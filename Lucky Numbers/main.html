@@ -21,8 +21,8 @@
             }
 
             playGame(){
-                this.#base = Math.floor(Math.random()*101)
-                this.#other = Math.floor(Math.random()*101)
+                this.#base = Math.floor(Math.random()*100)
+                this.#other = Math.floor(Math.random()*100)
 
                 numbers.innerHTML = "The Computer: " + this.#base + ", Your Number: " + this.#other
                 outcome.innerHTML = (() => {
@@ -41,10 +41,10 @@
 
             updateImage(){
                 if (this.#wins>this.#loss){
-                    picture.src = "https://images.unsplash.com/photo-1595420832643-faf4aaf65c5b?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    picture.src = "./Happy.jpg"
                     picture.alt = "Happy Face"
                 } else {
-                    picture.src = "https://images.unsplash.com/photo-1453227588063-bb302b62f50b?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    picture.src = "./sad.jpg"
                     picture.alt = "Sad Face"
                 }
             }
