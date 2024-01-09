@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lucky Numbers</title>
+    <script>
+        var numbers, outcome, picture
+        document.addEventListener("DOMContentLoaded", function() {
+            numbers = document.getElementById("numbers")
+            outcome = document.getElementById("outcome")
+            picture = document.getElementById("picture")
+        });
+
+        class LuckyNumbers {
+            #base= 0
+            #other= 0
+            #wins =0;
+            #loss=0;
+
+            constructor() {
+            }
+
+            playGame(){
+                this.#base = Math.floor(Math.random()*101)
+                this.#other = Math.floor(Math.random()*101)
+
+                numbers.innerHTML = "The Computer: " + this.#base + ", Your Number: " + this.#other
+                outcome.innerHTML = (() => {
+                    if (this.#base > this.#other) {
+                        this.#wins++
+                        return "You Lose. Total => Win: " + this.#wins + " Losses: " + this.#loss
+                    } else if (this.#base === this.#other) {
+                        return "You Tie. Total => Win: " + this.#wins + " Losses: " + this.#loss
+                    } else {
+                        this.#loss++
+                        return "You Win. Total => Win: " + this.#wins + " Losses: " + this.#loss
+                    }
+                })()
+                this.updateImage()
+            }
+
+            updateImage(){
+                if (this.#wins>this.#loss){
+                    picture.src = "https://images.unsplash.com/photo-1595420832643-faf4aaf65c5b?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    picture.alt = "Happy Face"
+                } else {
+                    picture.src = "https://images.unsplash.com/photo-1453227588063-bb302b62f50b?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                    picture.alt = "Sad Face"
+                }
+            }
+        }
+
+        let game= new LuckyNumbers()
+        function playLuckyNumbers() {
+            game.playGame()
+        }
+    </script>
+    <style>
+        body {
+            background: rgb(245,240,250);
+            display: grid;
+            align-content: center;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        button {
+            margin: auto auto 16px;
+            font-size: 20px;
+            background: rgb(194, 239, 194);
+            border-radius: 8px;
+            border: 2px solid black;
+            transition-duration: 0.5s;
+            height: 50px;
+            width: 100px;
+        }
+
+        button:hover {
+            background: rgb(114, 218, 114);
+        }
+
+        div {
+            margin: auto;
+            display: grid;
+            text-align: center;
+            align-content: center;
+        }
+
+        div div {
+            margin-top: 16px;
+        }
+
+        p {
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+<button onclick="playLuckyNumbers()">Click Me!</button>
+<div>
+    <p id="numbers"></p>
+    <p id="outcome"></p>
+    <div>
+        <img id="picture" src="" alt="" style="width: 200px">
+    </div>
+</div>
+</body>
+</html>

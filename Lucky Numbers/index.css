@@ -1,0 +1,38 @@
+body {
+    background: rgb(245,240,250);
+    display: grid;
+    align-content: center;
+    align-items: center;
+    margin-top: 16px;
+}
+
+button {
+    margin: auto auto 16px;
+    font-size: 20px;
+    background: rgb(194, 239, 194);
+    border-radius: 8px;
+    border: 2px solid black;
+    transition-duration: 0.5s;
+    height: 50px;
+    width: 100px;
+}
+
+button:hover {
+    background: rgb(114, 218, 114);
+}
+
+div {
+    margin: auto;
+    display: grid;
+    text-align: center;
+    align-content: center;
+}
+
+div div {
+    margin-top: 16px;
+}
+
+p {
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
