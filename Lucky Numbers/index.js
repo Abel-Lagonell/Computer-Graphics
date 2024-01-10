@@ -15,8 +15,8 @@ class LuckyNumbers {
      }
 
      playGame(){
-         this.#base = Math.floor(Math.random()*100)
-         this.#other = Math.floor(Math.random()*100)
+         this.#base = Math.floor(Math.random()*99)+1
+         this.#other = Math.floor(Math.random()*99)+1
 
          numbers.innerHTML = "The Computer: " + this.#base + ", Your Number: " + this.#other
          outcome.innerHTML = (() => {
