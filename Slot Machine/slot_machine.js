@@ -2,7 +2,7 @@ export class Slot_machine {
     //Class Variables
     #last_amount_won;
     #nums;
-    #img_list = this.make_img_list();
+    #img_list = this.#make_img_list();
     //Dictionary for the different Icons
     #slot_machine_icons = [
         {0 : "https://img.icons8.com/external-those-icons-fill-those-icons/96/external-Seven-casino-and-leisure-those-icons-fill-those-icons.png"},
@@ -28,7 +28,7 @@ export class Slot_machine {
             let outerDiv = document.createElement("div");
             outerDiv.className = "outerDiv"
             for (let img of this.#img_list){
-                img.src = this.getIconUrl(this.randomNumbers()[0])
+                img.src = this.#getIconUrl(this.#randomNumbers()[0])
                 let inner_div = document.createElement("div");
                 inner_div.className = "innerDiv"
                 inner_div.appendChild(img);
@@ -43,16 +43,16 @@ export class Slot_machine {
 
     //Playing the Slot machines
     play() {
-        this.#nums = this.randomNumbers();
+        this.#nums = this.#randomNumbers();
         for (let i = 0; i < this.#img_list.length; i++){
-            this.#img_list[i].src = this.getIconUrl(this.#nums[i]);
+            this.#img_list[i].src = this.#getIconUrl(this.#nums[i]);
             this.#img_list[i].alt = this.#nums[i];
         }
-        this.#last_amount_won =  this.calc_winnings(this.#nums)
+        this.#last_amount_won =  this.#calc_winnings(this.#nums)
     }
 
     //Function to make the list with the right formatting
-    make_img_list() {
+    #make_img_list() {
         let img1 = document.createElement("img");
         let img2 = document.createElement("img");
         let img3 = document.createElement("img");
@@ -65,20 +65,20 @@ export class Slot_machine {
     }
 
     //Picking 3 random numbers from [0-6]
-    randomNumbers(){
+    #randomNumbers(){
         let numberList = [0,0,0];
         for (let i= 0; i<3; i++){numberList[i] = Math.floor(Math.random()*7)}
         return numberList;
     }
 
     //Using the Dictionary to get the correct URL
-    getIconUrl(key) {
+    #getIconUrl(key) {
         const iconObject = this.#slot_machine_icons.find(obj => key in obj);
         return iconObject ? iconObject[key] : null;
     }
 
     //Calculate the total winnings of the slot machine
-    calc_winnings(num_list){
+    #calc_winnings(num_list){
         let first = num_list[0];
         let second = num_list[1];
         let third = num_list[2];
