@@ -4,20 +4,18 @@
     <meta charset="UTF-8">
     <title>Lucky Numbers</title>
     <script>
-        var numbers, outcome, picture
-        document.addEventListener("DOMContentLoaded", function() {
-            numbers = document.getElementById("numbers")
-            outcome = document.getElementById("outcome")
-            picture = document.getElementById("picture")
-        });
-
         class LuckyNumbers {
             #base= 0
             #other= 0
             #wins =0;
             #loss=0;
 
-            constructor() {
+            constructor(picture, numbers, outcome) {
+                document.addEventListener("DOMContentLoaded", function() {
+                    this.picture = document.getElementById("picture")
+                    this.numbers = document.getElementById("numbers")
+                    this.outcome = document.getElementById("outcome")
+                })
             }
 
             playGame(){

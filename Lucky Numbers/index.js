@@ -1,25 +1,26 @@
-var numbers, outcome, picture
-document.addEventListener("DOMContentLoaded", function() {
-    numbers = document.getElementById("numbers")
-    outcome = document.getElementById("outcome")
-    picture = document.getElementById("picture")
-});
-
 class LuckyNumbers {
-    #base= 0
-    #other= 0
-    #wins =0;
-    #loss=0;
+     #base= 0
+     #other= 0
+     #wins =0;
+     #loss=0;
+    numbers;
+    outcome;
+    picture;
 
-     constructor() {
+     constructor(picture, numbers, outcome) {
+         document.addEventListener("DOMContentLoaded", function() {
+             this.picture = document.getElementById("picture")
+             this.numbers = document.getElementById("numbers")
+             this.outcome = document.getElementById("outcome")
+         })
      }
 
      playGame(){
          this.#base = Math.floor(Math.random()*100)
          this.#other = Math.floor(Math.random()*100)
 
-         numbers.innerHTML = "The Computer: " + this.#base + ", Your Number: " + this.#other
-         outcome.innerHTML = (() => {
+         this.numbers.innerHTML = "The Computer: " + this.#base + ", Your Number: " + this.#other
+         this.outcome.innerHTML = (() => {
              if (this.#base > this.#other) {
                  this.#wins++
                  return "You Lose. Total => Win: " + this.#wins + " Losses: " + this.#loss
@@ -35,11 +36,11 @@ class LuckyNumbers {
 
      updateImage(){
          if (this.#wins>this.#loss){
-             picture.src = "./Happy.jpg"
-             picture.alt = "Happy Face"
+             this.picture.src = "./Happy.jpg"
+             this.picture.alt = "Happy Face"
          } else {
-             picture.src = "./sad.jpg"
-             picture.alt = "Sad Face"
+             this.picture.src = "./sad.jpg"
+             this.picture.alt = "Sad Face"
          }
      }
 }
