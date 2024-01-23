@@ -1,0 +1,3 @@
+Only use the grid for visualization of walls
+Functionality of both monster and player should be shared.
+Have enemy and hero having both x and y coords

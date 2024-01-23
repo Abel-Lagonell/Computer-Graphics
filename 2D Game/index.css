@@ -1,0 +1,11 @@
+canvas {
+    height: 1080px;
+    width: 1280px;
+    border: 2px outset black;
+    border-radius: 4px;
+}
+
+div {
+    display: flex;
+    justify-content: center;
+}
