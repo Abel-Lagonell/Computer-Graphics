@@ -14,9 +14,12 @@ export class Actor extends Object{
         this.hp = this.maxHp;
     }
 
-    takeDmg(dmg, def){
-        const totalDMG = dmg-def;
-        this.hp -= totalDMG>0? totalDMG: 1;
+    takeDmg(dmg){
+        const totalDMG = dmg-this.def;
+        let attack = totalDMG>0? totalDMG: 1;
+        attack *= Math.floor(Math.random()*6)+1;
+        this.hp -= attack;
+        console.log(this.hp);
     }
 
     //Direction in which the actor is going to move {0:up, 1:right, 2:down, 3:left}
@@ -39,6 +42,7 @@ export class Actor extends Object{
 }
 
 export class Hero extends Actor{
+    id = "Hero"
     constructor(
         x, y, hp, dmg, def, imgSrc
     ) {

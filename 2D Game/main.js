@@ -33,35 +33,54 @@ class Main {
         ];
         this.hero = new Hero(2,1, 20, 5, 5, "./MiniSwordMan.png")
         this.CR1 = new Actor(15, 16, 5, 2, 0, "./MiniGoblin.png")
+        this.CR2 = new Actor(10, 16, 10, 3, 1, "./MiniOrcBerserker.png")
+        this.CR3 = new Actor(5, 16, 15, 4, 2, "./MiniWargRider.png")
 
-        this.actors = [this.hero, this.CR1]
+        this.actors = [this.hero, this.CR1, this.CR2, this.CR3]
 
     }
 
-    tryMove(actor, direction){
+    tryMove(hero, direction){
         let arr = this.playArea
         switch (direction) {
             case 0: //Up
-                if (arr[actor.x][actor.y-1] < 1){
-                    actor.move(direction);
+                if (arr[hero.x][hero.y-1] >= 1) return;
+                for (let actor of this.actors) {
+                    if (actor.y === hero.y - 1 && actor.x === hero.x) actor.takeDmg(hero.dmg);
                 }
+                hero.move(direction);
                 break;
             case 1: //Right
-                if (arr[actor.x+1][actor.y] < 1){
-                    actor.move(direction);
+                if (arr[hero.x+1][hero.y] >= 1) return;
+                for (let actor of this.actors) {
+                    if (actor.x === hero.x + 1 && actor.y === hero.y) actor.takeDmg(hero.dmg);
                 }
+                hero.move(direction);
                 break;
             case 2: //Down
-                if (arr[actor.x][actor.y+1] < 1){
-                    actor.move(direction);
+                if (arr[hero.x][hero.y+1] >= 1) return;
+                for (let actor of this.actors) {
+                    if (actor.y === hero.y + 1 && actor.x === hero.x) actor.takeDmg(hero.dmg);
                 }
+                hero.move(direction);
                 break;
             case 3: //Left
-                if (arr[actor.x-1][actor.y] < 1){
-                    actor.move(direction)
+                if (arr[hero.x-1][hero.y] >= 1) return;
+                for (let actor of this.actors) {
+                    if (actor.x === hero.x - 1 && actor.y === hero.y) actor.takeDmg(hero.dmg);
                 }
+                hero.move(direction);
                 break;
         }
+    }
+
+    drawHealth() {
+        this.ctx.fillStyle = "red";
+        this.ctx.fillRect(this.hero.x*64 +15, this.hero.y*64 +2, 30, 5);
+        let percent = Math.floor( (this.hero.hp / this.hero.maxHp) * 10) *3;
+        this.ctx.fillStyle = "green";
+        this.ctx.fillRect(this.hero.x*64 +15, this.hero.y*64 +2, percent, 5);
+
     }
 
     createImg(actor){
@@ -80,6 +99,8 @@ class Main {
         for (let actor of this.actors){
             let img = this.createImg(actor);
             img.onload = () => {
+                if (actor.hp <= 0) return;
+                if (!!actor.id) this.drawHealth();
                 ctx.drawImage(img, actor.x*64, actor.y*64, 64, 64);
             };
         }
