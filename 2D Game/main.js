@@ -1,4 +1,3 @@
-import {Object, Potion} from "./Object.js";
 import {Actor, Hero} from "./Actor.js";
 
 class Main {
@@ -135,7 +134,6 @@ class Main {
     }
 
     checkKey(e){
-        let str
         switch (e.keyCode) {
             case 37:
                 this.tryMove(this.hero, 3);
