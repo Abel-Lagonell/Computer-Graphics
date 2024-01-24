@@ -1,17 +1,36 @@
 export class Object {
+    x;
+    y;
     constructor(
-        x,y,id
+        x,y
     ) {
         this.x = x;
         this.y = y;
-        this.id = id;
     }
+
+    xAdd(){
+        this.x++;
+    }
+
+    xMinus(){
+        this.x--;
+    }
+
+    yAdd(){
+        this.y++;
+    }
+
+    yMinus(){
+        this.y--;
+    }
+
+
 }
 
 // Other Object in the game
-
 export class Potion extends Object{
     constructor(x, y) {
-        super(x, y, -1);
+        super(x, y);
+        //calculate hp regen randomly
     }
 }
