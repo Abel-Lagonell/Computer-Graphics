@@ -1,11 +1,14 @@
 export class Object {
     x;
     y;
+    src = "";
+
     constructor(
-        x,y
+        x,y, src
     ) {
         this.x = x;
         this.y = y;
+        this.src = src;
     }
 
     xAdd(){
@@ -29,8 +32,16 @@ export class Object {
 
 // Other Object in the game
 export class Potion extends Object{
-    constructor(x, y) {
-        super(x, y);
-        //calculate hp regen randomly
+    potionRegen
+
+    constructor(x, y, src) {
+        super(x, y, src);
+        this.potionRegen = Math.floor(Math.random()*10)+1
+    }
+
+    gotten() {
+        for (let i = 0; i <50; i++){
+            this.xAdd()
+        }
     }
 }

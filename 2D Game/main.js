@@ -1,4 +1,5 @@
 import {Actor, Hero} from "./Actor.js";
+import {Object, Potion} from "./Object.js";
 
 class Main {
     ctx;
@@ -8,7 +9,7 @@ class Main {
         this.playable = true;
         this.ctx = ctx;
         this.canvas = canvas;
-        // Height = 13 with Width = 20
+        // Height = 20 with Width = 20
         this.playArea = [
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -18,16 +19,16 @@ class Main {
             [1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],
             [1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
             [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 2, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
             [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
             [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
             [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1],
             [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0, 1, 1],
             [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
@@ -36,35 +37,12 @@ class Main {
         this.CR1 = new Actor(15, 16, 5, 2, 0, "./MiniGoblin.png")
         this.CR2 = new Actor(10, 16, 10, 3, 1, "./MiniOrcBerserker.png")
         this.CR3 = new Actor(5, 16, 15, 4, 2, "./MiniWargRider.png")
+        this.hPotion1 = new Potion(18,10, "./HPotion.png")
+        this.hPotion2 = new Potion(1, 10, "./HPotion.png")
 
+        this.potions = [this.hPotion1, this.hPotion2]
         this.actors = [this.CR1, this.CR2, this.CR3]
 
-    }
-
-    createMaze(columns, rows) {
-        // Initialize the maze array
-        let maze = [];
-
-        // Populate the maze with 0s (open spaces)
-        for (let i = 0; i < rows; i++) {
-            maze[i] = Array(columns).fill(0);
-        }
-
-        // Add bricks (1s) randomly
-        for (let i = 1; i < rows - 1; i += 2) {
-            for (let j = 1; j < columns - 1; j += 2) {
-                maze[i][j] = 1;
-            }
-        }
-
-        // Add trees (2s) randomly
-        for (let i = 2; i < rows - 2; i += 2) {
-            for (let j = 2; j < columns - 2; j += 2) {
-                maze[i][j] = 2;
-            }
-        }
-
-        return maze;
     }
 
     tryMove(self, direction){ //Return Hit something (index) if index > arr.size then its hero or Wall (-1)
@@ -123,7 +101,13 @@ class Main {
             case 2: this.actors[2].takeDmg(this.hero.dmg); break;
             default: this.hero.move(direction);
         }
-        //Could be made better to allow for variable amount of enemies.
+        for (let i =0; i < this.potions.length; i++) {
+            if (this.potions[i].x === this.hero.x && this.potions[i].y === this.hero.y){
+                this.hero.heal(this.potions[i].potionRegen);
+                this.potions[i].gotten();
+            }
+        }
+        //Could be made better to allow for variable amount of enemies and potions.
     }
 
     drawHealth() {
@@ -146,17 +130,20 @@ class Main {
         this.renderWalls()
         this.renderHero()
         this.drawHealth()
-        this.renderActor()
+        for (let actor of this.actors) {
+            this.renderActor(actor)
+        }
+        for (let potions of this.potions){
+            this.renderActor(potions)
+        }
     }
 
-    renderActor() {
-        for (let actor of this.actors){
-            let img = this.createImg(actor);
-            img.onload = () => {
-                if (actor.hp <= 0) return;
-                ctx.drawImage(img, actor.x*64, actor.y*64, 64, 64);
-            };
-        }
+    renderActor(object) {
+        let img = this.createImg(object);
+        img.onload = () => {
+            if (object.hp <= 0) return;
+            ctx.drawImage(img, object.x*64, object.y*64, 64, 64);
+        };
     }
 
     renderHero(){
@@ -196,7 +183,7 @@ class Main {
     }
 
     drawText(str){
-        ctx.font = "60px Comic Sans MS";
+        ctx.font = "60px Jokerman";
         ctx.fillStyle = "black";
         ctx.textAlign = "center";
         ctx.fillText(str, canvas.width/2, canvas.height/2);
@@ -227,14 +214,11 @@ class Main {
     }
 
     checkGameState() {
-        console.log(this.actors)
         if (this.actors.length === 0){
-            console.log("win")
             this.win()
             this.playable = false;
         }
         else if (this.hero.hp < 0){
-            console.log("lose")
             this.lose()
             this.playable = false;
         }
@@ -244,7 +228,6 @@ class Main {
                 if (index > -1) {
                     this.actors.splice(index, 1);
                 }
-                console.warn("doing stuff")
             }
         }
     }

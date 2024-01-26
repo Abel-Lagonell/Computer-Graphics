@@ -1,16 +1,14 @@
 import {Object} from "./Object.js"
 
 export class Actor extends Object{
-    src = "";
 
     constructor(
         x, y, hp, dmg, def, src
     ) {
-        super(x, y);
+        super(x, y, src);
         this.maxHp = hp;
         this.dmg = dmg;
         this.def = def;
-        this.src = src;
         this.hp = this.maxHp;
     }
 
