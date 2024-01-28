@@ -12,37 +12,51 @@ class Main {
         // Height = 20 with Width = 20
         this.playArea = [
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
-            [1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],
-            [1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
-            [1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],
-            [1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
-            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 1, 2, 1, 1, 1, 1, 1, 0, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
-            [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0, 1, 1],
-            [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 2, 2, 0, 1, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 2, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 1, 0, 2, 0, 1, 2, 0, 2, 0, 2, 0, 0, 0, 0, 1],
+            [1, 0, 2, 1, 0, 1, 2, 0, 0, 1, 0, 0, 0, 2, 2, 2, 0, 2, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 2, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 1, 1, 1, 1, 0, 1, 1],
+            [1, 0, 2, 0, 0, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 1, 0, 1, 0, 2, 2, 0, 1],
+            [1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1],
+            [1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+            [1, 2, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1],
+            [1, 2, 0, 1, 0, 0, 1, 0, 0, 0, 2, 0, 2, 2, 0, 2, 0, 0, 0, 1],
+            [1, 0, 0, 0, 0, 2, 1, 2, 0, 2, 2, 0, 0, 2, 0, 1, 0, 2, 0, 1],
+            [1, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 1],
+            [1, 0, 0, 0, 0, 2, 0, 1, 0, 2, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1],
+            [1, 1, 1, 2, 0, 2, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+            [1, 2, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ];
 
+        let place = this.randomPlacing()
         this.hero = new Hero(2,1, 20, 5, 5, "./MiniSwordMan.png")
-        this.CR1 = new Actor(15, 16, 5, 2, 0, "./MiniGoblin.png")
-        this.CR2 = new Actor(10, 16, 10, 3, 1, "./MiniOrcBerserker.png")
-        this.CR3 = new Actor(5, 16, 15, 4, 2, "./MiniWargRider.png")
-        this.hPotion1 = new Potion(18,10, "./HPotion.png")
+        this.CR1 = new Actor(place[0], place[1], 5, 2, 0, "./MiniGoblin.png")
+        place = this.randomPlacing()
+        this.CR2 = new Actor(place[0], place[1], 10, 3, 1, "./MiniOrcBerserker.png")
+        place = this.randomPlacing()
+        this.CR3 = new Actor(place[0], place[1], 15, 4, 2, "./MiniWargRider.png")
+        this.hPotion1 = new Potion(18,8, "./HPotion.png")
         this.hPotion2 = new Potion(1, 10, "./HPotion.png")
 
         this.potions = [this.hPotion1, this.hPotion2]
         this.actors = [this.CR1, this.CR2, this.CR3]
 
+    }
+
+    randomPlacing(){
+        let x = 0;
+        let y = 0;
+        while (this.playArea[x][y] >= 1){
+            x = Math.floor(Math.random()*15)+5
+            y = Math.floor(Math.random()*15)+5
+        }
+
+        return [x,y]
     }
 
     tryMove(self, direction){ //Return Hit something (index) if index > arr.size then its hero or Wall (-1)
@@ -82,7 +96,7 @@ class Main {
         let direction = Math.floor(Math.random() * 4);
         let result = this.tryMove(monster, direction);
         switch (result) {
-            case -1: break;
+            case -1: this.randMove(monster);
             case 0:  break;
             case 1:  break;
             case 2:  break;
@@ -158,8 +172,8 @@ class Main {
         for (let i =0; i<20; i++){
             for (let j  =0; j<20; j++){
                 switch (this.playArea[i][j]) {
-                    case 1: this.drawBox(i*64,j*64, "red"); break;
-                    case 2: this.drawCircle(i*64, j*64, "green"); break;
+                    case 1: this.drawBrick(i*64, j*64); break;
+                    case 2: this.drawTree(i*64, j*64); break;
                 }
             }
         }
@@ -170,16 +184,49 @@ class Main {
         this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height)
     }
 
-    drawBox(x, y, color){
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(x, y, 64 ,64);
-    }
-
-    drawCircle(x, y, color){
-        this.ctx.fillStyle = color;
+    drawTree(x,y){
+        this.ctx.fillStyle = "darkgreen";
         this.ctx.beginPath();
         this.ctx.arc(x+32 ,y+32, 32, 0 , Math.PI*2, true);
         this.ctx.fill();
+
+        this.ctx.fillStyle = "green";
+        this.ctx.beginPath();
+        this.ctx.arc(x+32 ,y+32, 24, 0 , Math.PI*2, true);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = "seagreen";
+        this.ctx.beginPath();
+        this.ctx.arc(x+32 ,y+32, 16, 0 , Math.PI*2, true);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = "lightgreen";
+        this.ctx.beginPath();
+        this.ctx.arc(x+32 ,y+32, 8, 0 , Math.PI*2, true);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = "olivedrab";
+        this.ctx.beginPath();
+        this.ctx.arc(x+32 ,y+32, 2, 0 , Math.PI*2, true);
+        this.ctx.fill();
+    }
+
+    drawBrick(x,y){
+        this.ctx.fillStyle = "darksalmon";
+        this.ctx.fillRect(x, y, 64 ,64);
+
+        this.ctx.fillStyle = "firebrick";
+
+        this.ctx.fillRect(x, y+1, 20 ,18);
+        this.ctx.fillRect(x+50, y+1, 14 ,18);
+        this.ctx.fillRect(x+22, y+1, 26 ,18);
+
+        this.ctx.fillRect(x+1, y+21, 32 ,21);
+        this.ctx.fillRect(x+36, y+21, 26 ,21);
+
+        this.ctx.fillRect(x, y+44, 10 ,19);
+        this.ctx.fillRect(x+12, y+44, 25 ,19);
+        this.ctx.fillRect(x+39, y+44, 25 ,19);
     }
 
     drawText(str){
