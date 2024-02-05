@@ -60,9 +60,12 @@
 		class Shape {
 			constructor() {
 				var positions = [
-					0, 0, 1, 0, 0,
-					0, 0.5, 0, 1, 0,
-					0.7, 0, 0, 0, 1
+					0, 0.5, 1, 0, 0,
+					1, 0.5, 0, 1, 0,
+					0.5, 1, 0, 0, 1,
+					0.5, 0, 0, 1, 1,
+					0, 	-1, 1, 0, 1,
+				   -0.5, 1, 1, 0, 1,
 				];
 				this.positionBuffer = gl.createBuffer();
 				gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
@@ -88,7 +91,7 @@
 						colorAttributeLocation, 3, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
 
 				var primitiveType = gl.TRIANGLES;
-				var count = 3;
+				var count = 6;
 				gl.drawArrays(primitiveType, offset, count);
 			}
 		}

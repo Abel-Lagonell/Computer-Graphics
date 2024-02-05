@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>2D Game!</title>
+    <style>
+        canvas {
+            height: 832px;
+            width: 832px;
+        }
+
+        div {
+            display: flex;
+            justify-content: center;
+        }
+
+        body {
+            background: seagreen;
+        }
+    </style>
+    <script>
+        class Object {
+            x;
+            y;
+            src = "";
+
+            constructor(
+                x,y, src
+            ) {
+                this.x = x;
+                this.y = y;
+                this.src = src;
+            }
+
+            xAdd(){
+                this.x++;
+            }
+
+            xMinus(){
+                this.x--;
+            }
+
+            yAdd(){
+                this.y++;
+            }
+
+            yMinus(){
+                this.y--;
+            }
+
+
+        }
+
+        // Other Object in the game
+        class Potion extends Object{
+            potionRegen
+
+            constructor(x, y, src) {
+                super(x, y, src);
+                this.potionRegen = Math.floor(Math.random()*10)+1
+            }
+
+            gotten() {
+                for (let i = 0; i <50; i++){
+                    this.xAdd()
+                }
+            }
+        }
+
+        class Actor extends Object{
+
+            constructor(
+                x, y, hp, dmg, def, src
+            ) {
+                super(x, y, src);
+                this.maxHp = hp;
+                this.dmg = dmg;
+                this.def = def;
+                this.hp = this.maxHp;
+            }
+
+            takeDmg(dmg){ //This function should be the other way around where it takes in an actor
+                const totalDMG = dmg-this.def;
+                let attack = totalDMG>0? totalDMG: 1;
+                attack *= Math.floor(Math.random()*6)+1;
+                this.hp -= attack;
+            }
+
+            //Direction in which the actor is going to move {0:up, 1:right, 2:down, 3:left}
+            move(direction) {
+                switch (direction) {
+                    case 0:
+                        this.yMinus();
+                        break;
+                    case 1:
+                        this.xAdd();
+                        break;
+                    case 2:
+                        this.yAdd();
+                        break;
+                    case 3:
+                        this.xMinus();
+                        break;
+                }
+            }
+        }
+
+        class Hero extends Actor{
+            id = "Hero"
+            constructor(
+                x, y, hp, dmg, def, imgSrc
+            ) {
+                super(x, y, hp, dmg, def, imgSrc);
+            }
+
+            heal(potion) {
+                this.hp += potion;
+            }
+        }
+
+        class Main {
+            ctx;
+            canvas;
+
+            constructor(canvas, ctx) {
+                this.playable = true;
+                this.ctx = ctx;
+                this.canvas = canvas;
+                // Height = 20 with Width = 20
+                this.playArea = [
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 0, 2, 2, 0, 1, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 2, 0, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 0, 1, 0, 2, 0, 1, 2, 0, 2, 0, 2, 0, 0, 0, 0, 1],
+                    [1, 0, 2, 1, 0, 1, 2, 0, 0, 1, 0, 0, 0, 2, 2, 2, 0, 2, 1, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 2, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 1, 1, 1, 1, 0, 1, 1],
+                    [1, 0, 2, 0, 0, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 1, 0, 1, 0, 2, 2, 0, 1],
+                    [1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1],
+                    [1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+                    [1, 2, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 1],
+                    [1, 2, 0, 1, 0, 0, 1, 0, 0, 0, 2, 0, 2, 2, 0, 2, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 2, 1, 2, 0, 2, 2, 0, 0, 2, 0, 1, 0, 2, 0, 1],
+                    [1, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 1],
+                    [1, 0, 0, 0, 0, 2, 0, 1, 0, 2, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1],
+                    [1, 1, 1, 2, 0, 2, 0, 1, 0, 0, 2, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+                    [1, 2, 0, 2, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                ];
+
+                let place = this.randomPlacing()
+                this.hero = new Hero(2,1, 20, 2, 5, "./MiniSwordMan.png")
+                this.CR1 = new Actor(place[0], place[1], 5, 2, 0, "./MiniGoblin.png")
+                place = this.randomPlacing()
+                this.CR2 = new Actor(place[0], place[1], 10, 3, 1, "./MiniOrcBerserker.png")
+                place = this.randomPlacing()
+                this.CR3 = new Actor(place[0], place[1], 15, 4, 2, "./MiniWargRider.png")
+                this.hPotion1 = new Potion(18,8, "./HPotion.png")
+                this.hPotion2 = new Potion(1, 10, "./HPotion.png")
+
+                this.potions = [this.hPotion1, this.hPotion2]
+                this.actors = [this.CR1, this.CR2, this.CR3]
+
+            }
+
+            randomPlacing(){
+                let x = 0;
+                let y = 0;
+                while (this.playArea[x][y] >= 1){
+                    x = Math.floor(Math.random()*15)+5
+                    y = Math.floor(Math.random()*15)+5
+                }
+
+                return [x,y]
+            }
+
+            tryMove(self, direction){ //Return Hit something (index) if index > arr.size then its hero or Wall (-1)
+                let arr = this.playArea
+                let actors = this.actors.slice()
+                actors.push(this.hero);
+
+                switch (direction) {
+                    case 0: //Up
+                        if (arr[self.x][self.y-1] >= 1) return -1;
+                        for (let i =0; i < actors.length; i++) {
+                            if (actors[i].y === self.y - 1 && actors[i].x === self.x) return i;
+                        }
+                        break;
+                    case 1: //Right
+                        if (arr[self.x+1][self.y] >= 1) return -1;
+                        for (let i =0; i < actors.length; i++) {
+                            if (actors[i].x === self.x + 1 && actors[i].y === self.y) return i;
+                        }
+                        break;
+                    case 2: //Down
+                        if (arr[self.x][self.y+1] >= 1) return -1;
+                        for (let i =0; i < actors.length; i++) {
+                            if (actors[i].y === self.y + 1 && actors[i].x === self.x) return i;
+                        }
+                        break;
+                    case 3: //Left
+                        if (arr[self.x-1][self.y] >= 1) return -1;
+                        for (let i =0; i < actors.length; i++) {
+                            if (actors[i].x === self.x - 1 && actors[i].y === self.y) return i;
+                        }
+                        break;
+                }
+            }
+
+            randMove(monster) {
+                let direction = Math.floor(Math.random() * 4);
+                let result = this.tryMove(monster, direction);
+                switch (result) {
+                    case -1: this.randMove(monster); break;
+                    case 0:  break;
+                    case 1:  break;
+                    case 2:  break;
+                    case 3:  this.hero.takeDmg(monster.dmg); break;
+                    default: monster.move(direction);
+                }
+                //You can put logic here to make it so that the monster attacks if hero is near
+            }
+
+
+            heroMove(direction){
+                let result = this.tryMove(this.hero, direction);
+                switch (result) {
+                    case -1: break;
+                    case 0: this.actors[0].takeDmg(this.hero.dmg); break;
+                    case 1: this.actors[1].takeDmg(this.hero.dmg); break;
+                    case 2: this.actors[2].takeDmg(this.hero.dmg); break;
+                    default: this.hero.move(direction);
+                }
+                for (let i =0; i < this.potions.length; i++) {
+                    if (this.potions[i].x === this.hero.x && this.potions[i].y === this.hero.y){
+                        this.hero.heal(this.potions[i].potionRegen);
+                        this.potions[i].gotten();
+                    }
+                }
+                //Could be made better to allow for variable amount of enemies and potions.
+            }
+
+            drawHealth(actor) {
+                if (actor.hp <= 0) return;
+
+                let percent = Math.floor( (actor.hp / actor.maxHp) * 10) *3;
+
+                this.ctx.fillStyle = "red";
+                this.ctx.fillRect(actor.x*64 +15, actor.y*64 +2, 30, 5);
+                this.ctx.fillStyle = "green";
+                this.ctx.fillRect(actor.x*64 +15, actor.y*64 +2, percent, 5);
+
+            }
+
+            createImg(actor){
+                let img = document.createElement("img");
+                img.src = actor.src;
+                img.alt = "alt"
+                return img;
+            }
+
+            render(){
+                this.renderWalls()
+                this.renderHero()
+                this.drawHealth(this.hero)
+                for (let actor of this.actors) {
+                    this.renderActor(actor)
+                    this.drawHealth(actor)
+                }
+                for (let potions of this.potions){
+                    this.renderActor(potions)
+                }
+            }
+
+            renderActor(object) {
+                let img = this.createImg(object);
+                img.onload = () => {
+                    if (object.hp <= 0) return;
+                    ctx.drawImage(img, object.x*64, object.y*64, 64, 64);
+                };
+            }
+
+            renderHero(){
+                let img = this.createImg(this.hero);
+                img.onload = () => {
+                    if (this.hero.hp <= 0) return;
+                    ctx.drawImage(img, this.hero.x*64, this.hero.y*64, 64, 64);
+                };
+            }
+
+            renderWalls(){
+                for (let i =0; i<20; i++){
+                    for (let j  =0; j<20; j++){
+                        switch (this.playArea[i][j]) {
+                            case 1: this.drawBrick(i*64, j*64); break;
+                            case 2: this.drawTree(i*64, j*64); break;
+                        }
+                    }
+                }
+            }
+
+            clear() {
+                this.ctx.fillStyle = "burlywood";
+                this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height)
+            }
+
+            drawTree(x,y){
+                this.ctx.fillStyle = "darkgreen";
+                this.ctx.beginPath();
+                this.ctx.arc(x+32 ,y+32, 32, 0 , Math.PI*2, true);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = "green";
+                this.ctx.beginPath();
+                this.ctx.arc(x+32 ,y+32, 24, 0 , Math.PI*2, true);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = "seagreen";
+                this.ctx.beginPath();
+                this.ctx.arc(x+32 ,y+32, 16, 0 , Math.PI*2, true);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = "lightgreen";
+                this.ctx.beginPath();
+                this.ctx.arc(x+32 ,y+32, 8, 0 , Math.PI*2, true);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = "olivedrab";
+                this.ctx.beginPath();
+                this.ctx.arc(x+32 ,y+32, 2, 0 , Math.PI*2, true);
+                this.ctx.fill();
+            }
+
+            drawBrick(x,y){
+                this.ctx.fillStyle = "darksalmon";
+                this.ctx.fillRect(x, y, 64 ,64);
+
+                this.ctx.fillStyle = "firebrick";
+
+                this.ctx.fillRect(x, y+1, 20 ,18);
+                this.ctx.fillRect(x+50, y+1, 14 ,18);
+                this.ctx.fillRect(x+22, y+1, 26 ,18);
+
+                this.ctx.fillRect(x+1, y+21, 32 ,21);
+                this.ctx.fillRect(x+36, y+21, 26 ,21);
+
+                this.ctx.fillRect(x, y+44, 10 ,19);
+                this.ctx.fillRect(x+12, y+44, 25 ,19);
+                this.ctx.fillRect(x+39, y+44, 25 ,19);
+            }
+
+            drawText(str){
+                ctx.font = "60px Jokerman";
+                ctx.fillStyle = "black";
+                ctx.textAlign = "center";
+                ctx.fillText(str, canvas.width/2, canvas.height/2);
+            }
+
+            checkKey(e){
+                if (!this.playable) return;
+                switch (e.keyCode) {
+                    case 37:
+                        this.heroMove(3);
+                        break;
+                    case 38:
+                        this.heroMove(0);
+                        break;
+                    case 39:
+                        this.heroMove(1);
+                        break;
+                    case 40:
+                        this.heroMove(2);
+                        break;
+                }
+                for (let actor of this.actors){
+                    this.randMove(actor);
+                }
+                this.clear()
+                this.render()
+                this.checkGameState()
+            }
+
+            checkGameState() {
+                if (this.hero.hp < 0){
+                    this.lose()
+                    this.playable = false;
+                    return;
+                } else if (this.actors.length === 0){
+                    this.win()
+                    this.playable = false;
+                    return;
+                }
+                for (let actor of this.actors){
+                    if (actor.hp <= 0){
+                        const index = this.actors.indexOf(actor);
+                        if (index > -1) {
+                            this.actors.splice(index, 1);
+                        }
+                    }
+                }
+            }
+
+            win() {
+                this.clear()
+                this.drawText("YOU WIN")
+            }
+
+            lose() {
+                this.clear()
+                this.drawText("GAME OVER")
+            }
+        }
+
+        let canvas = document.createElement("canvas")
+        canvas.id = "canvas";
+        canvas.height = 1280;
+        canvas.width = 1280;
+        let ctx = canvas.getContext("2d")
+        let main = new Main(canvas, ctx);
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let div = document.createElement("div");
+            div.appendChild(canvas)
+            document.body.appendChild(div);
+        });
+        document.onkeydown = ev => main.checkKey(ev);
+
+        main.render()
+    </script>
+</head>
+<body>
+</body>
+</html>
