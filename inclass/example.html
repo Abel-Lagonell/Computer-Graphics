@@ -1,0 +1,318 @@
+<!DOCTYPE HTML>
+<HTML lang = "en">
+<head>
+    <title>
+        "DrawTrianglesExample"
+    </title>
+
+    <script id="vertex-shader-2d" type="notjs">
+        attribute vec4 a_position;
+        attribute vec3 a_color;
+        varying vec3 v_color;
+
+        void main()
+        {
+            gl_PointSize = 5.0;
+            gl_Position = a_position;
+            v_color = a_color;
+        }
+    </script>
+
+    <script id="fragment-shader-2d" type="notjs">
+        precision mediump float;
+        varying vec3 v_color;
+
+        void main()
+        {
+            gl_FragColor = vec4(v_color, 1);
+        }
+    </script>
+
+    <script>
+        class InitWebGLProgram
+        {
+            constructor()
+            {
+                // webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+                gl.clearColor(0, 0, 0, 0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+            }
+
+            createShader(type, source)
+            {
+                var shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+                if (success)
+                {
+                    return shader;
+                }
+            }
+
+            createProgram(vertexShader, fragmentShader)
+            {
+                var program = gl.createProgram();
+                gl.attachShader(program, vertexShader);
+                gl.attachShader(program, fragmentShader);
+                gl.linkProgram(program);
+                var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+                if (success)
+                {
+                    return program;
+                }
+
+                console.log(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+            }
+        }
+
+        class shapeOLD
+        {
+            constructor(_positions)
+            {
+                var positions = _positions;
+                this.setting = 0;
+
+                this.positionBuffer = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+            }
+
+            render(program)
+            {
+                var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+                var colorAttributeLocation = gl.getAttribLocation(program, "a_color");
+
+                gl.enableVertexAttribArray(positionAttributeLocation);
+                gl.enableVertexAttribArray(colorAttributeLocation);
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                var size = 2;
+                var type = gl.FLOAT;
+                var normalize = false;
+                var stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+                var offset = 0 * Float32Array.BYTES_PER_ELEMENT;
+                gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset)
+
+                // gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+                var size = 3;
+                var type = gl.FLOAT;
+                var normalize = false;
+                var stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+                var offset = 2 * Float32Array.BYTES_PER_ELEMENT;
+                gl.vertexAttribPointer(colorAttributeLocation, size, type, normalize, stride, offset)
+
+                var primitiveType = gl.TRIANGLES;
+
+                var offset = 0;
+                var count = 6;
+                gl.drawArrays(primitiveType, offset, count);
+            }
+
+        }
+
+        class shape
+        {
+            constructor()
+            {
+                this.positions = [];
+                this.positionBuffer = gl.createBuffer();
+                this.vertCount = 0;
+                this.isDone = false;
+            }
+
+            addTempPoint(x,y)
+            {
+                this.positions.push(x);
+                this.positions.push(y);
+                this.positions.push(0) //R
+                this.positions.push(0) //G
+                this.positions.push(1) //B
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
+
+                this.vertCount++;
+            }
+
+            removeTempPoint()
+            {
+                for(let i = 0; i < 5; i++)
+                {
+                    this.positions.pop()
+                }
+                this.vertCount--;
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
+            }
+
+            addPoint(x, y)
+            {
+                this.positions.push(x);
+                this.positions.push(y);
+                this.positions.push(Math.random()) //R
+                this.positions.push(Math.random()) //G
+                this.positions.push(Math.random()) //B
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
+
+                this.vertCount++;
+                if (this.vertCount >= 3)
+                {
+                    this.isDone = true;
+                }
+            }
+
+            update()
+            {
+
+            }
+
+            render(program)
+            {
+                var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+                var colorAttributeLocation = gl.getAttribLocation(program, "a_color");
+
+                gl.enableVertexAttribArray(positionAttributeLocation);
+                gl.enableVertexAttribArray(colorAttributeLocation);
+
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                var size = 2;
+                var type = gl.FLOAT;
+                var normalize = false;
+                var stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+                var offset = 0 * Float32Array.BYTES_PER_ELEMENT;
+                gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset)
+
+                // gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+                var size = 3;
+                var type = gl.FLOAT;
+                var normalize = false;
+                var stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+                var offset = 2 * Float32Array.BYTES_PER_ELEMENT;
+                gl.vertexAttribPointer(colorAttributeLocation, size, type, normalize, stride, offset)
+
+                var primitiveType = gl.TRIANGLES;
+                if (!this.isDone)
+                {
+                    primitiveType = gl.LINE_LOOP;
+                }
+                var offset = 0;
+                /// var count = 3;
+                gl.drawArrays(primitiveType, offset, this.vertCount);
+            }
+        }
+
+        class main
+        {
+            constructor()
+            {
+                this.webGL = new InitWebGLProgram();
+
+                this.vertexShaderSource = document.getElementById("vertex-shader-2d").text;
+                this.fragmentShaderSource = document.getElementById("fragment-shader-2d").text;
+
+                this.vertexShader = this.webGL.createShader(gl.VERTEX_SHADER, this.vertexShaderSource);
+                this.fragmentShader = this.webGL.createShader(gl.FRAGMENT_SHADER, this.fragmentShaderSource);
+
+                this.program = this.webGL.createProgram(this.vertexShader, this.fragmentShader);
+
+                gl.useProgram(this.program);
+
+                this.shapes = [];
+
+                //this.temp = new shape(this.positions);
+                //this.temp.render(this.program)
+            }
+
+            canvasHandle(event)
+            {
+                var rect = canvas.getBoundingClientRect();
+                var realX = event.clientX - rect.left;
+                var realY = event.clientY - rect.top;
+                console.log(realX+","+realY);
+                var x = -1 + 2*realX/myCanvas.width;
+                var y = -1 + 2*(myCanvas.height - realY)/myCanvas.height;
+                console.log("The click occurred on "+x+","+y);
+
+                //this.shapes.addPoint(x,y)
+                //this.shapes.render(this.program)
+
+                //make new object if triangle is done
+                if (this.shapes.length == 0 || this.shapes[this.shapes.length - 1].isDone)
+                {
+                    this.shapes.push(new shape());
+                }
+
+                this.shapes[this.shapes.length - 1].addPoint(x,y);
+                this.renderAll();
+            }
+
+            canvasMove(event)
+            {
+                var rect = canvas.getBoundingClientRect();
+                var realX = event.clientX - rect.left;
+                var realY = event.clientY - rect.top;
+                var x = -1 + 2*realX/myCanvas.width;
+                var y = -1 + 2*(myCanvas.height - realY)/myCanvas.height;
+
+                if (this.shapes.length > 0 && !this.shapes[this.shapes.length - 1].isDone)
+                {
+                    this.shapes[this.shapes.length-1].addTempPoint(x,y);
+                    this.renderAll();
+                    this.shapes[this.shapes.length-1].removeTempPoint();
+
+                }
+            }
+
+            renderAll()
+            {
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                for (let i =0; i < this.shapes.length; i++)
+                {
+                    this.shapes[i].render(this.program)
+                }
+            }
+
+            static mouseH(event)
+            {
+                m.canvasHandle(event);
+            }
+
+            static mouseM(event)
+            {
+                m.canvasMove(event);
+            }
+        }
+    </script>
+
+</head>
+<body>
+<header>
+    <h1 style="text-align: center;">
+        DrawTrianglesExample
+    </h1>
+</header>
+
+<canvas id = "myCanvas" width = "640" height="400" style = "position: absolute; top: auto; left: 0px; right: 0px; bottom: auto; margin: auto; border: 1px solid #000000; margin-top: 20px;">
+
+</canvas>
+
+<footer>
+
+</footer>
+
+<script>
+    var canvas = document.getElementById("myCanvas");
+    var gl = canvas.getContext("webgl");
+
+    canvas.addEventListener("click",main.mouseH);
+    canvas.addEventListener("mousemove", main.mouseM);
+    var m = new main();
+</script>
+</body>
+</HTML>

@@ -1,0 +1,125 @@
+<!DOCTYPE HTML>
+<HTML lang="en">
+	<Head>
+	<Title>"Modularizing WebGL"</TITLE>
+<SCRIPT>
+
+		class main
+		{	
+			constructor()
+			{
+
+			}
+			
+			keyDown(event)
+			{
+				console.log("The number of the key pressed:  "+event.keyCode+
+				",the string of the event code: "+String.fromCharCode(event.keyCode));                   
+			}
+			
+			slideHandle(handle)
+			{
+			console.log("The slide has been changed to "+ handle.value);
+			console.log("X = "+this.x);
+			}
+	
+			canvasHandle(event)
+			{
+				var rect = canvas.getBoundingClientRect();
+				var realX = event.clientX - rect.left;
+				var realY = event.clientY - rect.top;
+				console.log(realX+","+realY);
+				var x = -1 + 2*event.clientX/myCanvas.width;
+				var y = -1 + 2*(myCanvas.height - event.clientY)/myCanvas.height;
+				console.log("The click occurred on "+x+","+y);
+			}
+		
+			menuHandle(menu)
+			{
+				console.log("The menu option is "+ menu.selectedIndex);
+				console.log("the menu value is "+menu.value);
+			}
+			
+			buttonHandle()
+			{
+				console.log("You clicked the button");
+			}	
+			
+			static keyD(event)
+			{
+				m.keyDown(event);
+			}
+			
+			static slideH()
+			{
+				m.slideHandle(this);
+			}
+			
+			static mouseH(event)
+			{
+				m.canvasHandle(event);
+			}
+			static menuH()
+			{
+				m.menuHandle(this);
+			}
+			
+			static buttonH()
+			{
+				m.buttonHandle();
+			}
+		}
+		
+		
+		</script>
+		
+		
+
+	</Head>
+	<BODY style="padding: 15px;">
+		<HEADER>
+		
+		</HEADER>
+		
+		<CANVAS id="myCanvas" width="640" height="400" style = "border: 1px solid #000;">
+			Your browser does not support canvas.
+		</CANVAS>
+		
+		<button id="myB">Clear Canvas</button>
+		
+		
+		<select id="mySel" size = "3">
+			<option value="Circle">Circle</option>
+			<option value="Square">Square</option>
+			<option value="Triangle">Triangle</option>
+		</select>
+		
+		<input id="slide" type="range" min="0" max="100" step="10" value="50"/>
+
+		
+		<FOOTER>
+		
+		</FOOTER>
+		<SCRIPT>
+			var canvas = document.getElementById("myCanvas");
+			var gl = canvas.getContext("webgl");
+			
+			var m = new main();
+			
+			window.onkeydown = main.keyD;
+			var slide = document.getElementById("slide");
+			slide.onchange = main.slideH;
+			canvas.addEventListener("click",main.mouseH);
+			var mySel = document.getElementById("mySel");
+			mySel.addEventListener("click", main.menuH);
+			var myB = document.getElementById("myB");
+			myB.addEventListener("click",main.buttonH);
+
+			
+		</SCRIPT>
+		
+	</BODY>
+	
+</HTML>
+		
+		

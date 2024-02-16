@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Initials</title>
+
+    <script id="2dVertexShader" type="notjs">
+        attribute vec4 a_position;
+        attribute vec3 a_color;
+        varying vec3 v_color;
+        void main()
+        {
+            v_color = a_color;
+            gl_Position = a_position;
+        }
+    </script>
+
+    <script id="2dFragmentShader" type="notjs">
+        precision mediump float;
+        varying vec3 v_color;
+        void main()
+        {
+            gl_FragColor = vec4(v_color, 1.0);
+        }
+    </script>
+
+    <script>
+
+        /**
+         * author : Abel Lagonell
+         */
+
+        class InitWebGLProgram {
+            /**
+             * @param gl : WebGLRenderingContext
+             */
+            constructor(gl) {
+                this.gl = gl
+                this.gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+                this.clear()
+            }
+
+
+            /**
+             * Creates the specific shader
+             * @param type : GLenum gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+             * @param source : string A string containing the GLSL source code to set.
+             * @returns {WebGLShader}
+             */
+            createShader(type, source) {
+                let shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                let success = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
+                if (success) {
+                    return shader;
+                }
+                console.error(this.gl.getShaderInfoLog(shader));
+                this.gl.deleteShader(shader);
+            }
+
+            /**
+             * Creates the Program to render stuff
+             * @param vs : WebGLShader Vertex Shader
+             * @param fs : WebGLShader Fragment Shader
+             * @returns {WebGLProgram}
+             */
+            createProgram(vs, fs) {
+                let program = this.gl.createProgram();
+                this.gl.attachShader(program, vs);
+                this.gl.attachShader(program, fs);
+                this.gl.linkProgram(program);
+                let success = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+                if (!success) {
+                    console.error(this.gl.getProgramInfoLog(program));
+                    this.gl.deleteProgram(program);
+                }
+                return program;
+            }
+
+
+            /**
+             * Clears the board
+             */
+            clear(){
+                this.gl.clearColor(1, 1, 1, 1);
+                this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+            }
+        }
+
+        class Shape {
+            /**
+             * @param gl : {WebGLRenderingContext}
+             * @param positions : number[]
+             * @param count : number
+             */
+            constructor(gl, positions, count ) {
+                this.gl = gl;
+                this.positions = positions;
+                this.count = count
+                this.positionBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
+            }
+
+            /**
+             * Renders the given program
+             * @param program : WebGLProgram
+             * @param triType : number 0=>Lines, 1=>Line Loop, 2=>Line Strip, 3=>Triangles, 4=>Triangle Strip, 5=>Fan
+             */
+            render(program, triType) {
+                let positionAttributeLocation = this.gl.getAttribLocation(program, "a_position");
+                this.gl.enableVertexAttribArray(positionAttributeLocation);
+
+                let colorAttributeLocation = this.gl.getAttribLocation(program, "a_color");
+                this.gl.enableVertexAttribArray(colorAttributeLocation);
+
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                const type = this.gl.FLOAT; //Type of array
+                const normalize = false;
+                const stride = 5 * Float32Array.BYTES_PER_ELEMENT; //How many per line
+                this.gl.vertexAttribPointer(positionAttributeLocation, 2, type, normalize, stride, 0);
+
+                this.gl.vertexAttribPointer(colorAttributeLocation, 3, type, normalize, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+
+                switch (triType) {
+                    case 3: return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.count);
+                    case 4: return this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.count);
+                    case 5: return this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, this.count);
+                    case 0: return this.gl.drawArrays(this.gl.LINES, 0, this.count);
+                    case 1: return this.gl.drawArrays(this.gl.LINE_LOOP, 0, this.count);
+                    case 2: return this.gl.drawArrays(this.gl.LINE_STRIP, 0, this.count);
+                    default: return this.gl.drawArrays(this.gl.POINTS, 0, this.count);
+                }
+            }
+
+            add_positions(positions){
+                this.positions = this.positions.concat(positions)
+
+                this.count += positions.length/5
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER_BINDING, this.positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
+            }
+        }
+
+        class FreeFormShape {
+            /**
+             *
+             * @param positions : number[]
+             * @param color : number[]
+             */
+            constructor(positions, color) {
+                this.positions = positions
+                this.color = color
+            }
+
+            /**
+             *
+             * @returns {number[]}
+             */
+            get_array() {
+                // Combined array to store the result
+                let combinedArray = [];
+
+                // Iterate through the coordinate points array
+                for (let i = 0; i < this.positions.length; i += 2) {
+                    // Push coordinate point
+                    combinedArray.push(this.positions[i]);
+                    combinedArray.push(this.positions[i + 1]);
+
+                    // Push RGB values (repeated for each coordinate point)
+                    for (let j = 0; j < 3; j++) {
+                        combinedArray.push(this.color[j]);
+                    }
+                }
+
+                return combinedArray;
+            }
+        }
+
+        class Main {
+            /**
+             * @param gl : {WebGLRenderingContext}
+             */
+            constructor(gl) {
+                this.gl = gl
+                this.webGL = new InitWebGLProgram(this.gl);
+                const vertexShaderSource = document.getElementById("2dVertexShader").text;
+                const fragmentShaderSource = document.getElementById("2dFragmentShader").text;
+                const vertexShader = this.webGL.createShader(this.gl.VERTEX_SHADER, vertexShaderSource);
+                const fragmentShader = this.webGL.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
+                this.program = this.webGL.createProgram(vertexShader, fragmentShader);
+                this.gl.useProgram(this.program);
+
+                // This is the A
+                const first_trap = [
+                    -1, -1,
+                    -0.5, 1,
+                    0.5, 1,
+                    1, -1,
+                ];
+
+                const first_trap_class = new FreeFormShape(this.scale(first_trap, 3,2 ), [1,0,0])
+                let red = new Shape(this.gl, first_trap_class.get_array(), 4);
+                let shapes = [red]
+
+                const second_trap = [
+                    -0.5, -1,
+                    -0.35, -0.25,
+                    0.35, -0.25,
+                    0.5, -1,
+                ];
+
+                const second_trap_class = new FreeFormShape(this.scale(second_trap,3,2), [1,1,1])
+                let white_bottom = new Shape(this.gl, second_trap_class.get_array(), 4)
+                shapes.push(white_bottom)
+
+                const white_triangle_A =[
+                    -0.3, 0.1,
+                    -0.2, 0.6,
+                    0.2, 0.6,
+                    0.3, 0.1,
+                ]
+
+                const first_white_tri = new FreeFormShape(this.scale(white_triangle_A, 3,2 ), [1,1,1])
+                let white_top = new Shape(this.gl, first_white_tri.get_array(), white_triangle_A.length/2)
+                shapes.push(white_top)
+
+                //This is the L
+                const L = [
+                    -1, -1,
+                    -1, 1,
+                    -0.25, 1,
+                    -0.25, -0.5,
+                    1, -1,
+                    1, -0.5,
+                    -0.25, -0.5
+                ]
+
+                const l = new FreeFormShape(this.scale(L, 3, -2), [0,0,1])
+                let L_shape = new Shape(this.gl, l.get_array(), L.length/2);
+                shapes.push(L_shape)
+
+                //This is the J
+                const J =[
+                    1, 1,
+                    .2, 1,
+                    1,-1,
+                    0.2, -0.5,
+                    -1,-1,
+                    -1, 0.2,
+                    -0.2, 0.2,
+                    -0.2, -0.3,
+
+                ]
+
+                const j = new FreeFormShape(this.scale(J, 3, 0), [0,1,0])
+                let j_shape = new Shape(this.gl, j.get_array(), J.length/2)
+                j_shape.render(this.program, 4)
+
+                for (let shape of shapes) {
+                    shape.render(this.program, 5)
+                }
+
+            }
+
+
+            scale(arr, scale, position= 1){
+                let array_2 = Array(arr.length);
+                for(let i = 0, length = arr.length; i < length; i++){
+                    array_2[i] = i%2? arr[i]: arr[i] / scale - (position/scale);
+                }
+                return array_2;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const canvas = document.getElementById("myCanvas");
+            const gl = canvas.getContext("webgl");
+
+            let m = new Main(gl);
+        })
+
+
+
+    </script>
+    <style>
+        .canvas-div{
+        display: flex;
+        justify-content: center;
+    }
+
+    canvas {
+        width: 640px;
+        height: 480px;
+        border: 2px outset black;
+        border-radius: 4px;
+    }
+
+    /* Style The Dropdown Button */
+    .dropbtn {
+        background-color: #4CAF50;
+        color: white;
+        padding: 16px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+    }
+
+    /* The container <div> - needed to position the dropdown content */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Dropdown Content (Hidden by Default) */
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 160px;
+        box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+    /* Links inside the dropdown */
+    .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    /* Change color of dropdown links on hover */
+    .dropdown-content a:hover {background-color: #f1f1f1}
+
+    /* Show the dropdown menu on hover */
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    /* Change the background color of the dropdown button when the dropdown content is shown */
+    .dropdown:hover .dropbtn {
+        background-color: #3e8e41;
+    }
+    </style>
+
+</head>
+<body>
+    <div class="canvas-div">
+        <canvas id="myCanvas" width="600" height="480">
+            Browser Does not support Canvas
+        </canvas>
+    </div>
+</body>
+</html>
