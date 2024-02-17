@@ -3,6 +3,7 @@ import { Triangle } from "./triangle.js";
 import {Box} from "./box.js";
 import {Line} from "./line.js";
 import {Circle} from "./circle.js";
+import {Polygon} from "./polygon.js";
 
 export class Main {
     constructor(gl) {
@@ -44,7 +45,7 @@ export class Main {
         let coords = this.getMouse(event);
         if (this.shapes.length === 0 || this.shapes[this.shapes.length - 1].isDone) {
             //New Object
-            this.shapes.push(new Circle(this.gl, [1,0,0]));
+            this.shapes.push(new Polygon(this.gl, [1,0,0]));
         }
         //Add point to the last object
         this.shapes[this.shapes.length - 1].addPoint(coords[0], coords[1]);
