@@ -19,6 +19,7 @@ export class Main {
         this.shapes = [];
 
         this.canvas = document.getElementById("myCanvas");
+        this.canvas.addEventListener("contextmenu", this.canvasRightClick.bind(this))
         this.canvas.addEventListener("click", this.canvasHandle.bind(this));
         this.canvas.addEventListener("mousemove", this.canvasMove.bind(this));
     }
@@ -53,10 +54,16 @@ export class Main {
         this.renderAll();
     }
 
+    canvasRightClick(event) {
+        try {
+            this.shapes[this.shapes.length-1].endPoint();
+        } catch (e) {}
+    }
+
     renderAll() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         for (let shape of this.shapes) {
-            shape.render(this.program);
+            shape.render(this.program, false);
         }
     }
 }

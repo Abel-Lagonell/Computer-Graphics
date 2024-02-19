@@ -1,4 +1,6 @@
-class Circle {
+import {Shape} from "./shape.js"
+
+class Circle extends Shape{
     SIZE = 30;
     DEGREES = 2 * Math.PI/this.SIZE
 
@@ -8,13 +10,7 @@ class Circle {
      * @param rgb : number[]
      */
     constructor(gl, rgb) {
-        this.gl = gl;
-        this.positions = [];
-        this.positionBuffer = this.gl.createBuffer()
-        this.vertCount = 0;
-        this.isDone = false;
-
-        this.rgb = rgb;
+        super(gl, rgb)
         this.center = [0,0];
         this.radius = 0;
     }
@@ -52,20 +48,6 @@ class Circle {
     }
 
     /**
-     * Pushes (x,y) into positions list
-     * @param x : number
-     * @param y : number
-     */
-    pushPoint(x,y){
-        this.positions.push(x);
-        this.positions.push(y);
-        this.positions.push(this.rgb[0]);
-        this.positions.push(this.rgb[1]);
-        this.positions.push(this.rgb[2]);
-        this.vertCount++;
-    }
-
-    /**
      * Takes (x,y) and displays a Circle with it
      * @param x : number
      * @param y : number
@@ -78,23 +60,6 @@ class Circle {
             this.pushPoint(x,y)
             this.drawCircle()
         }
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
-
-
-    }
-
-    /**
-     * Removes the temp points
-     */
-    removeTempPoint(){
-        for (let i = 0; i < 1*5; i++) {
-            this.positions.pop()
-        }
-        this.vertCount -= 1;
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
     }
 
     /**
@@ -107,54 +72,39 @@ class Circle {
 
         if (this.vertCount ===1 ){
             this.center = [this.positions[0], this.positions[1]]
-        } else {
-            this.drawCircle()
         }
-
-        console.log(this.positions)
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
-
         if (this.vertCount >= 2) {
+            this.drawCircle()
             this.isDone = true;
         }
     }
 
-
     /**
-     * Renders Box onto the canvas object using webgl
+     * Renders Circle onto the canvas object using webgl
      * @param program : WebGLProgram
+     * @param lines : boolean
      */
-    render(program) {
-        const positionAttributeLocation = this.gl.getAttribLocation(program, "a_position");
-        const colorAttributeLocation = this.gl.getAttribLocation(program, "a_color");
-
-        this.gl.enableVertexAttribArray(positionAttributeLocation);
-        this.gl.enableVertexAttribArray(colorAttributeLocation);
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        const size = 2;
-        const type = this.gl.FLOAT;
-        const normalize = false;
-        const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
-        const offset = 0
-        this.gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
-
-        this.gl.vertexAttribPointer(colorAttributeLocation, 3, this.gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
-
+    render(program, lines) {
+        this.prepareRender(program)
         let primitiveType = this.gl.TRIANGLE_FAN;
         if (!this.isDone){
             primitiveType = this.gl.LINE_LOOP;
         }
-        this.gl.drawArrays(primitiveType, offset, this.vertCount);
+        if (lines) {
+            primitiveType = this.gl.LINE_LOOP
+            if (this.positions.length/5 >= 3){
+                this.positions[0] = this.positions[this.positions.length-5]
+                this.positions[1] = this.positions[this.positions.length-4]
+                this.positions[5] = this.positions[this.positions.length-10]
+                this.positions[6] = this.positions[this.positions.length-9]
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
+            }
+
+        }
+
+        this.gl.drawArrays(primitiveType, 0, this.vertCount);
     }
 }
 
 export {Circle};
-
-/**
- * NEEDS TO CHANGE HOW CIRCLE IS MADE
- * Breaks when outline is needed instead of regular
- *  Basically need to delete first point and make the second point be right where the circle starts
- */
