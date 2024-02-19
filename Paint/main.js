@@ -5,6 +5,8 @@ import {Line} from "./line.js";
 import {Circle} from "./circle.js";
 import {Polygon} from "./polygon.js";
 
+let m
+
 export class Main {
     constructor(gl) {
         this.gl = gl;
@@ -14,16 +16,81 @@ export class Main {
         const vertexShader = this.webGL.createShader(gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = this.webGL.createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
         this.program = this.webGL.createProgram(vertexShader, fragmentShader);
-        gl.useProgram(this.program);
+        this.gl.useProgram(this.program);
 
         this.shapes = [];
+        this.lines = false;
 
         this.canvas = document.getElementById("myCanvas");
+        const r = document.getElementById("slider_red");
+        const g = document.getElementById("slider_green");
+        const b = document.getElementById("slider_blue");
+        const shapeType = document.getElementById("shapeType")
+        r.addEventListener("input", this.sliderHandle(0));
+        g.addEventListener("input", this.sliderHandle(1));
+        b.addEventListener("input", this.sliderHandle(2));
+        shapeType.addEventListener("click", Main.shapeH)
+        document.getElementById("outline-fill").addEventListener("click", Main.fillH);
+        document.getElementById("btnClear").addEventListener("click", Main.btnClear)
         this.canvas.addEventListener("contextmenu", this.canvasRightClick.bind(this))
         this.canvas.addEventListener("click", this.canvasHandle.bind(this));
         this.canvas.addEventListener("mousemove", this.canvasMove.bind(this));
+
+        this.rgb = [r.value, g.value, b.value]
+        this.shapeType = shapeType.selectedIndex
+
     }
 
+    // Static
+    static fillH(){
+        m.changeLineType(this)
+    }
+
+    static shapeH(){
+        m.changeShapeType(this)
+    }
+
+    static btnClear(){
+        m.clearCanvas();
+    }
+
+    // Handlers
+
+    /**
+     * Handles the changing of the slider values
+     * @param index : number
+     * @returns {(function(InputEvent): void)}
+     */
+    sliderHandle = (index) => (event) => {
+        this.rgb[index] = event.target.value;
+    }
+
+    /**
+     * Changes between Outline and Fill
+     * @param event : HTMLOptionsCollection
+     */
+    changeLineType(event) {
+        this.lines = (event.selectedIndex === 0);
+    }
+
+    /**
+     * Changes between the different Shapes
+     * @param event : HTMLOptionsCollection
+     */
+    changeShapeType(event){
+        this.shapeType = event.selectedIndex
+    }
+
+    clearCanvas(){
+        this.webGL.clear();
+        this.shapes = [];
+    }
+
+    /**
+     * Gets where the mouse is with canvas bounds in mind
+     * @param event : MouseEvent
+     * @returns {[number, number]}
+     */
     getMouse(event) {
         const rect = this.canvas.getBoundingClientRect();
         const realX = event.clientX - rect.left;
@@ -46,15 +113,20 @@ export class Main {
         let coords = this.getMouse(event);
         if (this.shapes.length === 0 || this.shapes[this.shapes.length - 1].isDone) {
             //New Object
-            this.shapes.push(new Polygon(this.gl, [1,0,0]));
+            switch (this.shapeType) {
+                case 0: this.shapes.push(new Box(this.gl, this.rgb)); break;
+                case 1: this.shapes.push(new Line(this.gl, this.rgb)); break;
+                case 2: this.shapes.push(new Circle(this.gl, this.rgb)); break;
+                case 3: this.shapes.push(new Triangle(this.gl, this.rgb)); break;
+                case 4: this.shapes.push(new Polygon(this.gl, this.rgb)); break;
+            }
         }
         //Add point to the last object
         this.shapes[this.shapes.length - 1].addPoint(coords[0], coords[1]);
-
         this.renderAll();
     }
 
-    canvasRightClick(event) {
+    canvasRightClick() {
         try {
             this.shapes[this.shapes.length-1].endPoint();
         } catch (e) {}
@@ -63,7 +135,7 @@ export class Main {
     renderAll() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         for (let shape of this.shapes) {
-            shape.render(this.program, false);
+            shape.render(this.program, this.lines);
         }
     }
 }
@@ -71,5 +143,5 @@ export class Main {
 document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("myCanvas");
     const gl = canvas.getContext("webgl");
-    const m = new Main(gl);
+    m = new Main(gl);
 });
