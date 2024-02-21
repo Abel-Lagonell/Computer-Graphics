@@ -18,6 +18,9 @@ export class Main {
         this.program = this.webGL.createProgram(vertexShader, fragmentShader);
         this.gl.useProgram(this.program);
 
+        /**
+         * @var shapes : Shape[]
+         */
         this.shapes = [];
         this.lines = false;
 
@@ -81,11 +84,6 @@ export class Main {
         this.shapeType = event.selectedIndex
     }
 
-    clearCanvas(){
-        this.webGL.clear();
-        this.shapes = [];
-    }
-
     /**
      * Gets where the mouse is with canvas bounds in mind
      * @param event : MouseEvent
@@ -114,11 +112,11 @@ export class Main {
         if (this.shapes.length === 0 || this.shapes[this.shapes.length - 1].isDone) {
             //New Object
             switch (this.shapeType) {
-                case 0: this.shapes.push(new Box(this.gl, this.rgb)); break;
+                case 0: this.shapes.push(new Box(this.gl, this.rgb, this.lines)); break;
                 case 1: this.shapes.push(new Line(this.gl, this.rgb)); break;
-                case 2: this.shapes.push(new Circle(this.gl, this.rgb)); break;
-                case 3: this.shapes.push(new Triangle(this.gl, this.rgb)); break;
-                case 4: this.shapes.push(new Polygon(this.gl, this.rgb)); break;
+                case 2: this.shapes.push(new Circle(this.gl, this.rgb, this.lines)); break;
+                case 3: this.shapes.push(new Triangle(this.gl, this.rgb, this.lines)); break;
+                case 4: this.shapes.push(new Polygon(this.gl, this.rgb, this.lines)); break;
             }
         }
         //Add point to the last object
@@ -126,16 +124,26 @@ export class Main {
         this.renderAll();
     }
 
-    canvasRightClick() {
+    canvasRightClick(event) {
         try {
-            this.shapes[this.shapes.length-1].endPoint();
+            let coords = this.getMouse(event);
+            this.shapes[this.shapes.length-1].endPoint(coords[0], coords[1]);
+            this.renderAll()
         } catch (e) {}
+    }
+
+    /**
+     * Clears the Canvas and clears the Shape list
+     */
+    clearCanvas(){
+        this.webGL.clear();
+        this.shapes = [];
     }
 
     renderAll() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         for (let shape of this.shapes) {
-            shape.render(this.program, this.lines);
+            shape.render(this.program);
         }
     }
 }

@@ -3,14 +3,16 @@ class Shape {
      * Takes in gl context and an array of rgb values going from 0 to 1
      * @param gl : WebGLRenderingContext
      * @param rgb : number[]
+     * @param lineType : boolean
      */
-    constructor(gl, rgb) {
+    constructor(gl, rgb, lineType) {
         this.gl = gl
         this.positions = []
         this.positionBuffer = this.gl.createBuffer()
         this.vertCount = 0;
         this.isDone = false;
         this.rgb = rgb;
+        this.lineType = false;
     }
 
     /**
@@ -52,7 +54,12 @@ class Shape {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.positions), this.gl.STATIC_DRAW);
     }
 
-    addPoint(){
+    /**
+     * Adds a permanent point to the Shape
+     * @param x
+     * @param y
+     */
+    addPoint(x,y){
         throw Error("NOT IMPLEMENTED")
     }
 
@@ -77,7 +84,11 @@ class Shape {
         this.gl.vertexAttribPointer(colorAttributeLocation, 3, this.gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
     }
 
-    render(){
+    /**
+     * Renders the Shape
+     * @param program : WebGLProgram
+     */
+    render(program){
         throw Error("NOT IMPLEMENTED")
     }
 }

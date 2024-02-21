@@ -4,9 +4,10 @@ class Triangle extends Shape{
      * Takes in gl context and an array of rgb values going from 0 to 1
      * @param gl : WebGLRenderingContext
      * @param rgb : number[]
+     * @param lineType : boolean
      */
-    constructor(gl, rgb) {
-        super(gl, rgb);
+    constructor(gl, rgb, lineType) {
+        super(gl, rgb, lineType);
     }
 
     /**
@@ -25,13 +26,12 @@ class Triangle extends Shape{
     /**
      * Renders Triangle onto the canvas object using webgl
      * @param program : WebGLProgram
-     * @param lines : boolean
      */
-    render(program, lines) {
+    render(program) {
         this.prepareRender(program)
 
         let primitiveType = this.gl.TRIANGLES  ;
-        if (!this.isDone || lines){
+        if (!this.isDone || this.lineType){
             primitiveType = this.gl.LINE_LOOP
         }
         this.gl.drawArrays(primitiveType, 0, this.vertCount);

@@ -7,7 +7,7 @@ class Line extends Shape{
      * @param rgb : number[]
      */
     constructor(gl, rgb) {
-        super(gl, rgb);
+        super(gl, rgb, true);
     }
 
     /**
@@ -26,9 +26,8 @@ class Line extends Shape{
     /**
      * Renders Line onto the canvas object using webgl
      * @param program : WebGLProgram
-     * @param lines : boolean
      */
-    render(program, lines) {
+    render(program) {
         this.prepareRender(program)
 
         let primitiveType = this.gl.LINES;

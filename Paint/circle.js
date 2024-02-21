@@ -8,9 +8,10 @@ class Circle extends Shape{
      * Takes in gl context and an array of rgb values going from 0 to 1
      * @param gl : WebGLRenderingContext
      * @param rgb : number[]
+     * @param lineType : boolean
      */
-    constructor(gl, rgb) {
-        super(gl, rgb)
+    constructor(gl, rgb, lineType) {
+        super(gl, rgb, lineType)
         this.center = [0,0];
         this.radius = 0;
     }
@@ -82,15 +83,14 @@ class Circle extends Shape{
     /**
      * Renders Circle onto the canvas object using webgl
      * @param program : WebGLProgram
-     * @param lines : boolean
      */
-    render(program, lines) {
+    render(program) {
         this.prepareRender(program)
         let primitiveType = this.gl.TRIANGLE_FAN;
         if (!this.isDone){
             primitiveType = this.gl.LINE_LOOP;
         }
-        if (lines) {
+        if (this.lineType) {
             primitiveType = this.gl.LINE_LOOP
             if (this.positions.length/5 >= 3){
                 this.positions[0] = this.positions[this.positions.length-5]
