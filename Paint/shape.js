@@ -87,6 +87,7 @@ class Shape {
     /**
      * Renders the Shape
      * @param program : WebGLProgram
+     * @return void
      */
     render(program){
         throw Error("NOT IMPLEMENTED")

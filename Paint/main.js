@@ -55,7 +55,6 @@ export class Main {
      * @param swatch : number[]
      */
     startRGB(sliders, swatch){
-        const def = [0.5,0.5,0.5]
         if (() => {
             for (let i = 0; i < sliders.length; i++) {
                 if (sliders[i] !== this.rgb[i]) {
