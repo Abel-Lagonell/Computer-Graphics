@@ -28,24 +28,64 @@ export class Main {
         const r = document.getElementById("slider_red");
         const g = document.getElementById("slider_green");
         const b = document.getElementById("slider_blue");
-        const shapeType = document.getElementById("shapeType")
+        const shapeType = document.getElementById("shapeType");
+        const color_swatch = document.getElementById("color_swatch");
+        const outline = document.getElementById("outline-fill")
         r.addEventListener("input", this.sliderHandle(0));
         g.addEventListener("input", this.sliderHandle(1));
         b.addEventListener("input", this.sliderHandle(2));
         shapeType.addEventListener("click", Main.shapeH)
-        document.getElementById("outline-fill").addEventListener("click", Main.fillH);
+        color_swatch.addEventListener("change", this.swatchHandle.bind(this))
+        outline.addEventListener("click", Main.fillH);
         document.getElementById("btnClear").addEventListener("click", Main.btnClear)
+        document.addEventListener("keydown", this.keyDown.bind(this))
         this.canvas.addEventListener("contextmenu", this.canvasRightClick.bind(this))
         this.canvas.addEventListener("click", this.canvasHandle.bind(this));
         this.canvas.addEventListener("mousemove", this.canvasMove.bind(this));
-
-        this.rgb = [r.value, g.value, b.value]
-        this.shapeType = shapeType.selectedIndex
+        this.rgb = [0.5,0.5,0.5]
+        this.startRGB([r.value, g.value, b.value], this.hexToRgb(color_swatch.value));
+        this.shapeType = shapeType.selectedIndex;
+        this.lines = !outline.selectedIndex;
 
     }
 
-    // Static
+    /**
+     * Changes the default RGB values if the sliders have not changed
+     * @param sliders : number[]
+     * @param swatch : number[]
+     */
+    startRGB(sliders, swatch){
+        const def = [0.5,0.5,0.5]
+        if (() => {
+            for (let i = 0; i < sliders.length; i++) {
+                if (sliders[i] !== this.rgb[i]) {
+                    return false;
+                }
+            }
+            return true
+        }) {
+            this.rgb = swatch;
+        }
+    }
+
+    /**
+     * Converts a hex number (#000000) into values that webgl can understand
+     * @param hex
+     * @returns {number[]}
+     */
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return [
+            parseInt(result[1], 16)/255,
+            parseInt(result[2], 16)/255,
+            parseInt(result[3], 16)/255,
+        ]
+    }
+
+    /* Static Variables */
+
     static fillH(){
+        console.log("HERE")
         m.changeLineType(this)
     }
 
@@ -58,6 +98,15 @@ export class Main {
     }
 
     // Handlers
+
+    /**
+     * Handles when the color swatch changes
+     * @param event : Event
+     */
+    swatchHandle(event){
+        const hex = event.target.value
+        this.rgb = this.hexToRgb(hex);
+    }
 
     /**
      * Handles the changing of the slider values
@@ -98,6 +147,10 @@ export class Main {
         return [x, y];
     }
 
+    /**
+     * Renders a temporary point
+     * @param event : MouseEvent
+     */
     canvasMove(event) {
         let coords = this.getMouse(event);
         if (this.shapes.length > 0 && !this.shapes[this.shapes.length - 1].isDone) {
@@ -107,6 +160,10 @@ export class Main {
         }
     }
 
+    /**
+     * Renders a new point
+     * @param event : MouseEvent
+     */
     canvasHandle(event) {
         let coords = this.getMouse(event);
         if (this.shapes.length === 0 || this.shapes[this.shapes.length - 1].isDone) {
@@ -133,6 +190,20 @@ export class Main {
     }
 
     /**
+     * Controls the actions of keydown
+     * @param event
+     */
+    keyDown(event){
+        if (event.isComposing || event.keyCode === 229) {
+            return;
+        }
+        if (event.keyCode === 90 && event.ctrlKey) {
+            this.shapes.pop()
+            this.renderAll()
+        }
+    }
+
+    /**
      * Clears the Canvas and clears the Shape list
      */
     clearCanvas(){
@@ -140,6 +211,9 @@ export class Main {
         this.shapes = [];
     }
 
+    /**
+     * Renders all the shapes in the stack
+     */
     renderAll() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         for (let shape of this.shapes) {

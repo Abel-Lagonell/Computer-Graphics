@@ -12,7 +12,7 @@ class Shape {
         this.vertCount = 0;
         this.isDone = false;
         this.rgb = rgb;
-        this.lineType = false;
+        this.lineType = lineType;
     }
 
     /**

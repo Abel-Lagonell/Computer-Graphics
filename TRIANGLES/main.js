@@ -3,7 +3,7 @@
  */
 
 import {Shape} from "./shape.js";
-import {InitWebGLProgram} from "./initWebGLProgram.js";
+import {InitWebGLProgram} from "../webgl/initWebGLProgram";
 
 class Main {
     /**
