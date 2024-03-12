@@ -5,7 +5,8 @@ export class InitWebGLProgram {
     constructor(gl) {
         this.gl = gl
         this.gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        this.clear()
+        this.gl.enable(gl.DEPTH_TEST);
+        this.clear();
     }
 
 

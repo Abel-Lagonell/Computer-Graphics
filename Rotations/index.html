@@ -1,8 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Made By Abel Lagonell -->
+
     <meta charset="UTF-8">
     <title>testing</title>
+
+    <!-- CSS -->
+    <style>
+        #canvas-div {
+            display: grid;
+            width: 99vw;
+            height: 98vh;
+            place-content: center;
+        }
+        canvas{
+            border: 2px black solid ;
+        }
+    </style>
 
     <!-- Scripts WebGL -->
     <script id="3dVertexShader" type="text">
@@ -86,9 +101,11 @@
     <script src="main.js" type="module"></script>
 </head>
 <body>
-    <canvas id="canvas">
-        Your browser does not support Canvas
-    </canvas>
+    <div id="canvas-div">
+        <canvas id="canvas" height="640" width="640">
+            Your browser does not support Canvas
+        </canvas>
+    </div>
     <!-- Scripts for running -->
     <script>
 

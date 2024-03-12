@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Made By Abel Lagonell -->
+    
+    <meta charset="UTF-8">
+    <title>testing</title>
+
+    <!-- CSS -->
+    <style>
+        #canvas-div {
+            display: grid;
+            width: 99vw;
+            height: 98vh;
+            place-content: center;
+        }
+        canvas{
+            border: 2px black solid ;
+        }
+    </style>
+
+    <!-- Scripts WebGL -->
+    <script id="3dVertexShader" type="text">
+        attribute vec4 a_position;
+        attribute vec3 a_color;
+        varying vec3 v_color;
+
+        //This is added to place the object
+        uniform vec3 u_transform;
+        uniform vec3 u_rotation;
+        uniform vec3 u_scale;
+
+        vec4 PositionObject(vec4 pos){
+            mat4 translateM = mat4(
+                1.0,             0.0,             0.0,             0.0,
+                0.0,             1.0,             0.0,             0.0,
+                0.0,             0.0,             1.0,             0.0,
+                u_transform.x, u_transform.y, u_transform.z, 1.0
+            );
+            return translateM * pos;
+        }
+
+        vec4 ScaleObject(vec4 pos){
+            if (length(u_scale) == 0.0) return pos;
+            mat4 scaleM = mat4(
+                u_scale.x, 0.0,       0.0,       0.0,
+                0.0,       u_scale.y, 0.0,       0.0,
+                0.0,       0.0,       u_scale.z, 0.0,
+                0.0,       0.0,       0.0,       1.0
+            );
+            return scaleM * pos;
+        }
+
+        vec4 RotateObject(vec4 pos){
+            vec3 c = cos(u_rotation);
+            vec3 s = sin(u_rotation);
+
+            mat4 rotateX = mat4(
+                1.0, 0.0,      0.0, 0.0,
+                0.0, c.x,      s.x, 0.0,
+                0.0, -s.x,     c.x, 0.0,
+                0.0, 0.0,      0.0, 1.0
+            );
+
+            mat4 rotateY = mat4(
+                c.y, 0.0, -s.y, 0.0,
+                0.0, 1.0, 0.0,  0.0,
+                s.y, 0.0, c.y,  0.0,
+                0.0, 0.0, 0.0,  1.0
+            );
+
+            mat4 rotateZ = mat4(
+                c.z,  s.z, 0.0, 0.0,
+                -s.z, c.z, 0.0, 0.0,
+                0.0,  0.0, 1.0, 0.0,
+                0.0,  0.0, 0.0, 1.0
+            );
+
+            return rotateX * rotateY * rotateZ * pos;
+        }
+
+        void main()
+        {
+            gl_PointSize = 10.0;
+            v_color = a_color;
+            //Now the final gl_Position will be the world space coordinates. T*R*S
+            gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
+        }
+
+    </SCRIPT>
+    <script id="3dFragmentShader" type="text">
+        //Fragment shaders do not have precision so we have to set it.
+        precision mediump float;
+        varying vec3 v_color;
+        void main() {
+            gl_FragColor = vec4(v_color,1);			//Between 0 and 1.
+        }
+    </script>
+
+    <!-- Scripts -->
+    <script>
+        class InitWebGLProgram {
+            /**
+             * @param gl : WebGLRenderingContext
+             */
+            constructor(gl) {
+                this.gl = gl
+                this.gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+                this.gl.enable(gl.DEPTH_TEST);
+                this.clear();
+            }
+
+
+            /**
+             * Creates the specific shader
+             * @param type : GLenum gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+             * @param source : string A string containing the GLSL source code to set.
+             * @returns {WebGLShader}
+             */
+            createShader(type, source) {
+                let shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                let success = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
+                if (success) {
+                    return shader;
+                }
+                console.error(this.gl.getShaderInfoLog(shader));
+                this.gl.deleteShader(shader);
+            }
+
+            /**
+             * Creates the Program to render stuff
+             * @param vs : WebGLShader Vertex Shader
+             * @param fs : WebGLShader Fragment Shader
+             * @returns {WebGLProgram}
+             */
+            createProgram(vs, fs) {
+                let program = this.gl.createProgram();
+                this.gl.attachShader(program, vs);
+                this.gl.attachShader(program, fs);
+                this.gl.linkProgram(program);
+                let success = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+                if (!success) {
+                    console.error(this.gl.getProgramInfoLog(program));
+                    this.gl.deleteProgram(program);
+                }
+                return program;
+            }
+
+
+            /**
+             * Clears the board
+             */
+            clear(){
+                this.gl.clearColor(1, 1, 1, 1);
+                this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+            }
+        }
+
+        class Octahedron {
+            /**
+             *
+             * @param gl : WebGLRenderingContext
+             * @param trans : boolean
+             * @param initTrans : number[]
+             * @param initRot : number[]
+             * @param initSca : number[]
+             * @param updateRot : number[]
+             */
+            constructor(
+                gl,
+                trans = false,
+                initTrans = [0.0,0.0,0.0],
+                initRot = [0.0,0.0,0.0],
+                initSca=[1.0,1.0,1.0],
+                updateRot = [0,0,0]
+            ){
+
+                this.gl = gl;
+
+                const A = [1, 0 ,0]; //red
+                const B = [0, 1, 0]; //red+green
+                const C = [-1, 0 ,0]; //green
+                const D = [0, -1, 0]; //green+blue
+                const E = [0, 0, 1]; // blue
+                const F = [0, 0, -1]; // blue+ red
+                const red = [1, 0, 0];
+                const blue = [0, 1, 0];
+                const green = [0, 0, 1];
+                // @type {number[]}
+
+
+
+                this.vertices =[
+                    ...E,   ...blue,
+                    ...C,   ...green,
+                    ...B,   ...(red.map((v,i) => v + green[i])),
+                    ...F,   ...(blue.map((v,i) => v + red[i])),
+                    ...A,   ...red,
+                    ...D,   ...(blue.map((v,i) => v + green[i])),
+                    ...F,   ...(blue.map((v,i) => v + red[i])),
+                    ...C,   ...green,
+                    ...D,   ...(blue.map((v,i) => v + green[i])),
+                    ...E,   ...blue,
+                    ...A,   ...red,
+                    ...B,   ...(red.map((v,i) => v + green[i]))
+                ];
+                this.positionBuffer = this.gl.createBuffer();
+
+
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                this.gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+
+                this.trans = initTrans;
+                this.rot = initRot;
+                this.sca = initSca;
+                this.updateRot = updateRot;
+                this.updateTrans = (false === trans)? [0,0,0] : [(Math.random()*2-1)/100,(Math.random()*2-1)/100,0];
+
+
+            }
+
+            update(){
+                this.rot = this.rot.map((v,i) => v + this.updateRot[i]);
+                this.trans = this.trans.map((v, i) => v + this.updateTrans[i])
+            }
+
+            /**
+             * @param program : WebGLProgram
+             */
+            render(program){
+                const positionAttribLocation = this.gl.getAttribLocation(program, "a_position");
+                const colorAttribLocation = this.gl.getAttribLocation(program, "a_color");
+                let size = 3;           //3 components per iteration
+                let type = this.gl.FLOAT;    // Data in 32 bit floats
+
+                let normalize = false // Don't normalize data
+                let stride = 6 * Float32Array.BYTES_PER_ELEMENT;
+                let offset = 0;         // Start at beginning
+                this.gl.enableVertexAttribArray(positionAttribLocation);
+                this.gl.vertexAttribPointer(positionAttribLocation, size, type, normalize, stride, offset);
+
+                offset = 3 * Float32Array.BYTES_PER_ELEMENT;
+                this.gl.enableVertexAttribArray(colorAttribLocation);
+                this.gl.vertexAttribPointer(colorAttribLocation, size, type, normalize, stride, offset);
+
+                let tranLoc = this.gl.getUniformLocation(program, 'u_transform');
+                this.gl.uniform3fv(tranLoc, new Float32Array(this.trans))
+                let rotLoc = this.gl.getUniformLocation(program, 'u_rotation');
+                this.gl.uniform3fv(rotLoc, new Float32Array(this.rot))
+                let scaLoc = this.gl.getUniformLocation(program, 'u_scale');
+                this.gl.uniform3fv(scaLoc, new Float32Array(this.sca))
+
+                const primitiveType = this.gl.TRIANGLE_STRIP;
+                offset = 0;
+                const count = 12;
+                this.gl.drawArrays(primitiveType, offset, count);
+            }
+        }
+
+        class Main {
+            /** @param canvas : HTMLCanvasElement */
+            constructor(canvas) {
+
+                //* Setting up constants
+
+                this.canvas = canvas
+                this.gl = canvas.getContext("webgl");
+                this.webGL = new InitWebGLProgram(this.gl);
+                const vertexShaderSource = document.getElementById("3dVertexShader").text;
+                const fragmentShaderSource = document.getElementById("3dFragmentShader").text;
+                const vertexShader = this.webGL.createShader(this.gl.VERTEX_SHADER, vertexShaderSource);
+                const fragmentShader = this.webGL.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
+                this.program = this.webGL.createProgram(vertexShader, fragmentShader);
+                this.gl.useProgram(this.program);
+
+                const upperCenter =  new Octahedron(this.gl, false, [0.0,0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0,0.01,0])
+                const lowerLeft =  new Octahedron(this.gl, false, [0.5,-0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0,0,0.01])
+                const lowerRight =  new Octahedron(this.gl, false, [-0.5,-0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0.01,0,0])
+                this.octahedrons = [upperCenter, lowerLeft, lowerRight];
+
+                //* Getting stuff from the HTML
+                this.canvas.addEventListener("click", this.canvasHandle.bind(this));
+                this.mainLoop()
+            }
+
+            mainLoop(){
+                this.updateAll();
+                this.renderAll();
+                requestAnimationFrame(() => this.mainLoop());
+            }
+
+            renderAll() {
+                this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+                for (let oct of this.octahedrons){
+                    oct.render(this.program)
+                }
+            }
+
+            updateAll(){
+                for (let oct of this.octahedrons){
+                    oct.update()
+                }
+            }
+
+            /**
+             * Renders a new point
+             * @param event : MouseEvent
+             */
+            canvasHandle(event) {
+                let coords = this.getMouse(event);
+                this.octahedrons.push(
+                    new Octahedron(this.gl, true, [...coords, 0.0], [0,0,0], [0.25,0.25,0.25], [0,0,0])
+                )
+            }
+
+
+            /**
+             * Gets where the mouse is with canvas bounds in mind
+             * @param event : MouseEvent
+             * @returns {[number, number]}
+             */
+            getMouse(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                const realX = event.clientX - rect.left;
+                const realY = event.clientY - rect.top;
+                let x = -1 + 2 * realX / this.canvas.width;
+                let y = -1 + 2 * (this.canvas.height - realY) / this.canvas.height;
+                return [x, y];
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="canvas-div">
+        <canvas id="canvas" height="640" width="640">
+            Your browser does not support Canvas
+        </canvas>
+    </div>
+    <!-- Scripts for running -->
+    <script>
+        canvas = document.getElementsByTagName("Canvas")[0];
+        const m = new Main(canvas);
+    </script>
+</body>
+</html>
