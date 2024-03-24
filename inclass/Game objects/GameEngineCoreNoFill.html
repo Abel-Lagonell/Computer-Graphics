@@ -1,9 +1,9 @@
-<!DOCTYPE HTML>
-<HTML lang="en">
-	<Head>
-	<Title>"Modularizing WebGL"</TITLE>
-		
-		<!-- 
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>"Modularizing WebGL"</title>
+
+    <!-- 
 		GLSL is the language used for shaders (GL Shader Language)
 		
 		Attribute - you specify how to pull the data out of the buffers you supply.
@@ -15,188 +15,184 @@
 		
 		Varying - are way for a vertex shader to pass data to the fragmentShader.
 		-->
-		<script id="2dVertexShader" type="notjs">
-		attribute vec4 a_position;	
-		//We now want to read in Colors
-		attribute vec3 vert_color;
-		//However, we want to send the color to
-		//The fragment Shader
-		varying vec3 fragColor;
-		void main()
-		{
-			fragColor = vert_color;
-			gl_Position=a_position;
-		}		
-		</SCRIPT>
-		<script id="2dFragmentShader" type="notjs">
-		//Fragment shaders do not have precision so we have to set it.
-		precision mediump float;
-		varying vec3 fragColor;
-		void main()
-		{
-			//gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
-			gl_FragColor = vec4(fragColor,1);
-		}
-		</script>
-		<script src="webgl_interface.js"></script>
-		<script src="BasicGameObject.js"></script>
+    <script id="2dVertexShader" type="notjs">
+      attribute vec4 a_position;
+      //We now want to read in Colors
+      attribute vec3 vert_color;
+      //However, we want to send the color to
+      //The fragment Shader
+      varying vec3 fragColor;
+      void main()
+      {
+      	fragColor = vert_color;
+      	gl_Position=a_position;
+      }
+    </script>
+    <script id="2dFragmentShader" type="notjs">
+      //Fragment shaders do not have precision so we have to set it.
+      precision mediump float;
+      varying vec3 fragColor;
+      void main()
+      {
+      	//gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+      	gl_FragColor = vec4(fragColor,1);
+      }
+    </script>
+    <script src="webgl_interface.js"></script>
+    <script src="BasicGameObject.js"></script>
 
-		<script>
-		class main
-		{	
-			constructor()
-			{
+    <script>
+      class main {
+        constructor() {
+          this.Keys = [];
+          this.myWEBGL = new WebGL_Interface();
+          this.program = this.myWEBGL.program;
+          /** @type {GameObject[]} */
+          this.Visual = [];
+          /** @type {GameObject[]} */
+          this.Solid = [];
+          /** @type {GameObject[]} */
+          this.Trigger = [];
+          this.ObjectCounter = 0;
+          this.myTriangle = [];
 
-			  this.Keys = [];
-			  this.myWEBGL = new WebGL_Interface();
-        this.program = this.WebGL_Interface.program;
-			  this.Visual =[];
-        this.Solid =[];
-        this.Trigger =[];
-        this.ObjectCounter =0;
-
-        this.CreateObject(0, Demo, [0,0,0], [0,0,0])
-			}
-			
-			UpdateAll() {
-			  for(var i in this.Visual){ this.Visual[i].Update(this.program)}
-			  for(var i in this.Solid){ this.Solid[i].Update(this.program)}
-			  for(var i in this.Trigger){ this.Trigger[i].Update(this.program)}
-			
-			}
-
-			RenderAll() {
-			  for(var i in this.Visual){ this.Visual[i].Render(this.program)}
-			  for(var i in this.Solid){ this.Solid[i].Render(this.program)}
-			  for(var i in this.Trigger){ this.Trigger[i].Render(this.program)}
-			}
-
-			CheckCollision(loc1,rad1,loc2, rad2) {
-			
-			}
-
-			
-			CreateObject(type, prefab, loc, rot) {
-        let temp = new prefab;
-        let id = "ID"+this.ObjectCounter;
-        this.ObjectCounter++;
-        temp.id = id;
-        temp.prefab = prefab;
-
-        for (let i=0; i<3; i++){
-          temp.loc[i] = loc[i];
-          temp.rot[i] = rot[i];
+          this.CreateObject(0, DemoCharacter, [0, 0, 0], [0, 0, 0]);
         }
 
-        switch(type){
-          case 0: this.Visual[id] = temp; break;
-          case 1: this.Solid[id] = temp; break;
-          case 2: 
-            temp.isTrigger = true;
-            this.Trigger[id] = temp; break;
-          default: break;
+        UpdateAll() {
+          for (var i in this.Visual) {
+            this.Visual[i].Update(this.program);
+          }
+          for (var i in this.Solid) {
+            this.Solid[i].Update(this.program);
+          }
+          for (var i in this.Trigger) {
+            this.Trigger[i].Update(this.program);
+          }
         }
-			
-			}
 
-			DestroyObject(id) {
-			  if (id in this.Visual) delete this.Visual[id];
-			  if (id in this.Solid) delete this.Solid[id];
-			  if (id in this.Trigger) delete this.Trigger[id];
-			}
-			
-			KeyDown(event)
-			{
-        this.Keys[String.fromCharCode(event.keyCode)] = true;
-			}
-
-      keyUp(event){
-        this.Keys[String.fromCharCode(event.keyCode)] = false;
-      }
-			
-      TestKey(event){
-        if (test in this.Keys){
-          return this.Keys[test]
+        RenderAll() {
+          for (var i in this.Visual) {
+            this.Visual[i].Render(this.program);
+          }
+          for (var i in this.Solid) {
+            this.Solid[i].Render(this.program);
+          }
+          for (var i in this.Trigger) {
+            this.Trigger[i].Render(this.program);
+          }
         }
-        return false;
+
+        CheckCollision(loc1, rad1, loc2, rad2) {}
+
+        CreateObject(type, prefab, loc, rot) {
+          let temp = new prefab();
+          let id = "ID" + this.ObjectCounter;
+          this.ObjectCounter++;
+          temp.id = id;
+          temp.prefab = prefab;
+
+          for (let i = 0; i < 3; i++) {
+            temp.loc[i] = loc[i];
+            temp.rot[i] = rot[i];
+          }
+
+          switch (type) {
+            case 0:
+              this.Visual[id] = temp;
+              break;
+            case 1:
+              this.Solid[id] = temp;
+              break;
+            case 2:
+              temp.isTrigger = true;
+              this.Trigger[id] = temp;
+              break;
+            default:
+              break;
+          }
+        }
+
+        DestroyObject(id) {
+          if (id in this.Visual) delete this.Visual[id];
+          if (id in this.Solid) delete this.Solid[id];
+          if (id in this.Trigger) delete this.Trigger[id];
+        }
+
+        KeyDown(event) {
+          this.Keys[String.fromCharCode(event.keyCode)] = true;
+        }
+
+        keyUp(event) {
+          this.Keys[String.fromCharCode(event.keyCode)] = false;
+        }
+
+        TestKey(test) {
+          if (test in this.Keys) {
+            return this.Keys[test];
+          }
+          return false;
+        }
+
+        MouseClick(event) {
+          var rect = canvas.getBoundingClientRect();
+          var realX = event.clientX - rect.left;
+          var realY = event.clientY - rect.top;
+          //console.log(realX + "," + realY);
+          var x = -1 + (2 * realX) / myCanvas.width;
+          var y = -1 + (2 * (myCanvas.height - realY)) / myCanvas.height;
+          //console.log("The click occurred on " + x + "," + y);
+        }
+
+        //Static call backs go down here
+        //   |
+        //  \ /
+        //   v
+        static keyD(event) {
+          m.KeyDown(event);
+        }
+
+        static keyU(event) {
+          m.keyUp(event);
+        }
+
+        static mouseH(event) {
+          m.MouseClick(event);
+        }
+
+        static MainLoop() {
+          console.log(m.TestKey("A"));
+          m.UpdateAll();
+          m.RenderAll();
+          requestAnimationFrame(main.MainLoop);
+        }
       }
+    </script>
+  </head>
+  <body style="padding: 15px">
+    <header></header>
 
-			MouseClick(event)
-			{
-				var rect = canvas.getBoundingClientRect();
-				var realX = event.clientX - rect.left;
-				var realY = event.clientY - rect.top;
-				console.log(realX+","+realY);
-				var x = -1 + 2*realX/myCanvas.width;
-				var y = -1 + 2*(myCanvas.height - realY)/myCanvas.height;
-				console.log("The click occurred on "+x+","+y);
-			}
+    <canvas
+      id="myCanvas"
+      width="640"
+      height="400"
+      style="border: 1px solid #000"
+    >
+      Your browser does not support canvas.
+    </canvas>
 
-			
-			//Static call backs go down here
-			//   |
-			//  \ /
-			//   v
-			static keyD(event)
-			{
-				m.KeyDown(event);
-			}
-			
-      static keyU(event){
-        m.keyUp(event);
-      }
+    <button id="myB">Clear Canvas</button>
 
-			static mouseH(event)
-			{
-				m.MouseClick(event);
-			}
-			
-			static MainLoop()
-			{
-        m.TestKey("A");
-				m.UpdateAll();
-				m.RenderAll();
-				requestAnimationFrame(main.MainLoop);
-			}
+    <script>
+      var canvas = document.getElementById("myCanvas");
+      var gl = canvas.getContext("webgl");
+      var m = new main();
+      window.onkeydown = main.keyD;
+      window.onkeyup = main.keyU;
+      canvas.addEventListener("click", main.mouseH);
+      requestAnimationFrame(main.MainLoop);
+    </script>
 
-		}
-		
-		
-		</script>
-		
-		
-
-	</Head>
-	<BODY style="padding: 15px;">
-		<HEADER>
-		
-		</HEADER>
-		
-		<CANVAS id="myCanvas" width="640" height="400" style = "border: 1px solid #000;">
-			Your browser does not support canvas.
-		</CANVAS>
-		
-		<button id="myB">Clear Canvas</button>
-		
-		<SCRIPT>
-			var canvas = document.getElementById("myCanvas");
-			var gl = canvas.getContext("webgl");
-			var m = new main();
-			window.onkeydown = main.keyD;
-			canvas.addEventListener("click",main.mouseH);
-      window.addEventListener("keydown", main.keyD);
-      window.addEventListener("keyup", main.keyU);
-			requestAnimationFrame(main.MainLoop);	
-			
-		</SCRIPT>
-		
-		<FOOTER>
-		
-		</FOOTER>
-
-		
-	</BODY>
-	
-</HTML>
-		
-		
+    <footer></footer>
+  </body>
+</html>
