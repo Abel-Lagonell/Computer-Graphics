@@ -69,3 +69,5 @@ class WebGL_Interface {
     }
   }
 }
+
+export default WebGL_Interface;

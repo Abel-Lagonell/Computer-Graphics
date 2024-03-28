@@ -1,3 +1,4 @@
+//@ts-check
 class WebGL_Interface {
   constructor() {
     this.vertexShaderSource = document.getElementById("2dVertexShader").text;
