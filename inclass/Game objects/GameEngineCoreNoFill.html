@@ -81,7 +81,6 @@
           //Now the final gl_Position will be the world space coordinates. T*R*S
           gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
       }
-
     </script>
     <script id="2dFragmentShader" type="notjs">
       //Fragment shaders do not have precision so we have to set it.
@@ -93,7 +92,7 @@
       }
     </script>
     <script src="webgl_interface.js"></script>
-    <script src="BasicGameObject.js"></script>
+    <script src="BasicGameObjectNoFill.js"></script>
 
     <script>
       class main {
@@ -143,7 +142,7 @@
           //type 0 = visual
           //type 1 = solid
           //type 2 = trigger
-          let temp = new prefab;
+          let temp = new prefab();
           let id = "ID" + this.ObjectCounter;
           this.ObjectCounter++;
           temp.id = id;
@@ -151,10 +150,9 @@
           for (let i = 0; i < 3; i++) {
             temp.loc[i] = loc[i];
             temp.rot[i] = rot[i];
-
           }
 
-          switch(type) {
+          switch (type) {
             case 0:
               this.Visual[id] = temp;
               break;
@@ -233,7 +231,7 @@
     <canvas
       id="myCanvas"
       width="640"
-      height="400"
+      height="640"
       style="border: 1px solid #000"
     >
       Your browser does not support canvas.

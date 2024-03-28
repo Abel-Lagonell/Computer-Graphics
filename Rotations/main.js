@@ -1,8 +1,9 @@
+// @ts-check
 import {InitWebGLProgram} from "../webgl/initWebGLProgram.js";
 import {Octahedron} from "./octahedron.js";
 
 class Main {
-    /** @param canvas : HTMLCanvasElement */
+    /** @param {HTMLCanvasElement} canvas  */
     constructor(canvas) {
 
         //* Setting up constants
@@ -16,7 +17,7 @@ class Main {
         const fragmentShader = this.webGL.createShader(this.gl.FRAGMENT_SHADER, fragmentShaderSource);
         this.program = this.webGL.createProgram(vertexShader, fragmentShader);
         this.gl.useProgram(this.program);
-
+        
         const upperCenter =  new Octahedron(this.gl, false, [0.0,0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0,0.01,0])
         const lowerLeft =  new Octahedron(this.gl, false, [0.5,-0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0,0,0.01])
         const lowerRight =  new Octahedron(this.gl, false, [-0.5,-0.5,0.0], [0.0,0.0,0.0], [0.25,0.25,0.25], [0.01,0,0])
@@ -74,7 +75,7 @@ class Main {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    canvas = document.getElementsByTagName("Canvas")[0];
+    let canvas = document.getElementsByTagName("Canvas")[0];
     const m = new Main(canvas);
 })
 
