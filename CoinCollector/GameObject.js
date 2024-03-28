@@ -6,7 +6,6 @@ class Transform {
     this.up = [0, 1, 0];
   }
 
-  /**@param {number[]} RotAngles*/
   doRotations(RotAngles) {
     this.xRot = [
       [1, 0, 0, 0],
@@ -50,10 +49,6 @@ class Transform {
     );
   }
 
-  /**
-   * @param {number[][]} M
-   * @param {number[]} V
-   */
   crossMultiply(M, V) {
     //console.log(M[0][3]);
     //console.log(V[3]);
@@ -72,6 +67,7 @@ class GameObject {
   constructor() {
     this.loc = [0, 0, 0];
     this.rot = [0, 0, 0];
+    this.scale = [1, 1, 1];
     this.isTrigger = false;
     this.collisionRadius = 0.1;
     this.velocity = [0, 0, 0];
@@ -92,7 +88,7 @@ class GameObject {
 
     var clear = true;
     for (var so in m.Solid) {
-      if (m.Solid[so] != this) {
+      if (m.Solid[so] !== this) {
         if (
           m.CheckCollision(
             tempP,
@@ -117,7 +113,7 @@ class GameObject {
     }
     //what happens if a trigger object collides with another trigger object
     for (var to in m.Trigger) {
-      if (m.Trigger[to] != this) {
+      if (m.Trigger[to] !== this) {
         if (
           m.CheckCollision(
             tempP,
@@ -137,16 +133,18 @@ class GameObject {
   Update() {
     console.error(this.name + " update() is NOT IMPLEMENTED!");
   }
+
   Render(program) {
     console.error(this.name + " render() is NOT IMPLEMENTED!");
   }
 
   OnTriggerEnter(other) {}
 
+  /**@param {GameObject} other*/
   OnCollisionEnter(other) {}
 }
 
-class DemoCharacter extends GameObject {
+class MainCharacter extends GameObject {
   constructor() {
     super();
 
@@ -169,46 +167,52 @@ class DemoCharacter extends GameObject {
     );
     this.loc = [0.0, 0.0, 0.0];
     this.rot = [0.0, 0.0, 0.0];
+    this.scale = [0.1, 0.1, 0.1];
+    this.rotationVelocity = 0.05;
+    this.transformVelocity = 0.005;
+  }
+
+  OnCollisionEnter(other) {
+    console.log(other);
   }
 
   Update() {
     this.velocity = [0, 0, 0];
     this.angVelocity = [0, 0, 0];
     if (m.TestKey("A")) {
-      this.angVelocity[2] = -0.01;
+      this.angVelocity[2] = this.rotationVelocity;
     }
     if (m.TestKey("D")) {
-      this.angVelocity[2] = 0.01;
+      this.angVelocity[2] = -this.rotationVelocity;
     }
 
-    let dir = this.transform.doRotations(this.rot);
+    this.transform.doRotations(this.rot);
     let direction = this.transform.up;
 
     if (m.TestKey("W")) {
       for (let i = 0; i < 3; i++) {
-        this.velocity[i] = direction[i] * 0.01;
+        this.velocity[i] = direction[i] * this.transformVelocity;
       }
     }
 
     if (m.TestKey("S")) {
       for (let i = 0; i < 3; i++) {
-        this.velocity[i] = direction[i] * -0.01;
+        this.velocity[i] = direction[i] * -this.transformVelocity;
       }
     }
     this.Move();
   }
 
-  /**@param {WebGLProgram} program */
   Render(program) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
     //First we bind the buffer for triangle 1
-    var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-    var size = 3; // 2 components per iteration
-    var type = gl.FLOAT; // the data is 32bit floats
-    var normalize = false; // don't normalize the data
-    var stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
-    var offset = 0; // start at the beginning of the buffer
+    let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+    let size = 3; // 2 components per iteration
+    let type = gl.FLOAT; // the data is 32bit floats
+    let normalize = false; // don't normalize the data
+    let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+    let offset = 0; // start at the beginning of the buffer
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.vertexAttribPointer(
       positionAttributeLocation,
@@ -220,7 +224,7 @@ class DemoCharacter extends GameObject {
     );
 
     //Now we have to do this for color
-    var colorAttributeLocation = gl.getAttribLocation(program, "vert_color");
+    const colorAttributeLocation = gl.getAttribLocation(program, "vert_color");
     //We don't have to bind because we already have the correct buffer bound.
     size = 3;
     type = gl.FLOAT;
@@ -237,16 +241,102 @@ class DemoCharacter extends GameObject {
       offset,
     );
 
-    var tranLoc = gl.getUniformLocation(program, "transform");
+    const tranLoc = gl.getUniformLocation(program, "u_transform");
+    const thetaLoc = gl.getUniformLocation(program, "u_rotation");
+    const scaleLoc = gl.getUniformLocation(program, "u_scale");
     gl.uniform3fv(tranLoc, new Float32Array(this.loc));
-    var thetaLoc = gl.getUniformLocation(program, "u_rotation");
     gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
+    gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
 
-    var primitiveType = gl.TRIANGLES;
+    const primitiveType = gl.TRIANGLES;
     offset = 0;
-    var count = 12;
+    let count = 12;
     gl.drawArrays(primitiveType, offset, count);
   }
 }
 
-export { GameObject, DemoCharacter };
+class Walls extends GameObject {
+  constructor() {
+    super();
+
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    this.vertices = [
+      -0.3, -0.3, 0, 1, 0, 0,
+
+      -0.3, 0.3, 0, 1, 0, 0,
+
+      0.3, 0.3, 0, 1, 0, 0,
+
+      0.3, -0.3, 0, 1, 0, 0,
+    ];
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+
+    this.loc = [0.0, 0.0, 0.0];
+    this.rot = [0.0, 0.0, 0.0];
+    this.scale = [0.1, 0.1, 0.1];
+  }
+
+  Update() {}
+
+  Render(program) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    //First we bind the buffer for triangle 1
+    let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+    let size = 3; // 2 components per iteration
+    let type = gl.FLOAT; // the data is 32bit floats
+    let normalize = false; // don't normalize the data
+    let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+    let offset = 0; // start at the beginning of the buffer
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.vertexAttribPointer(
+      positionAttributeLocation,
+      size,
+      type,
+      normalize,
+      stride,
+      offset,
+    );
+
+    //Now we have to do this for color
+    const colorAttributeLocation = gl.getAttribLocation(program, "vert_color");
+    //We don't have to bind because we already have the correct buffer bound.
+    size = 3;
+    type = gl.FLOAT;
+    normalize = false;
+    stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
+    offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
+    gl.enableVertexAttribArray(colorAttributeLocation);
+    gl.vertexAttribPointer(
+      colorAttributeLocation,
+      size,
+      type,
+      normalize,
+      stride,
+      offset,
+    );
+
+    const tranLoc = gl.getUniformLocation(program, "u_transform");
+    const thetaLoc = gl.getUniformLocation(program, "u_rotation");
+    const scaleLoc = gl.getUniformLocation(program, "u_scale");
+    gl.uniform3fv(tranLoc, new Float32Array(this.loc));
+    gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
+    gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
+
+    const primitiveType = gl.TRIANGLE_FAN;
+    offset = 0;
+    let count = 4;
+    gl.drawArrays(primitiveType, offset, count);
+  }
+
+  OnCollisionEnter(other) {
+    console.log(other);
+  }
+}

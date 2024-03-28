@@ -1,32 +1,30 @@
 //@ts-check
-class WebGL_Interface {
-  /** @param {WebGLRenderingContext} gl*/
-  constructor(gl) {
-    this.gl = gl;
+class I_WebGL {
+  constructor() {
     this.vertexShaderSource = document.getElementById("2dVertexShader").text;
     this.fragmentShaderSource =
       document.getElementById("2dFragmentShader").text;
     this.vertexShader = this.createShader(
-      this.gl.VERTEX_SHADER,
+      gl.VERTEX_SHADER,
       this.vertexShaderSource,
     );
     this.fragmenShader = this.createShader(
-      this.gl.FRAGMENT_SHADER,
+      gl.FRAGMENT_SHADER,
       this.fragmentShaderSource,
     );
     //Link to program
     this.program = this.createProgram(this.vertexShader, this.fragmenShader);
     //setup our viewport
-    this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     //set clear colors
-    this.gl.clearColor(1, 1, 1, 1);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    //what progbram to use;
+    gl.clearColor(1, 1, 1, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    //what program to use;
 
     //We will need this for now!
-    this.gl.enable(this.gl.DEPTH_TEST);
+    gl.enable(gl.DEPTH_TEST);
 
-    this.gl.useProgram(this.program);
+    gl.useProgram(this.program);
   }
 
   /**
@@ -35,17 +33,17 @@ class WebGL_Interface {
    * @returns {WebGLShader}
    */
   createShader(type, source) {
-    var shader = this.gl.createShader(type);
+    var shader = gl.createShader(type);
     if (shader != null) {
-      this.gl.shaderSource(shader, source);
-      this.gl.compileShader(shader);
-      var success = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
       if (success) {
         return shader;
       }
       //Else it didn't work
-      console.error(this.gl.getShaderInfoLog(shader));
-      this.gl.deleteShader(shader);
+      console.error(gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
     }
   }
 
@@ -55,19 +53,17 @@ class WebGL_Interface {
    * @returns {WebGLProgram}
    */
   createProgram(vs, fs) {
-    var program = this.gl.createProgram();
+    var program = gl.createProgram();
     if (program != null) {
-      this.gl.attachShader(program, vs);
-      this.gl.attachShader(program, fs);
-      this.gl.linkProgram(program);
-      var succsess = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      var succsess = gl.getProgramParameter(program, gl.LINK_STATUS);
       if (succsess) {
         return program;
       }
-      console.error(this.gl.getProgramInfoLog(program));
-      this.gl.deleteProgram(program);
+      console.error(gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
     }
   }
 }
-
-export default WebGL_Interface;

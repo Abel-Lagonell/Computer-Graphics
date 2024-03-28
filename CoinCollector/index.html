@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <title>"Modularizing WebGL"</title>
 
     <!--
@@ -17,99 +17,109 @@
 		-->
     <!-- Scripts WebGL -->
     <script id="2dVertexShader" type="notjs">
-      attribute vec4 a_position;
-      attribute vec3 vert_color;
-      varying vec3 fragColor;
+        attribute vec4 a_position;
+        attribute vec3 vert_color;
+        varying vec3 fragColor;
 
-      //This is added to place the object
-      uniform vec3 u_transform;
-      uniform vec3 u_rotation;
-      uniform vec3 u_scale;
+        //This is added to place the object
+        uniform vec3 u_transform;
+        uniform vec3 u_rotation;
+        uniform vec3 u_scale;
 
-      vec4 PositionObject(vec4 pos){
-          mat4 translateM = mat4(
-              1.0,             0.0,             0.0,             0.0,
-              0.0,             1.0,             0.0,             0.0,
-              0.0,             0.0,             1.0,             0.0,
-              u_transform.x, u_transform.y, u_transform.z, 1.0
-          );
-          return translateM * pos;
-      }
+        vec4 PositionObject(vec4 pos){
+            mat4 translateM = mat4(
+                1.0,             0.0,             0.0,             0.0,
+                0.0,             1.0,             0.0,             0.0,
+                0.0,             0.0,             1.0,             0.0,
+                u_transform.x, u_transform.y, u_transform.z, 1.0
+            );
+            return translateM * pos;
+        }
 
-      vec4 ScaleObject(vec4 pos){
-          if (length(u_scale) == 0.0) return pos;
-          mat4 scaleM = mat4(
-              u_scale.x, 0.0,       0.0,       0.0,
-              0.0,       u_scale.y, 0.0,       0.0,
-              0.0,       0.0,       u_scale.z, 0.0,
-              0.0,       0.0,       0.0,       1.0
-          );
-          return scaleM * pos;
-      }
+        vec4 ScaleObject(vec4 pos){
+            if (length(u_scale) == 0.0) return pos;
+            mat4 scaleM = mat4(
+                u_scale.x, 0.0,       0.0,       0.0,
+                0.0,       u_scale.y, 0.0,       0.0,
+                0.0,       0.0,       u_scale.z, 0.0,
+                0.0,       0.0,       0.0,       1.0
+            );
+            return scaleM * pos;
+        }
 
-      vec4 RotateObject(vec4 pos){
-          vec3 c = cos(u_rotation);
-          vec3 s = sin(u_rotation);
+        vec4 RotateObject(vec4 pos){
+            vec3 c = cos(u_rotation);
+            vec3 s = sin(u_rotation);
 
-          mat4 rotateX = mat4(
-              1.0, 0.0,      0.0, 0.0,
-              0.0, c.x,      s.x, 0.0,
-              0.0, -s.x,     c.x, 0.0,
-              0.0, 0.0,      0.0, 1.0
-          );
+            mat4 rotateX = mat4(
+                1.0, 0.0,      0.0, 0.0,
+                0.0, c.x,      s.x, 0.0,
+                0.0, -s.x,     c.x, 0.0,
+                0.0, 0.0,      0.0, 1.0
+            );
 
-          mat4 rotateY = mat4(
-              c.y, 0.0, -s.y, 0.0,
-              0.0, 1.0, 0.0,  0.0,
-              s.y, 0.0, c.y,  0.0,
-              0.0, 0.0, 0.0,  1.0
-          );
+            mat4 rotateY = mat4(
+                c.y, 0.0, -s.y, 0.0,
+                0.0, 1.0, 0.0,  0.0,
+                s.y, 0.0, c.y,  0.0,
+                0.0, 0.0, 0.0,  1.0
+            );
 
-          mat4 rotateZ = mat4(
-              c.z,  s.z, 0.0, 0.0,
-              -s.z, c.z, 0.0, 0.0,
-              0.0,  0.0, 1.0, 0.0,
-              0.0,  0.0, 0.0, 1.0
-          );
+            mat4 rotateZ = mat4(
+                c.z,  s.z, 0.0, 0.0,
+                -s.z, c.z, 0.0, 0.0,
+                0.0,  0.0, 1.0, 0.0,
+                0.0,  0.0, 0.0, 1.0
+            );
 
-          return rotateX * rotateY * rotateZ * pos;
-      }
+            return rotateX * rotateY * rotateZ * pos;
+        }
 
-      void main()
-      {
-          fragColor = vert_color;
-          //Now the final gl_Position will be the world space coordinates. T*R*S
-          gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
-      }
+        void main()
+        {
+            fragColor = vert_color;
+            //Now the final gl_Position will be the world space coordinates. T*R*S
+            gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
+        }
     </script>
     <script id="2dFragmentShader" type="notjs">
-      //Fragment shaders do not have precision so we have to set it.
-      precision mediump float;
-      varying vec3 fragColor;
-      void main(){
-          //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
-          gl_FragColor = vec4(fragColor,1);
-      }
+        //Fragment shaders do not have precision so we have to set it.
+        precision mediump float;
+        varying vec3 fragColor;
+        void main(){
+            //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+            gl_FragColor = vec4(fragColor,1);
+        }
     </script>
+    <script src="./I_WebGL.js"></script>
+    <script src="./GameObject.js"></script>
 
-    <script></script>
-  </head>
-  <body style="padding: 15px">
-    <header></header>
+    <script src="./main.js"></script>
+</head>
+<body style="padding: 15px">
+<header></header>
 
-    <canvas
-      id="myCanvas"
-      width="640"
-      height="640"
-      style="border: 1px solid #000"
-    >
-      Your browser does not support canvas.
-    </canvas>
+<canvas
+        height="640"
+        id="myCanvas"
+        style="border: 1px solid #000"
+        width="640"
+>
+    Your browser does not support canvas.
+</canvas>
 
-    <button id="myB">Clear Canvas</button>
+<button id="myB">Clear Canvas</button>
 
-    <script></script>
+<script>
+    var canvas = document.getElementById("myCanvas");
+    var gl = canvas.getContext("webgl");
+    var m = new main();
+    window.onkeydown = main.keyD;
+    window.onkeyup = main.keyU;
+    canvas.addEventListener("click", main.mouseH);
+    requestAnimationFrame(main.MainLoop);
+</script>
 
-    <footer></footer>
-  </body>
+<footer></footer>
+</body>
 </html>

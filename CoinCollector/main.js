@@ -1,12 +1,8 @@
-import WebGL_Interface from "./I_WebGL";
-import { GameObject, DemoCharacter } from "./GameObject";
-
 //@ts-check
 class main {
-  /** @param {WebGLRenderingContext} gl*/
-  constructor(gl) {
+  constructor() {
     this.Keys = [];
-    this.myWEBGL = new WebGL_Interface(gl);
+    this.myWEBGL = new I_WebGL();
     this.program = this.myWEBGL.program;
     /** @type {GameObject[]} */
     this.Visual = [];
@@ -15,31 +11,49 @@ class main {
     /** @type {GameObject[]} */
     this.Trigger = [];
     this.ObjectCounter = 0;
-    this.myTriangle = [];
 
-    this.CreateObject(1, DemoCharacter, [0, 0, 0], [0, 0, 0]);
+    this.CreateObject(1, MainCharacter, [0, 0, 0], [0, 0, 0]);
+    this.CreateObject(1, Walls, [0, 0, 0], [0, 0, 0]);
+  }
+
+  static keyD(event) {
+    m.KeyDown(event);
+  }
+
+  static keyU(event) {
+    m.keyUp(event);
+  }
+
+  static mouseH(event) {
+    m.MouseClick(event);
+  }
+
+  static MainLoop() {
+    m.UpdateAll();
+    m.RenderAll();
+    requestAnimationFrame(main.MainLoop);
   }
 
   UpdateAll() {
-    for (var i in this.Visual) {
+    for (let i in this.Visual) {
       this.Visual[i].Update();
     }
-    for (var i in this.Solid) {
+    for (let i in this.Solid) {
       this.Solid[i].Update();
     }
-    for (var i in this.Trigger) {
+    for (let i in this.Trigger) {
       this.Trigger[i].Update();
     }
   }
 
   RenderAll() {
-    for (var i in this.Visual) {
+    for (let i in this.Visual) {
       this.Visual[i].Render(this.program);
     }
-    for (var i in this.Solid) {
+    for (let i in this.Solid) {
       this.Solid[i].Render(this.program);
     }
-    for (var i in this.Trigger) {
+    for (let i in this.Trigger) {
       this.Trigger[i].Render(this.program);
     }
   }
@@ -92,7 +106,6 @@ class main {
     this.Keys[String.fromCharCode(event.keyCode)] = false;
   }
 
-  /** @param {string} test */
   TestKey(test) {
     if (test in this.Keys) {
       return this.Keys[test];
@@ -105,34 +118,8 @@ class main {
     var realX = event.clientX - rect.left;
     var realY = event.clientY - rect.top;
     console.log(realX + "," + realY);
-    var x = -1 + (2 * realX) / canvas.width;
-    var y = -1 + (2 * (canvas.height - realY)) / canvas.height;
+    var x = -1 + (2 * realX) / myCanvas.width;
+    var y = -1 + (2 * (myCanvas.height - realY)) / myCanvas.height;
     console.log("The click occurred on " + x + "," + y);
   }
-
-  static keyD(event) {
-    m.KeyDown(event);
-  }
-
-  static keyU(event) {
-    m.keyUp(event);
-  }
-
-  static mouseH(event) {
-    m.MouseClick(event);
-  }
-
-  static MainLoop() {
-    m.UpdateAll();
-    m.RenderAll();
-    requestAnimationFrame(main.MainLoop);
-  }
 }
-
-const canvas = document.getElementById("myCanvas");
-const gl = canvas.getContext("webgl");
-const m = new main(gl);
-window.onkeydown = main.keyD;
-window.onkeyup = main.keyU;
-canvas.addEventListener("click", main.mouseH);
-requestAnimationFrame(main.MainLoop);
