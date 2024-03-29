@@ -107,17 +107,20 @@
 >
     Your browser does not support canvas.
 </canvas>
+<div>
+    <p id="score">Score: 0</p>
+    <button id="myB">Clear Canvas</button>
+</div>
 
-<button id="myB">Clear Canvas</button>
 
 <script>
-    var canvas = document.getElementById("myCanvas");
-    var gl = canvas.getContext("webgl");
-    var m = new main();
-    window.onkeydown = main.keyD;
-    window.onkeyup = main.keyU;
-    canvas.addEventListener("click", main.mouseH);
-    requestAnimationFrame(main.MainLoop);
+    const canvas = document.getElementById("myCanvas");
+    const gl = canvas.getContext("webgl");
+    const m = new Main(gl);
+    window.onkeydown = Main.keyD;
+    window.onkeyup = Main.keyU;
+    canvas.addEventListener("click", Main.mouseH);
+    requestAnimationFrame(Main.MainLoop);
 </script>
 
 <footer></footer>

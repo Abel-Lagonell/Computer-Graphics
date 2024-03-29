@@ -1,6 +1,7 @@
 //@ts-check
-class main {
-  constructor() {
+class Main {
+  constructor(gl) {
+    this.gl = gl;
     this.Keys = [];
     this.myWEBGL = new I_WebGL();
     this.program = this.myWEBGL.program;
@@ -11,10 +12,19 @@ class main {
     /** @type {GameObject[]} */
     this.Trigger = [];
     this.ObjectCounter = 0;
+    this.score = 0;
+    this.scoreText = document.getElementById("score");
+    this.gameContinue = true;
 
-    this.CreateObject(1, MainCharacter, [0, 0, 0], [0, 0, 0]);
-    this.CreateObject(1, Walls, [0, 0, 0], [0, 0, 0]);
+    this.CreateObject(1, MainCharacter, [0, 0, 0], [0, 0, 0], undefined);
+    this.CreateObject(1, Walls, [0, 1, 0], [0, 0, 0], [10, 0.5, 1]);
+    this.CreateObject(1, Walls, [0, -1, 0], [0, 0, 0], [10, 0.5, 1]);
+    this.CreateObject(1, Walls, [1, 0, 0], [0, 0, 0], [0.5, 10, 1]);
+    this.CreateObject(1, Walls, [-1, 0, 0], [0, 0, 0], [0.5, 10, 1]);
+    this.CreateObject(2, Coin, [0.5, 0, 0], [0, 0, 0], undefined);
+    this.CreateObject(1, Enemy, [0, 0.5, 0], [0, 0, 0], undefined);
   }
+  wdw;
 
   static keyD(event) {
     m.KeyDown(event);
@@ -31,7 +41,7 @@ class main {
   static MainLoop() {
     m.UpdateAll();
     m.RenderAll();
-    requestAnimationFrame(main.MainLoop);
+    m.gameContinue ? requestAnimationFrame(Main.MainLoop) : m.gameEnd();
   }
 
   UpdateAll() {
@@ -58,9 +68,55 @@ class main {
     }
   }
 
-  CheckCollision(loc1, rad1, loc2, rad2) {}
+  updateScore() {
+    this.score++;
+    this.scoreText.innerText = "Score: " + this.score.toString();
+  }
 
-  CreateObject(type, prefab, loc, rot) {
+  gameEnd() {
+    console.log("HERE");
+  }
+
+  /**
+   * @param {number[]} location
+   * @param {number} collision_radius
+   * @param {GameObject} obj
+   * @return {boolean}
+   */
+  CheckCollision(location, collision_radius, obj) {
+    if (typeof obj.collisionRadius === "number") {
+      // If the radius of the object is a number, use it directly for collision check
+      const distance = Math.sqrt(
+        (location[0] - obj.loc[0]) ** 2 +
+          (location[1] - obj.loc[1]) ** 2 +
+          (location[2] - obj.loc[2]) ** 2,
+      );
+      return distance <= collision_radius + obj.collisionRadius;
+    } else {
+      const loc = obj.loc;
+      const scale = obj.scale;
+      const ref = obj.reference;
+
+      const x_bounds = [-scale[0] * ref + loc[0], scale[0] * ref + loc[0]];
+      const y_bounds = [-scale[1] * ref + loc[1], scale[1] * ref + loc[1]];
+
+      return (
+        location[0] - collision_radius / 2 < x_bounds[1] &&
+        location[0] + collision_radius / 2 > x_bounds[0] &&
+        location[1] - collision_radius / 2 < y_bounds[1] &&
+        location[1] + collision_radius / 2 > y_bounds[0]
+      );
+    }
+  }
+
+  /**
+   * @param {number} type - 0 => Visual, 1 => Solid, 2 => Trigger
+   * @param {number[]} loc
+   * @param {number[]} rot
+   * @param {GameObject} prefab
+   * @param {number[] | undefined} scale
+   */
+  CreateObject(type, prefab, loc, rot, scale) {
     //type 0 = visual
     //type 1 = solid
     //type 2 = trigger
@@ -72,6 +128,9 @@ class main {
     for (let i = 0; i < 3; i++) {
       temp.loc[i] = loc[i];
       temp.rot[i] = rot[i];
+      if (scale != null) {
+        temp.scale[i] = scale[i];
+      }
     }
 
     switch (type) {
@@ -118,8 +177,8 @@ class main {
     var realX = event.clientX - rect.left;
     var realY = event.clientY - rect.top;
     console.log(realX + "," + realY);
-    var x = -1 + (2 * realX) / myCanvas.width;
-    var y = -1 + (2 * (myCanvas.height - realY)) / myCanvas.height;
+    var x = -1 + (2 * realX) / canvas.width;
+    var y = -1 + (2 * (canvas.height - realY)) / canvas.height;
     console.log("The click occurred on " + x + "," + y);
   }
 }
