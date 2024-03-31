@@ -80,6 +80,7 @@ class GameObject {
     this.vertCount = 0;
     this.primitiveType = gl.TRIANGLES;
     this.buffer = gl.createBuffer();
+    this.tag = "";
   }
 
   Move() {
@@ -185,6 +186,7 @@ class MainCharacter extends GameObject {
   constructor() {
     super();
 
+    this.tag = "Player";
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     //Now we want to add color to our vertices information.
     this.vertices = [
@@ -207,10 +209,7 @@ class MainCharacter extends GameObject {
     this.rotationVelocity = 0.05;
     this.transformVelocity = 0.005;
     this.vertCount = this.vertices.length / 6;
-  }
-
-  OnCollisionEnter(other) {
-    //console.log(other);
+    this.bool = true;
   }
 
   Update() {
@@ -237,6 +236,18 @@ class MainCharacter extends GameObject {
         this.velocity[i] = direction[i] * -this.transformVelocity;
       }
     }
+
+    // Check if space bar is pressed and 30 frames have passed
+    if (m.TestKey(" ") && this.bool) {
+      this.bool = false;
+      // Call m.CreateObject here
+      m.CreateObject(2, Bullet, this.loc, this.rot, undefined);
+    }
+
+    if (!m.TestKey(" ")) {
+      this.bool = true;
+    }
+
     this.Move();
   }
 }
@@ -244,6 +255,8 @@ class MainCharacter extends GameObject {
 class Walls extends GameObject {
   constructor() {
     super();
+
+    this.tag = "Wall";
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
@@ -270,15 +283,12 @@ class Walls extends GameObject {
   }
 
   Update() {}
-
-  OnCollisionEnter(other) {
-    //console.log(other);
-  }
 }
 
 class Coin extends GameObject {
   constructor() {
     super();
+    this.tag = "Coin";
     this.numberOfPoints = 20;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.vertices = [];
@@ -313,7 +323,7 @@ class Coin extends GameObject {
   }
 
   OnTriggerEnter(other) {
-    if (other.id === "ID0") {
+    if (other.tag === "Player") {
       m.DestroyObject(this.id);
       m.updateScore();
     }
@@ -323,7 +333,7 @@ class Coin extends GameObject {
 class Enemy extends GameObject {
   constructor() {
     super();
-
+    this.tag = "Enemy";
     this.collisionRadius = 0.1;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     //Now we want to add color to our vertices information.
@@ -342,22 +352,86 @@ class Enemy extends GameObject {
       gl.STATIC_DRAW,
     );
     this.loc = [0.0, 0.0, 0.0];
-    this.rot = [0.0, 0.0, 0.0];
+    this.rot = [0, 0, 0];
     this.scale = [0.1, 0.1, 0.1];
-    this.rotationVelocity = 0.05;
+    this.primitiveType = gl.TRIANGLES;
     this.transformVelocity = 0.005;
     this.vertCount = this.vertices.length / 6;
   }
 
   Update() {
-    this.velocity = [this.transformVelocity, 0, 0];
+    this.velocity = [0, 0, 0];
+    this.angVelocity = [0, 0, 0];
+
+    this.transform.doRotations(this.rot);
+    let direction = this.transform.up;
+
+    for (let i = 0; i < 3; i++) {
+      this.velocity[i] = direction[i] * this.transformVelocity;
+    }
+
     this.Move();
   }
 
   OnCollisionEnter(other) {
-    if (other.id === "ID0") {
+    if (other.tag === "Player") {
       m.gameContinue = false;
     }
     this.transformVelocity = -this.transformVelocity;
+  }
+
+  OnTriggerEnter(other) {
+    if (other.tag === "Bullet") {
+      m.DestroyObject(this.id);
+    }
+  }
+}
+
+class Bullet extends GameObject {
+  constructor() {
+    super();
+
+    this.tag = "Bullet";
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    this.vertices = [
+      -0.01, -0.01, 0, 0.9, 0.9, 0.9,
+
+      -0.01, 0.01, 0, 0.9, 0.9, 0.9,
+
+      0.01, 0.01, 0, 0.9, 0.9, 0.9,
+
+      0.01, -0.01, 0, 0.9, 0.9, 0.9,
+    ];
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.primitiveType = gl.TRIANGLE_FAN;
+    this.vertCount = this.vertices.length / 6;
+    this.transformVelocity = 0.01;
+    this.collisionRadius = 0;
+  }
+
+  Update() {
+    this.velocity = [0, 0, 0];
+    this.angVelocity = [0, 0, 0];
+
+    this.transform.doRotations(this.rot);
+    let direction = this.transform.up;
+
+    for (let i = 0; i < 3; i++) {
+      this.velocity[i] = direction[i] * this.transformVelocity;
+    }
+
+    this.Move();
+  }
+
+  OnTriggerEnter(other) {
+    if (other.tag === "Wall") {
+      m.DestroyObject(this.id);
+    }
   }
 }

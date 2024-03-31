@@ -17,14 +17,55 @@ class Main {
     this.gameContinue = true;
 
     this.CreateObject(1, MainCharacter, [0, 0, 0], [0, 0, 0], undefined);
-    this.CreateObject(1, Walls, [0, 1, 0], [0, 0, 0], [10, 0.5, 1]);
-    this.CreateObject(1, Walls, [0, -1, 0], [0, 0, 0], [10, 0.5, 1]);
-    this.CreateObject(1, Walls, [1, 0, 0], [0, 0, 0], [0.5, 10, 1]);
-    this.CreateObject(1, Walls, [-1, 0, 0], [0, 0, 0], [0.5, 10, 1]);
-    this.CreateObject(2, Coin, [0.5, 0, 0], [0, 0, 0], undefined);
-    this.CreateObject(1, Enemy, [0, 0.5, 0], [0, 0, 0], undefined);
+    this.makeWalls();
+    this.makeCoins();
+    this.makeEnemies();
   }
-  wdw;
+
+  makeWalls() {
+    const rot = [0, 0, 0];
+    //Outer Walls
+    this.CreateObject(1, Walls, [0, 1, 0], rot, [10, 0.5, 1]);
+    this.CreateObject(1, Walls, [0, -1, 0], rot, [10, 0.5, 1]);
+    this.CreateObject(1, Walls, [1, 0, 0], rot, [0.5, 10, 1]);
+    this.CreateObject(1, Walls, [-1, 0, 0], rot, [0.5, 10, 1]);
+
+    //Inner Walls
+    //Vert
+    this.CreateObject(1, Walls, [0.7, 0.6, 0], rot, [0.25, 6, 1]);
+    this.CreateObject(1, Walls, [-0.7, 0.5, 0], rot, [0.25, 4.5, 1]);
+    this.CreateObject(1, Walls, [0.425, 0.25, 0], rot, [0.25, 4.5, 1]);
+    this.CreateObject(1, Walls, [-0.425, -0.25, 0], rot, [0.25, 4.5, 1]);
+    this.CreateObject(1, Walls, [-0.7, -0.475, 0], rot, [0.25, 2.5, 1]);
+    this.CreateObject(1, Walls, [0.7, -0.7, 0], rot, [0.25, 2.5, 1]);
+    //Horizontal
+    this.CreateObject(1, Walls, [0, 0.7, 0], rot, [4.5, 0.25, 1]);
+    this.CreateObject(1, Walls, [0, -0.7, 0], rot, [4.5, 0.25, 1]);
+    this.CreateObject(1, Walls, [-0.25, 0.425, 0], rot, [4.5, 0.25, 1]);
+    this.CreateObject(1, Walls, [0.275, -0.425, 0], rot, [4.5, 0.25, 1]);
+    this.CreateObject(1, Walls, [0.7, -0.2, 0], rot, [3, 0.25, 1]);
+    this.CreateObject(1, Walls, [-0.85, -0.5, 0], rot, [1.5, 0.25, 1]);
+  }
+
+  makeCoins() {
+    let rot = [0, 0, 0];
+    this.CreateObject(2, Coin, [0, -0.85, 0], rot, undefined);
+    this.CreateObject(2, Coin, [0, 0.85, 0], rot, undefined);
+    this.CreateObject(2, Coin, [0.845, 0.85, 0], rot, undefined);
+    this.CreateObject(2, Coin, [0.845, -0.85, 0], rot, undefined);
+    this.CreateObject(2, Coin, [-0.845, -0.85, 0], rot, undefined);
+    this.CreateObject(2, Coin, [-0.845, 0.85, 0], rot, undefined);
+  }
+
+  makeEnemies() {
+    let horizontal = [0, 0, Math.PI / 2];
+    let vertical = [0, 0, 0];
+    this.CreateObject(1, Enemy, [0.85, 0.5, 0], vertical, undefined);
+    this.CreateObject(1, Enemy, [-0.57, -0.5, 0], vertical, undefined);
+    this.CreateObject(1, Enemy, [-0.2, 0.55, 0], horizontal, undefined);
+    this.CreateObject(1, Enemy, [0.5, -0.55, 0], horizontal, undefined);
+    this.CreateObject(1, Enemy, [-0.85, 0.5, 0], horizontal, undefined);
+  }
 
   static keyD(event) {
     m.KeyDown(event);
@@ -71,10 +112,14 @@ class Main {
   updateScore() {
     this.score++;
     this.scoreText.innerText = "Score: " + this.score.toString();
+    if (this.score === 6) {
+      this.scoreText.innerText = "YOU WIN";
+    }
   }
 
   gameEnd() {
-    console.log("HERE");
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    this.scoreText.innerText = "GAME OVER";
   }
 
   /**
@@ -151,6 +196,9 @@ class Main {
     return temp;
   }
 
+  /**
+   * @param {string} id
+   */
   DestroyObject(id) {
     if (id in this.Visual) delete this.Visual[id];
     if (id in this.Solid) delete this.Solid[id];
@@ -164,7 +212,6 @@ class Main {
   keyUp(event) {
     this.Keys[String.fromCharCode(event.keyCode)] = false;
   }
-
   TestKey(test) {
     if (test in this.Keys) {
       return this.Keys[test];
