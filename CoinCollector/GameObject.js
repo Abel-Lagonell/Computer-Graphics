@@ -190,13 +190,13 @@ class MainCharacter extends GameObject {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     //Now we want to add color to our vertices information.
     this.vertices = [
-      -0.5, -0.5, 0, 0, 0, 0, 0.5, -0.5, 0, 1, 0, 0, 0, 0.5, 0, 1, 0, 0,
+      0, -0.5, 0, 1, 1, 0, -0.25, 0, 0, 1, 0, 0, 0.25, 0, 0, 1, 0, 0,
 
-      -0.5, -0.5, 0, 0, 1, 0, 0, 0, -0.5, 0, 1, 0, 0.5, -0.5, 0, 0, 1, 0,
+      0, 0, -0.1, 0.5, 0.5, 0.5, 0.4, -0.3, -0.1, 0, 0, 1, 0, 0.5, -0.1, 0.8,
+      0.8, 0.8,
 
-      0, 0, -0.5, 0, 0, 1, 0.5, -0.5, 0, 0, 0, 1, 0, 0.5, 0, 0, 0, 1,
-
-      0, 0.5, 0, 1, 1, 0, 0, 0, -0.5, 1, 1, 0, -0.5, -0.5, 0, 1, 1, 0,
+      0, 0.5, -0.1, 0.8, 0.8, 0.8, 0, 0, -0.1, 0.5, 0.5, 0.5, -0.4, -0.3, -0.1,
+      0, 0, 1,
     ];
     gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -334,17 +334,18 @@ class Enemy extends GameObject {
   constructor() {
     super();
     this.tag = "Enemy";
-    this.collisionRadius = 0.1;
+    this.collisionRadius = 0.07;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     //Now we want to add color to our vertices information.
     this.vertices = [
-      -0.3, -0.5, 0, 0, 0, 0, 0.5, -0.5, 0, 1, 0, 0, 0, 0.5, 0, 1, 0, 0,
+      -0.5, -0.35, -0.1, 0, 0, 0, 0, 0.4, -0.1, 1, 0.1, 0.1, 0.5, -0.35, -0.1,
+      0, 0, 0,
 
-      -0.5, -0.5, 0, 0, 1, 0, 0, 0, -0.5, 0, 1, 0, 0.5, -0.5, 0, 0, 1, 0,
+      0.4, 0.05, 0, 0.5, 0.5, 0.5, 0, -0.7, -0, 0.2, 0.2, 1, -0.4, 0.05, -0,
+      0.5, 0.5, 0.5,
 
-      0, 0, -0.5, 0, 0, 1, 0.5, -0.5, 0, 0, 0, 1, 0, 0.5, 0, 0, 0, 1,
-
-      0, 0.5, 0, 1, 1, 0, 0, 0, -0.5, 1, 1, 0, -0.5, -0.5, 0, 1, 1, 0,
+      0.3, 0.05, -0.2, 0.1, 0.1, 0.1, 0, -0.4, -0.2, 0.1, 0.1, 0.1, -0.3, 0.05,
+      -0.2, 0.1, 0.1, 0.1,
     ];
     gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -361,7 +362,6 @@ class Enemy extends GameObject {
 
   Update() {
     this.velocity = [0, 0, 0];
-    this.angVelocity = [0, 0, 0];
 
     this.transform.doRotations(this.rot);
     let direction = this.transform.up;
