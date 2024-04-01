@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>COIN COLLECTION</title>
+
+    <!--
+		GLSL is the language used for shaders (GL Shader Language)
+
+		Attribute - you specify how to pull the data out of the buffers you supply.
+		Buffers - Data loaded onto the GPU (Normally vertex information)
+
+		Uniforms - global variables (in GLSL) that you set before you run the shader program
+
+		Textures - Textures are arrays of data you can randomly acces in your shader program.
+
+		Varying - are way for a vertex shader to pass data to the fragmentShader.
+		-->
+    <!-- Scripts WebGL -->
+    <script id="2dVertexShader" type="notjs">
+        attribute vec4 a_position;
+        attribute vec3 vert_color;
+        varying vec3 fragColor;
+
+        //This is added to place the object
+        uniform vec3 u_transform;
+        uniform vec3 u_rotation;
+        uniform vec3 u_scale;
+
+        vec4 PositionObject(vec4 pos){
+            mat4 translateM = mat4(
+                1.0,             0.0,             0.0,             0.0,
+                0.0,             1.0,             0.0,             0.0,
+                0.0,             0.0,             1.0,             0.0,
+                u_transform.x, u_transform.y, u_transform.z, 1.0
+            );
+            return translateM * pos;
+        }
+
+        vec4 ScaleObject(vec4 pos){
+            if (length(u_scale) == 0.0) return pos;
+            mat4 scaleM = mat4(
+                u_scale.x, 0.0,       0.0,       0.0,
+                0.0,       u_scale.y, 0.0,       0.0,
+                0.0,       0.0,       u_scale.z, 0.0,
+                0.0,       0.0,       0.0,       1.0
+            );
+            return scaleM * pos;
+        }
+
+        vec4 RotateObject(vec4 pos){
+            vec3 c = cos(u_rotation);
+            vec3 s = sin(u_rotation);
+
+            mat4 rotateX = mat4(
+                1.0, 0.0,      0.0, 0.0,
+                0.0, c.x,      s.x, 0.0,
+                0.0, -s.x,     c.x, 0.0,
+                0.0, 0.0,      0.0, 1.0
+            );
+
+            mat4 rotateY = mat4(
+                c.y, 0.0, -s.y, 0.0,
+                0.0, 1.0, 0.0,  0.0,
+                s.y, 0.0, c.y,  0.0,
+                0.0, 0.0, 0.0,  1.0
+            );
+
+            mat4 rotateZ = mat4(
+                c.z,  s.z, 0.0, 0.0,
+                -s.z, c.z, 0.0, 0.0,
+                0.0,  0.0, 1.0, 0.0,
+                0.0,  0.0, 0.0, 1.0
+            );
+
+            return rotateX * rotateY * rotateZ * pos;
+        }
+
+        void main()
+        {
+            fragColor = vert_color;
+            //Now the final gl_Position will be the world space coordinates. T*R*S
+            gl_Position = PositionObject(RotateObject(ScaleObject(a_position)));
+        }
+    </script>
+    <script id="2dFragmentShader" type="notjs">
+        //Fragment shaders do not have precision so we have to set it.
+        precision mediump float;
+        varying vec3 fragColor;
+        void main(){
+            //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+            gl_FragColor = vec4(fragColor,1);
+        }
+    </script>
+    <!-- Functional Code -->
+    <script>//@ts-check
+    class I_WebGL {
+        constructor() {
+            this.vertexShaderSource = document.getElementById("2dVertexShader").text;
+            this.fragmentShaderSource =
+                document.getElementById("2dFragmentShader").text;
+            this.vertexShader = this.createShader(
+                gl.VERTEX_SHADER,
+                this.vertexShaderSource,
+            );
+            this.fragmenShader = this.createShader(
+                gl.FRAGMENT_SHADER,
+                this.fragmentShaderSource,
+            );
+            //Link to program
+            this.program = this.createProgram(this.vertexShader, this.fragmenShader);
+            //setup our viewport
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            //set clear colors
+            gl.clearColor(1, 1, 1, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            //what program to use;
+
+            //We will need this for now!
+            gl.enable(gl.DEPTH_TEST);
+
+            gl.useProgram(this.program);
+        }
+
+        /**
+         * @param {GLenum} type    gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+         * @param {string} source  A string containing the GLSL source code to set
+         * @returns {WebGLShader}
+         */
+        createShader(type, source) {
+            var shader = gl.createShader(type);
+            if (shader != null) {
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+                if (success) {
+                    return shader;
+                }
+                //Else it didn't work
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+            }
+        }
+
+        /**
+         * @param {WebGLShader} vs Vertex Shader
+         * @param {WebGLShader} fs Fragment Shader
+         * @returns {WebGLProgram}
+         */
+        createProgram(vs, fs) {
+            var program = gl.createProgram();
+            if (program != null) {
+                gl.attachShader(program, vs);
+                gl.attachShader(program, fs);
+                gl.linkProgram(program);
+                var succsess = gl.getProgramParameter(program, gl.LINK_STATUS);
+                if (succsess) {
+                    return program;
+                }
+                console.error(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+            }
+        }
+    }
+    </script>
+    <script>//@ts-check
+    class Transform {
+        constructor() {
+            this.forward = [0, 0, 1];
+            this.right = [1, 0, 0];
+            this.up = [0, 1, 0];
+        }
+
+        /**@param {number[]} RotAngles*/
+        doRotations(RotAngles) {
+            this.xRot = [
+                [1, 0, 0, 0],
+                [0, Math.cos(RotAngles[0]), -1 * Math.sin(RotAngles[0]), 0],
+                [0, Math.sin(RotAngles[0]), Math.cos(RotAngles[0]), 0],
+                [0, 0, 0, 1],
+            ];
+            this.yRot = [
+                [Math.cos(RotAngles[1]), 0, Math.sin(RotAngles[1]), 0],
+                [0, 1, 0, 0],
+                [-1 * Math.sin(RotAngles[1]), 0, Math.cos(RotAngles[1]), 0],
+                [0, 0, 0, 1],
+            ];
+            this.zRot = [
+                [Math.cos(RotAngles[2]), -1 * Math.sin(RotAngles[2]), 0, 0],
+                [Math.sin(RotAngles[2]), Math.cos(RotAngles[2]), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ];
+            //this.forward = this.crossMultiply(xRot,[0,0,1,0]);
+            this.forward = this.crossMultiply(
+                this.zRot,
+                this.crossMultiply(
+                    this.yRot,
+                    this.crossMultiply(this.xRot, [0, 0, 1, 0]),
+                ),
+            );
+            this.right = this.crossMultiply(
+                this.zRot,
+                this.crossMultiply(
+                    this.yRot,
+                    this.crossMultiply(this.xRot, [1, 0, 0, 0]),
+                ),
+            );
+            this.up = this.crossMultiply(
+                this.zRot,
+                this.crossMultiply(
+                    this.yRot,
+                    this.crossMultiply(this.xRot, [0, 1, 0, 0]),
+                ),
+            );
+        }
+
+        /**
+         * @param {number[][]} M
+         * @param {number[]} V
+         */
+        crossMultiply(M, V) {
+            return [
+                M[0][0] * V[0] + M[0][1] * V[1] + M[0][2] * V[2] + M[0][3] * V[3],
+                M[1][0] * V[0] + M[1][1] * V[1] + M[1][2] * V[2] + M[1][3] * V[3],
+                M[2][0] * V[0] + M[2][1] * V[1] + M[2][2] * V[2] + M[2][3] * V[3],
+                M[3][0] * V[0] + M[3][1] * V[1] + M[3][2] * V[2] + M[3][3] * V[3],
+            ];
+        }
+    }
+
+    class GameObject {
+        constructor() {
+            this.loc = [0, 0, 0];
+            this.rot = [0, 0, 0];
+            this.scale = [1, 1, 1];
+            this.isTrigger = false;
+            this.collisionRadius = 0.1;
+            this.velocity = [0, 0, 0];
+            this.angVelocity = [0, 0, 0];
+            this.name = "Default";
+            this.id = 0;
+            this.transform = new Transform();
+            this.reference = 1;
+            this.vertCount = 0;
+            this.primitiveType = gl.TRIANGLES;
+            this.buffer = gl.createBuffer();
+            this.tag = "";
+        }
+
+        Move() {
+            var tempP = [0, 0, 0];
+            for (var i = 0; i < 3; i++) {
+                tempP[i] = this.loc[i];
+                tempP[i] += this.velocity[i];
+                this.rot[i] += this.angVelocity[i];
+            }
+
+            let clear = true;
+            for (let so in m.Solid) {
+                if (m.Solid[so] !== this) {
+                    if (m.CheckCollision(tempP, this.collisionRadius, m.Solid[so])) {
+                        if (!this.isTrigger) {
+                            this.OnCollisionEnter(m.Solid[so]);
+                            m.Solid[so].OnCollisionEnter(this);
+                            clear = false;
+                        } else {
+                            this.OnTriggerEnter(m.Solid[so]);
+                            m.Solid[so].OnTriggerEnter(this);
+                        }
+                    }
+                }
+            }
+            if (clear) {
+                this.loc = tempP;
+            }
+            //what happens if a trigger object collides with another trigger object
+            for (let to in m.Trigger) {
+                if (m.Trigger[to] !== this) {
+                    if (m.CheckCollision(tempP, this.collisionRadius, m.Trigger[to])) {
+                        this.OnTriggerEnter(m.Trigger[to]);
+                        m.Trigger[to].OnTriggerEnter(this);
+                    }
+                }
+            }
+        }
+
+        //Abstract fucntions, think Unity
+        Update() {
+            console.error(this.name + " update() is NOT IMPLEMENTED!");
+        }
+
+        /**@param {WebGLProgram} program*/
+        Render(program) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+            //First we bind the buffer for triangle 1
+            let positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+            let size = 3; // 2 components per iteration
+            let type = gl.FLOAT; // the data is 32bit floats
+            let normalize = false; // don't normalize the data
+            let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+            let offset = 0; // start at the beginning of the buffer
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            gl.vertexAttribPointer(
+                positionAttributeLocation,
+                size,
+                type,
+                normalize,
+                stride,
+                offset,
+            );
+
+            //Now we have to do this for color
+            const colorAttributeLocation = gl.getAttribLocation(program, "vert_color");
+            //We don't have to bind because we already have the correct buffer bound.
+            size = 3;
+            type = gl.FLOAT;
+            normalize = false;
+            stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
+            offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
+            gl.enableVertexAttribArray(colorAttributeLocation);
+            gl.vertexAttribPointer(
+                colorAttributeLocation,
+                size,
+                type,
+                normalize,
+                stride,
+                offset,
+            );
+
+            const tranLoc = gl.getUniformLocation(program, "u_transform");
+            const thetaLoc = gl.getUniformLocation(program, "u_rotation");
+            const scaleLoc = gl.getUniformLocation(program, "u_scale");
+            gl.uniform3fv(tranLoc, new Float32Array(this.loc));
+            gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
+            gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
+
+            offset = 0;
+            gl.drawArrays(this.primitiveType, offset, this.vertCount);
+        }
+
+        /**@param {GameObject} other*/
+        OnTriggerEnter(other) {}
+
+        /**@param {GameObject} other*/
+        OnCollisionEnter(other) {}
+    }
+
+    class MainCharacter extends GameObject {
+        constructor() {
+            super();
+
+            this.tag = "Player";
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+            //Now we want to add color to our vertices information.
+            this.vertices = [
+                0, -0.5, 0, 1, 1, 0, -0.25, 0, 0, 1, 0, 0, 0.25, 0, 0, 1, 0, 0,
+
+                0, 0, -0.1, 0.5, 0.5, 0.5, 0.4, -0.3, -0.1, 0, 0, 1, 0, 0.5, -0.1, 0.8,
+                0.8, 0.8,
+
+                0, 0.5, -0.1, 0.8, 0.8, 0.8, 0, 0, -0.1, 0.5, 0.5, 0.5, -0.4, -0.3, -0.1,
+                0, 0, 1,
+            ];
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array(this.vertices),
+                gl.STATIC_DRAW,
+            );
+            this.collisionRadius = 0.05;
+            this.loc = [0.0, 0.0, 0.0];
+            this.rot = [0.0, 0.0, 0.0];
+            this.scale = [0.1, 0.1, 0.1];
+            this.rotationVelocity = 0.05;
+            this.transformVelocity = 0.005;
+            this.vertCount = this.vertices.length / 6;
+            this.bool = true;
+        }
+
+        Update() {
+            this.velocity = [0, 0, 0];
+            this.angVelocity = [0, 0, 0];
+            if (m.TestKey("A")) {
+                this.angVelocity[2] = this.rotationVelocity;
+            }
+            if (m.TestKey("D")) {
+                this.angVelocity[2] = -this.rotationVelocity;
+            }
+
+            this.transform.doRotations(this.rot);
+            let direction = this.transform.up;
+
+            if (m.TestKey("W")) {
+                for (let i = 0; i < 3; i++) {
+                    this.velocity[i] = direction[i] * this.transformVelocity;
+                }
+            }
+
+            if (m.TestKey("S")) {
+                for (let i = 0; i < 3; i++) {
+                    this.velocity[i] = direction[i] * -this.transformVelocity;
+                }
+            }
+
+            // Check if space bar is pressed and 30 frames have passed
+            if (m.TestKey(" ") && this.bool) {
+                this.bool = false;
+                // Call m.CreateObject here
+                m.CreateObject(2, Bullet, this.loc, this.rot, undefined);
+            }
+
+            if (!m.TestKey(" ")) {
+                this.bool = true;
+            }
+
+            this.Move();
+        }
+    }
+
+    class Walls extends GameObject {
+        constructor() {
+            super();
+
+            this.tag = "Wall";
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+            this.vertices = [
+                -0.1, -0.1, 0, 1, 0, 0,
+
+                -0.1, 0.1, 0, 1, 0, 0,
+
+                0.1, 0.1, 0, 1, 0, 0,
+
+                0.1, -0.1, 0, 1, 0, 0,
+            ];
+
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array(this.vertices),
+                gl.STATIC_DRAW,
+            );
+
+            this.reference = 0.1;
+            this.vertCount = this.vertices.length / 6;
+            this.primitiveType = gl.TRIANGLE_FAN;
+            this.collisionRadius = this.scale;
+        }
+
+        Update() {}
+    }
+
+    class Coin extends GameObject {
+        constructor() {
+            super();
+            this.tag = "Coin";
+            this.numberOfPoints = 20;
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+            this.vertices = [];
+            for (let i = 0; i < this.numberOfPoints; i++) {
+                // Calculate the angle for this point
+                const angle = Math.PI * 2 * (i / this.numberOfPoints);
+
+                // Calculate x and y coordinates using trigonometry
+                const x = Math.cos(angle);
+                const y = Math.sin(angle);
+
+                this.vertices.push(...[x, y, 0, 0.9, 0.9, 0]);
+            }
+
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array(this.vertices),
+                gl.STATIC_DRAW,
+            );
+
+            this.loc = [0.0, 0.0, 0.0];
+            this.rot = [0.0, 0.0, 0.0];
+            this.scale = [0.05, 0.05, 1];
+            this.angVelocity = [0, 0.01, 0];
+            this.collisionRadius = 0;
+            this.vertCount = this.vertices.length / 6;
+            this.primitiveType = gl.TRIANGLE_FAN;
+        }
+
+        Update() {
+            this.Move();
+        }
+
+        OnTriggerEnter(other) {
+            if (other.tag === "Player") {
+                m.DestroyObject(this.id);
+                m.updateScore();
+            }
+        }
+    }
+
+    class Enemy extends GameObject {
+        constructor() {
+            super();
+            this.tag = "Enemy";
+            this.collisionRadius = 0.07;
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+            //Now we want to add color to our vertices information.
+            this.vertices = [
+                -0.5, -0.35, -0.1, 0, 0, 0, 0, 0.4, -0.1, 1, 0.1, 0.1, 0.5, -0.35, -0.1,
+                0, 0, 0,
+
+                0.4, 0.05, 0, 0.5, 0.5, 0.5, 0, -0.7, -0, 0.2, 0.2, 1, -0.4, 0.05, -0,
+                0.5, 0.5, 0.5,
+
+                0.3, 0.05, -0.2, 0.1, 0.1, 0.1, 0, -0.4, -0.2, 0.1, 0.1, 0.1, -0.3, 0.05,
+                -0.2, 0.1, 0.1, 0.1,
+            ];
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array(this.vertices),
+                gl.STATIC_DRAW,
+            );
+            this.loc = [0.0, 0.0, 0.0];
+            this.rot = [0, 0, 0];
+            this.scale = [0.1, 0.1, 0.1];
+            this.primitiveType = gl.TRIANGLES;
+            this.transformVelocity = 0.005;
+            this.vertCount = this.vertices.length / 6;
+        }
+
+        Update() {
+            this.velocity = [0, 0, 0];
+
+            this.transform.doRotations(this.rot);
+            let direction = this.transform.up;
+
+            for (let i = 0; i < 3; i++) {
+                this.velocity[i] = direction[i] * this.transformVelocity;
+            }
+
+            this.Move();
+        }
+
+        OnCollisionEnter(other) {
+            if (other.tag === "Player") {
+                m.gameContinue = false;
+            }
+            this.transformVelocity = -this.transformVelocity;
+        }
+
+        OnTriggerEnter(other) {
+            if (other.tag === "Bullet") {
+                m.DestroyObject(this.id);
+            }
+        }
+    }
+
+    class Bullet extends GameObject {
+        constructor() {
+            super();
+
+            this.tag = "Bullet";
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+            this.vertices = [
+                -0.01, -0.01, 0, 0.9, 0.9, 0.9,
+
+                -0.01, 0.01, 0, 0.9, 0.9, 0.9,
+
+                0.01, 0.01, 0, 0.9, 0.9, 0.9,
+
+                0.01, -0.01, 0, 0.9, 0.9, 0.9,
+            ];
+
+            gl.bufferData(
+                gl.ARRAY_BUFFER,
+                new Float32Array(this.vertices),
+                gl.STATIC_DRAW,
+            );
+            this.primitiveType = gl.TRIANGLE_FAN;
+            this.vertCount = this.vertices.length / 6;
+            this.transformVelocity = 0.01;
+            this.collisionRadius = 0;
+        }
+
+        Update() {
+            this.velocity = [0, 0, 0];
+            this.angVelocity = [0, 0, 0];
+
+            this.transform.doRotations(this.rot);
+            let direction = this.transform.up;
+
+            for (let i = 0; i < 3; i++) {
+                this.velocity[i] = direction[i] * this.transformVelocity;
+            }
+
+            this.Move();
+        }
+
+        OnTriggerEnter(other) {
+            if (other.tag === "Wall") {
+                m.DestroyObject(this.id);
+            }
+        }
+    }
+    </script>
+
+    <script>//@ts-check
+    class Main {
+        constructor(gl) {
+            this.gl = gl;
+            this.Keys = [];
+            this.myWEBGL = new I_WebGL();
+            this.program = this.myWEBGL.program;
+            /** @type {GameObject[]} */
+            this.Visual = [];
+            /** @type {GameObject[]} */
+            this.Solid = [];
+            /** @type {GameObject[]} */
+            this.Trigger = [];
+            this.ObjectCounter = 0;
+            this.score = 0;
+            this.scoreText = document.getElementById("score");
+            this.gameContinue = true;
+
+            this.CreateObject(1, MainCharacter, [0, 0, 0], [0, 0, 0], undefined);
+            this.makeWalls();
+            this.makeCoins();
+            this.makeEnemies();
+        }
+
+        static keyD(event) {
+            m.KeyDown(event);
+        }
+
+        static keyU(event) {
+            m.keyUp(event);
+        }
+
+        static mouseH(event) {
+            m.MouseClick(event);
+        }
+
+        static MainLoop() {
+            m.UpdateAll();
+            m.RenderAll();
+            m.gameContinue ? requestAnimationFrame(Main.MainLoop) : m.gameEnd();
+        }
+
+        makeWalls() {
+            const rot = [0, 0, 0];
+            //Outer Walls
+            this.CreateObject(1, Walls, [0, 1, 0], rot, [10, 0.5, 1]);
+            this.CreateObject(1, Walls, [0, -1, 0], rot, [10, 0.5, 1]);
+            this.CreateObject(1, Walls, [1, 0, 0], rot, [0.5, 10, 1]);
+            this.CreateObject(1, Walls, [-1, 0, 0], rot, [0.5, 10, 1]);
+
+            //Inner Walls
+            //Vert
+            this.CreateObject(1, Walls, [0.7, 0.6, 0], rot, [0.25, 6, 1]);
+            this.CreateObject(1, Walls, [-0.7, 0.5, 0], rot, [0.25, 4.5, 1]);
+            this.CreateObject(1, Walls, [0.425, 0.25, 0], rot, [0.25, 4.5, 1]);
+            this.CreateObject(1, Walls, [-0.425, -0.25, 0], rot, [0.25, 4.5, 1]);
+            this.CreateObject(1, Walls, [-0.7, -0.475, 0], rot, [0.25, 2.5, 1]);
+            this.CreateObject(1, Walls, [0.7, -0.7, 0], rot, [0.25, 2.5, 1]);
+            //Horizontal
+            this.CreateObject(1, Walls, [0, 0.7, 0], rot, [4.5, 0.25, 1]);
+            this.CreateObject(1, Walls, [0, -0.7, 0], rot, [4.5, 0.25, 1]);
+            this.CreateObject(1, Walls, [-0.25, 0.425, 0], rot, [4.5, 0.25, 1]);
+            this.CreateObject(1, Walls, [0.275, -0.425, 0], rot, [4.5, 0.25, 1]);
+            this.CreateObject(1, Walls, [0.7, -0.2, 0], rot, [3, 0.25, 1]);
+            this.CreateObject(1, Walls, [-0.85, -0.5, 0], rot, [1.5, 0.25, 1]);
+        }
+
+        makeCoins() {
+            let rot = [0, 0, 0];
+            this.CreateObject(2, Coin, [0, -0.85, 0], rot, undefined);
+            this.CreateObject(2, Coin, [0, 0.85, 0], rot, undefined);
+            this.CreateObject(2, Coin, [0.845, 0.85, 0], rot, undefined);
+            this.CreateObject(2, Coin, [0.845, -0.85, 0], rot, undefined);
+            this.CreateObject(2, Coin, [-0.845, -0.85, 0], rot, undefined);
+            this.CreateObject(2, Coin, [-0.845, 0.85, 0], rot, undefined);
+        }
+
+        makeEnemies() {
+            let horizontal = [0, 0, Math.PI / 2];
+            let vertical = [0, 0, 0];
+            this.CreateObject(1, Enemy, [0.85, 0.5, 0], vertical, undefined);
+            this.CreateObject(1, Enemy, [-0.57, -0.5, 0], vertical, undefined);
+            this.CreateObject(1, Enemy, [-0.2, 0.55, 0], horizontal, undefined);
+            this.CreateObject(1, Enemy, [0.5, -0.55, 0], horizontal, undefined);
+            this.CreateObject(1, Enemy, [-0.85, 0.5, 0], horizontal, undefined);
+        }
+
+        UpdateAll() {
+            for (let i in this.Visual) {
+                this.Visual[i].Update();
+            }
+            for (let i in this.Solid) {
+                this.Solid[i].Update();
+            }
+            for (let i in this.Trigger) {
+                this.Trigger[i].Update();
+            }
+        }
+
+        RenderAll() {
+            for (let i in this.Visual) {
+                this.Visual[i].Render(this.program);
+            }
+            for (let i in this.Solid) {
+                this.Solid[i].Render(this.program);
+            }
+            for (let i in this.Trigger) {
+                this.Trigger[i].Render(this.program);
+            }
+        }
+
+        updateScore() {
+            this.score++;
+            this.scoreText.innerText = "Score: " + this.score.toString();
+            if (this.score === 6) {
+                this.scoreText.innerText = "YOU WIN";
+            }
+        }
+
+        gameEnd() {
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            this.scoreText.innerText = "GAME OVER";
+        }
+
+        /**
+         * @param {number[]} location
+         * @param {number| number[]} collision_radius
+         * @param {GameObject} obj
+         * @return {boolean}
+         */
+        CheckCollision(location, collision_radius, obj) {
+            if (typeof collision_radius !== "number") {
+                if (typeof obj.collisionRadius === "number") {
+                    // If the radius of the object is a number, use it directly for collision check
+                    const distance = Math.sqrt(
+                        (location[0] - obj.loc[0]) ** 2 +
+                        (location[1] - obj.loc[1]) ** 2 +
+                        (location[2] - obj.loc[2]) ** 2,
+                    );
+                    return distance <= collision_radius[1] + obj.collisionRadius;
+                } else {
+                    const loc = obj.loc;
+                    const scale = obj.scale;
+                    const ref = obj.reference;
+
+                    const x_bounds = [-scale[0] * ref + loc[0], scale[0] * ref + loc[0]];
+                    const y_bounds = [-scale[1] * ref + loc[1], scale[1] * ref + loc[1]];
+
+                    return (
+                        location[0] - collision_radius[0] < x_bounds[1] &&
+                        location[0] + collision_radius[0] > x_bounds[0] &&
+                        location[1] - collision_radius[1] < y_bounds[1] &&
+                        location[1] + collision_radius[1] > y_bounds[0]
+                    );
+                }
+            }
+            if (typeof obj.collisionRadius === "number") {
+                // If the radius of the object is a number, use it directly for collision check
+                const distance = Math.sqrt(
+                    (location[0] - obj.loc[0]) ** 2 +
+                    (location[1] - obj.loc[1]) ** 2 +
+                    (location[2] - obj.loc[2]) ** 2,
+                );
+                return distance <= collision_radius + obj.collisionRadius;
+            } else {
+                const loc = obj.loc;
+                const scale = obj.scale;
+                const ref = obj.reference;
+
+                const x_bounds = [-scale[0] * ref + loc[0], scale[0] * ref + loc[0]];
+                const y_bounds = [-scale[1] * ref + loc[1], scale[1] * ref + loc[1]];
+
+                return (
+                    location[0] - collision_radius < x_bounds[1] &&
+                    location[0] + collision_radius > x_bounds[0] &&
+                    location[1] - collision_radius < y_bounds[1] &&
+                    location[1] + collision_radius > y_bounds[0]
+                );
+            }
+        }
+
+        /**
+         * @param {number} type - 0 => Visual, 1 => Solid, 2 => Trigger
+         * @param {number[]} loc
+         * @param {number[]} rot
+         * @param {GameObject} prefab
+         * @param {number[] | undefined} scale
+         */
+        CreateObject(type, prefab, loc, rot, scale) {
+            //type 0 = visual
+            //type 1 = solid
+            //type 2 = trigger
+            let temp = new prefab();
+            let id = "ID" + this.ObjectCounter;
+            this.ObjectCounter++;
+            temp.id = id;
+            temp.prefab = prefab;
+            for (let i = 0; i < 3; i++) {
+                temp.loc[i] = loc[i];
+                temp.rot[i] = rot[i];
+                if (scale != null) {
+                    temp.scale[i] = scale[i];
+                }
+            }
+
+            switch (type) {
+                case 0:
+                    this.Visual[id] = temp;
+                    break;
+                case 1:
+                    this.Solid[id] = temp;
+                    break;
+                case 2:
+                    temp.isTrigger = true;
+                    this.Trigger[id] = temp;
+                    break;
+                default:
+                    break;
+            }
+
+            return temp;
+        }
+
+        /**
+         * @param {string} id
+         */
+        DestroyObject(id) {
+            if (id in this.Visual) delete this.Visual[id];
+            if (id in this.Solid) delete this.Solid[id];
+            if (id in this.Trigger) delete this.Trigger[id];
+        }
+
+        KeyDown(event) {
+            this.Keys[String.fromCharCode(event.keyCode)] = true;
+        }
+
+        keyUp(event) {
+            this.Keys[String.fromCharCode(event.keyCode)] = false;
+        }
+
+        TestKey(test) {
+            if (test in this.Keys) {
+                return this.Keys[test];
+            }
+            return false;
+        }
+
+        MouseClick(event) {
+            var rect = canvas.getBoundingClientRect();
+            var realX = event.clientX - rect.left;
+            var realY = event.clientY - rect.top;
+            console.log(realX + "," + realY);
+            var x = -1 + (2 * realX) / canvas.width;
+            var y = -1 + (2 * (canvas.height - realY)) / canvas.height;
+            console.log("The click occurred on " + x + "," + y);
+        }
+    }
+    </script>
+</head>
+<body style="padding: 15px; display: flex; justify-content: center; flex-direction: column">
+<header></header>
+
+<canvas
+        height="1280"
+        id="myCanvas"
+        style="border: 1px solid #000"
+        width="1280"
+>
+    Your browser does not support canvas.
+</canvas>
+<div>
+    <p id="score" style="font-size: 40px; text-align: center">Score: 0</p>
+</div>
+
+
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const gl = canvas.getContext("webgl");
+    const m = new Main(gl);
+    window.onkeydown = Main.keyD;
+    window.onkeyup = Main.keyU;
+    canvas.addEventListener("click", Main.mouseH);
+    requestAnimationFrame(Main.MainLoop);
+</script>
+
+<footer></footer>
+</body>
+</html>

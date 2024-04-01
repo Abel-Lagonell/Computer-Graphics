@@ -203,6 +203,7 @@ class MainCharacter extends GameObject {
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
+    this.collisionRadius = 0.05;
     this.loc = [0.0, 0.0, 0.0];
     this.rot = [0.0, 0.0, 0.0];
     this.scale = [0.1, 0.1, 0.1];

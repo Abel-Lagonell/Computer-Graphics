@@ -22,6 +22,24 @@ class Main {
     this.makeEnemies();
   }
 
+  static keyD(event) {
+    m.KeyDown(event);
+  }
+
+  static keyU(event) {
+    m.keyUp(event);
+  }
+
+  static mouseH(event) {
+    m.MouseClick(event);
+  }
+
+  static MainLoop() {
+    m.UpdateAll();
+    m.RenderAll();
+    m.gameContinue ? requestAnimationFrame(Main.MainLoop) : m.gameEnd();
+  }
+
   makeWalls() {
     const rot = [0, 0, 0];
     //Outer Walls
@@ -61,28 +79,10 @@ class Main {
     let horizontal = [0, 0, Math.PI / 2];
     let vertical = [0, 0, 0];
     this.CreateObject(1, Enemy, [0.85, 0.5, 0], vertical, undefined);
-    this.CreateObject(1, Enemy, [-0.57, -0.5, 0], vertical, undefined);
-    this.CreateObject(1, Enemy, [-0.2, 0.55, 0], horizontal, undefined);
-    this.CreateObject(1, Enemy, [0.5, -0.55, 0], horizontal, undefined);
-    this.CreateObject(1, Enemy, [-0.85, 0.5, 0], horizontal, undefined);
-  }
-
-  static keyD(event) {
-    m.KeyDown(event);
-  }
-
-  static keyU(event) {
-    m.keyUp(event);
-  }
-
-  static mouseH(event) {
-    m.MouseClick(event);
-  }
-
-  static MainLoop() {
-    m.UpdateAll();
-    m.RenderAll();
-    m.gameContinue ? requestAnimationFrame(Main.MainLoop) : m.gameEnd();
+    //this.CreateObject(1, Enemy, [-0.57, -0.5, 0], vertical, undefined);
+    //this.CreateObject(1, Enemy, [-0.2, 0.55, 0], horizontal, undefined);
+    //this.CreateObject(1, Enemy, [0.5, -0.55, 0], horizontal, undefined);
+    //this.CreateObject(1, Enemy, [-0.85, 0.5, 0], horizontal, undefined);
   }
 
   UpdateAll() {
@@ -124,11 +124,36 @@ class Main {
 
   /**
    * @param {number[]} location
-   * @param {number} collision_radius
+   * @param {number| number[]} collision_radius
    * @param {GameObject} obj
    * @return {boolean}
    */
   CheckCollision(location, collision_radius, obj) {
+    if (typeof collision_radius !== "number") {
+      if (typeof obj.collisionRadius === "number") {
+        // If the radius of the object is a number, use it directly for collision check
+        const distance = Math.sqrt(
+          (location[0] - obj.loc[0]) ** 2 +
+            (location[1] - obj.loc[1]) ** 2 +
+            (location[2] - obj.loc[2]) ** 2,
+        );
+        return distance <= collision_radius[1] + obj.collisionRadius;
+      } else {
+        const loc = obj.loc;
+        const scale = obj.scale;
+        const ref = obj.reference;
+
+        const x_bounds = [-scale[0] * ref + loc[0], scale[0] * ref + loc[0]];
+        const y_bounds = [-scale[1] * ref + loc[1], scale[1] * ref + loc[1]];
+
+        return (
+          location[0] - collision_radius[0] < x_bounds[1] &&
+          location[0] + collision_radius[0] > x_bounds[0] &&
+          location[1] - collision_radius[1] < y_bounds[1] &&
+          location[1] + collision_radius[1] > y_bounds[0]
+        );
+      }
+    }
     if (typeof obj.collisionRadius === "number") {
       // If the radius of the object is a number, use it directly for collision check
       const distance = Math.sqrt(
@@ -146,10 +171,10 @@ class Main {
       const y_bounds = [-scale[1] * ref + loc[1], scale[1] * ref + loc[1]];
 
       return (
-        location[0] - collision_radius / 2 < x_bounds[1] &&
-        location[0] + collision_radius / 2 > x_bounds[0] &&
-        location[1] - collision_radius / 2 < y_bounds[1] &&
-        location[1] + collision_radius / 2 > y_bounds[0]
+        location[0] - collision_radius < x_bounds[1] &&
+        location[0] + collision_radius > x_bounds[0] &&
+        location[1] - collision_radius < y_bounds[1] &&
+        location[1] + collision_radius > y_bounds[0]
       );
     }
   }
@@ -212,6 +237,7 @@ class Main {
   keyUp(event) {
     this.Keys[String.fromCharCode(event.keyCode)] = false;
   }
+
   TestKey(test) {
     if (test in this.Keys) {
       return this.Keys[test];
