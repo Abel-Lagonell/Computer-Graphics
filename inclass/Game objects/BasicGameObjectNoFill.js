@@ -241,3 +241,22 @@ class DemoCharacter extends GameObject {
   }
 }
 
+class Camera extends GameObject {
+  constructor() {
+    super();
+  }
+
+  Update() {
+    this.angVelocity = [0, 0, 0];
+    if (main.TestKey("A")) {
+      this.angVelocity[1] -= 0.1;
+    }
+  }
+
+  Render() {
+    var camLoc = gl.getUniformLocation(program, "cameraLoc");
+    var worldLoc = gl.getUniformLocation(program, "cameraRotation");
+    gl.uniform3fv(camLoc, new Float32Array(this.loc));
+    gl.uniform3fv(worldLoc, new Float32Array(this.rot));
+  }
+}

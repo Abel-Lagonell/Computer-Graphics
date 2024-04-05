@@ -1,7 +1,6 @@
 //@ts-check
 class Main {
-  constructor(gl) {
-    this.gl = gl;
+  constructor() {
     this.Keys = [];
     this.myWEBGL = new I_WebGL();
     this.program = this.myWEBGL.program;
