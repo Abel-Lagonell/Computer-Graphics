@@ -75,7 +75,6 @@ class GameObject {
     this.gl = gl;
     this.isTrigger = false;
     this.id = 0;
-    this.health = 0;
 
     this.loc = [0, 0, 0];
     this.rot = [0, 0, 0];
@@ -210,45 +209,38 @@ class Camera extends GameObject {
     this.collisionType = collision.Sphere;
     this.circleCollider = 0.1;
     this.tag = "Player";
-
-    this.shooting = false;
   }
 
   update() {
-    if (_main.checkKey("A") || _main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
-    if (_main.checkKey("D") || _main.checkKey("ARROWRIGHT"))
-      this.rot[1] += 0.01;
-    if (_main.checkKey("Z") || _main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
-    if (_main.checkKey("X") || _main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
+    if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
+    if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
+    if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
+    if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
 
     this.velocity = [0, 0, 0];
     if (_main.checkKey("W")) {
       this.transform.doRotations(this.rot);
-      for (let i = 0; i < 3; i++) {
-        this.velocity[i] = this.transform.forward[i] * 0.01;
+      for (let i = 0; i < 3; i += 2) {
+        this.velocity[i] += this.transform.forward[i] * 0.01;
       }
     }
     if (_main.checkKey("S")) {
       this.transform.doRotations(this.rot);
-      for (let i = 0; i < 3; i++) {
-        this.velocity[i] = this.transform.forward[i] * -0.01;
+      for (let i = 0; i < 3; i += 2) {
+        this.velocity[i] += this.transform.forward[i] * -0.01;
       }
     }
-
-    // Check if space bar is pressed and 30 frames have passed
-    if (_main.checkKey(" ") && !this.shooting) {
-      this.shooting = true;
+    if (_main.checkKey("A")) {
       this.transform.doRotations(this.rot);
-      let lil_infront = this.loc.map(
-        (value, index) => value + this.transform.forward[index] / 5,
-      );
-      lil_infront[1] -= 0.1;
-
-      _main.createObject(2, Bullet, lil_infront, this.rot, [0.01, 0.01, 0.01]);
+      for (let i = 0; i < 3; i++) {
+        this.velocity[i] += this.transform.right[i] * -0.01;
+      }
     }
-
-    if (!_main.checkKey(" ")) {
-      this.shooting = false;
+    if (_main.checkKey("D")) {
+      this.transform.doRotations(this.rot);
+      for (let i = 0; i < 3; i++) {
+        this.velocity[i] += this.transform.right[i] * 0.01;
+      }
     }
 
     this.Move();
@@ -262,132 +254,166 @@ class Camera extends GameObject {
   }
 }
 
-class Asteroid extends GameObject {
+class Floor extends GameObject {
   constructor() {
     super();
-    this.collisionType = collision.Sphere;
-    this.circleCollider = 1.1;
-    this.tag = "Asteroid";
-    this.health = 3;
+    this.tag = "Floor";
 
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     const A = [1, 0, 0]; //red
-    const B = [0, 1, 0]; //red+green
+    const B = [0, 0, 1]; //red+green
     const C = [-1, 0, 0]; //green
-    const D = [0, -1, 0]; //green+blue
-    const E = [0, 0, 1]; // blue
-    const F = [0, 0, -1]; // blue+ red
-    const gray = [0.3, 0.3, 0.3];
-    const black = [0, 0, 0];
+    const D = [0, 0, -1]; //green+blue
+    const green = [80 / 255, 122 / 255, 50 / 255];
 
     this.vertices = [
-      ...E,
-      ...black,
-      ...C,
-      ...gray,
-      ...B,
-      ...gray,
-      ...F,
-      ...black,
       ...A,
-      ...gray,
-      ...D,
-      ...gray,
-      ...F,
-      ...black,
-      ...C,
-      ...gray,
-      ...D,
-      ...gray,
-      ...E,
-      ...black,
-      ...A,
-      ...gray,
+      ...green,
       ...B,
-      ...gray,
+      ...green,
+      ...C,
+      ...green,
+      ...D,
+      ...green,
     ];
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
-    this.scale = [1, 1, 1];
 
     this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLE_STRIP;
-    this.angVelocity[0] = Math.floor(Math.random() * 500) / 1000;
-    this.angVelocity[1] = Math.floor(Math.random() * 500) / 1000;
-    this.angVelocity[2] = Math.floor(Math.random() * 500) / 1000;
+    this.primitiveType = gl.TRIANGLE_FAN;
   }
 
-  update() {
-    this.checkHealth();
-    this.Move();
-  }
+  update() {}
+}
 
-  checkHealth() {
-    if (this.health <= 0) _main.destroyObject(this.id);
-  }
-
-  hit() {
-    this.health--;
+class Rock extends GameObject {
+  constructor() {
+    super();
   }
 }
 
-class Bullet extends GameObject {
+class TreeTrunk extends GameObject {
   constructor() {
     super();
-    this.collisionType = collision.Sphere;
-    this.circleCollider = 0.0;
-    this.tag = "Bullet";
+  }
+}
 
+class TreeLeaves extends GameObject {
+  constructor() {
+    super();
+
+    this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    this.vertices = [
-      -1, 0, 0, 1, 0.1, 0.1,
+    this.collisionType = "none";
 
-      0, 0, 1, 1, 0.1, 0.1,
+    /** @type number[][]*/
+    const vertArray = createIcosahedronVertices();
+    const green = [60 / 255, 78 / 255, 15 / 255];
+    const lgreen = [80 / 255, 104 / 255, 20 / 255];
+    const elgreen = [100 / 255, 130 / 255, 25 / 255];
+    let verts = vertArray.map((value, index) => {
+      switch (Math.floor(Math.random() * 10) % 3) {
+        case 0:
+          return [...value, ...green];
+        case 1:
+          return [...value, ...lgreen];
+        case 2:
+          return [...value, ...elgreen];
+      }
+    });
+    this.vertices = [];
+    verts.map((value) => value.map((value) => this.vertices.push(value)));
+    console.log(verts);
 
-      0, 0, -1, 1, 0.1, 0.1,
-
-      -1, 0, 0, 1, 0.1, 0.1,
-
-      0, -1, 0, 1, 0.1, 0.1,
-
-      0, 1, 0, 1, 0.1, 0.1,
-    ];
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
 
-    this.primitiveType = gl.TRIANGLE_FAN;
+    this.angVelocity = [0.0, 0.001, 0.001];
+
     this.vertCount = this.vertices.length / 6;
-    this.angVelocity = [0, 0, 0];
+    this.primitiveType = gl.TRIANGLE_STRIP;
   }
 
-  update() {
-    if (
-      Math.abs(this.loc[0]) > 50 ||
-      Math.abs(this.loc[1]) > 50 ||
-      Math.abs(this.loc[2]) > 50
-    ) {
-      _main.destroyObject(this.id);
-    }
+  update() {}
+}
 
-    this.transform.doRotations(this.rot);
-    for (let i = 0; i < 3; i++) {
-      this.velocity[i] = this.transform.forward[i] * 0.02;
-    }
-    this.Move();
+function createIcosahedronVertices() {
+  const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
+
+  // Define the vertices of a regular icosahedron
+  let B = [0, 1, phi]; // A -> B FIXED
+  let C = [0, -1, phi]; // C CORRECT
+
+  let I = [0, -1, -phi]; //? D -> I
+
+  let H = [0, 1, -phi]; //? B -> H
+  let F = [1, phi, 0]; // E -> F
+  let E = [phi, 0, -1]; // I -> E
+
+  let D = [1, -phi, 0]; // F -> D FIXED
+  let G = [-1, phi, 0]; //? G CORRECT
+  let J = [-1, -phi, 0]; //? H -> J
+  let A = [phi, 0, 1]; //* J -> A FIXED
+  let K = [-phi, 0, 1]; //? K CORRECT
+  let M = [-phi, 0, -1]; //*M CORRECT
+
+  let vertices = [
+    M,
+    K,
+    G,
+    B,
+    K,
+    C,
+    B,
+    A,
+    C,
+    D,
+    J,
+    C,
+    K,
+    J,
+    M,
+    I,
+    J,
+    D,
+    I,
+    E,
+    D,
+    A,
+    E,
+    F,
+    H,
+    E,
+    I,
+    H,
+    M,
+    G,
+    H,
+    G,
+    G,
+    B,
+    F,
+    A,
+    F,
+    G,
+    H,
+  ];
+  // Normalize the vertices to the given radius */
+  for (let i = 0; i < vertices.length; i++) {
+    const length = Math.sqrt(
+      vertices[i][0] ** 2 + vertices[i][1] ** 2 + vertices[i][2] ** 2,
+    );
+    vertices[i][0] = vertices[i][0] / length;
+    vertices[i][1] = vertices[i][1] / length;
+    vertices[i][2] = vertices[i][2] / length;
   }
 
-  OnCollisionEnter(other) {
-    if (other.tag === "Asteroid") {
-      other.hit();
-      console.log(other.health);
-      _main.destroyObject(this.id);
-    }
-  }
+  return vertices;
 }
