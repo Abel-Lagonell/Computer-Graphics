@@ -217,6 +217,9 @@ class Camera extends GameObject {
     if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
     if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
 
+    if (this.rot[0] <= -1) this.rot[0] = -1;
+    if (this.rot[0] >= 1) this.rot[0] = 1;
+
     this.velocity = [0, 0, 0];
     if (_main.checkKey("W")) {
       this.transform.doRotations(this.rot);
@@ -293,41 +296,241 @@ class Floor extends GameObject {
 class Rock extends GameObject {
   constructor() {
     super();
+    this.collisionType = collision.Box;
+    this.boxCollider = [0.75, 1, 0.75];
+
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    let c = randNum([0.6, 1], 1, 1)[0];
+    let p = randNum([0, c - 0.1], 2, 2);
+    let q = randNum([-c + 0.1, 0], 2, 2);
+    let w = randNum([0.5, 0.8], 2, 2);
+
+    const B = [q[0], w[0], q[1]]; // TOP
+    const E = [p[0], w[1], p[1]]; // TOP
+    const A = [c, 0, 0];
+    const C = [-c, 0, 0];
+    const D = [0, 0, c];
+    const F = [0, 0, -c];
+    let vertSequence = [E, C, B, F, A, D, F, C, D, E, A, B];
+    let colorVerts = vertSequence.map((value) => {
+      let graycolor = randNum([0.3, 0.6], 3, 1)[0];
+      return [...value, graycolor, graycolor, graycolor];
+    });
+
+    this.vertices = [];
+    colorVerts.map((value) => value.map((value) => this.vertices.push(value)));
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLE_STRIP;
   }
+  update() {}
 }
 
 class TreeTrunk extends GameObject {
   constructor() {
     super();
-  }
-}
-
-class TreeLeaves extends GameObject {
-  constructor() {
-    super();
+    this.collisionType = collision.Box;
+    this.boxCollider = [0.6, 1, 0.6];
 
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    this.collisionType = "none";
+    let brown = [0.44, 0.27, 0.0];
+    let dbrown = [0.2, 0.13, 0.0];
 
+    this.vertices = hexPrism([brown, dbrown]);
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLE_STRIP;
+  }
+  update() {}
+}
+class CandleBase extends GameObject {
+  constructor() {
+    super();
+    this.collisionType = collision.Box;
+    this.boxCollider = [0.6, 1, 0.6];
+
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    let brown = [240 / 250, 235 / 250, 210 / 250];
+    let dbrown = brown.map((value) => {
+      return value / 2;
+    });
+
+    this.vertices = hexPrism([brown, dbrown]);
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLE_STRIP;
+  }
+  update() {}
+}
+class CandleTop extends GameObject {
+  constructor() {
+    super();
+    this.collisionType = collision.Box;
+    this.boxCollider = [0.6, 1, 0.6];
+
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    let brown = [240 / 250, 235 / 250, 210 / 250];
+    let lbrown = brown.map((value) => value / 0.8);
+
+    this.vertices = [
+      -0.5,
+      -0.5,
+      -0.25,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      -0.25,
+      -0.5,
+      -0.5,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      0.25,
+      -0.5,
+      -0.5,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      0.5,
+      -0.5,
+      -0.25,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      0.5,
+      -0.5,
+      0.25,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      0.25,
+      -0.5,
+      0.5,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      -0.25,
+      -0.5,
+      0.5,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      -0.5,
+      -0.5,
+      0.25,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+
+      -0.5,
+      -0.5,
+      -0.25,
+      ...brown,
+
+      0,
+      0.5,
+      0,
+      ...lbrown,
+    ];
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLE_STRIP;
+  }
+  update() {}
+}
+
+class Icosohedron extends GameObject {
+  constructor() {
+    super();
+
+    this.collisionType = collision.Sphere;
+    this.circleCollider = 1;
+    this.primary = [0, 0, 0];
+    this.secondary = [0, 0, 0];
+    this.tertiary = [0, 0, 0];
+
+    this.angVelocity = [0.0, 0.001, 0.001];
+  }
+
+  makeVerts() {
     /** @type number[][]*/
     const vertArray = createIcosahedronVertices();
-    const green = [60 / 255, 78 / 255, 15 / 255];
-    const lgreen = [80 / 255, 104 / 255, 20 / 255];
-    const elgreen = [100 / 255, 130 / 255, 25 / 255];
     let verts = vertArray.map((value, index) => {
       switch (Math.floor(Math.random() * 10) % 3) {
         case 0:
-          return [...value, ...green];
+          return [...value, ...this.primary];
         case 1:
-          return [...value, ...lgreen];
+          return [...value, ...this.secondary];
         case 2:
-          return [...value, ...elgreen];
+          return [...value, ...this.tertiary];
       }
     });
-    this.vertices = [];
-    verts.map((value) => value.map((value) => this.vertices.push(value)));
-    console.log(verts);
+    let vert = [];
+    verts.map((value) => value.map((value) => vert.push(value)));
+    return vert;
+  }
+
+  initalize() {
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    this.vertices = this.makeVerts();
 
     gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -335,13 +538,82 @@ class TreeLeaves extends GameObject {
       gl.STATIC_DRAW,
     );
 
-    this.angVelocity = [0.0, 0.001, 0.001];
-
     this.vertCount = this.vertices.length / 6;
     this.primitiveType = gl.TRIANGLE_STRIP;
   }
+}
+class TreeLeaves extends Icosohedron {
+  constructor() {
+    super();
+    this.primary = [60 / 255, 78 / 255, 15 / 255];
+    this.secondary = [80 / 255, 104 / 255, 20 / 255];
+    this.tertiary = [100 / 255, 130 / 255, 25 / 255];
+    this.initalize();
+  }
 
   update() {}
+}
+class Moon extends Icosohedron {
+  constructor() {
+    super();
+    this.primary = [0.6, 0.6, 0.6];
+    this.secondary = [0.8, 0.8, 0.8];
+    this.tertiary = [0.7, 0.7, 0.7];
+
+    this.initalize();
+  }
+
+  update() {
+    this.Move();
+  }
+}
+class Fire extends Icosohedron {
+  constructor() {
+    super();
+
+    this.primary = [1, 0, 0];
+    this.secondary = [1, 1, 0];
+    this.tertiary = [1, 0.5, 0];
+    this.initalize();
+  }
+
+  update() {
+    this.Move();
+  }
+}
+
+class UFOBase extends Icosohedron {
+  constructor() {
+    super();
+    this.scale = [1, 0.2, 1];
+    this.primary = [0.1, 0.1, 0.1];
+    this.secondary = [0.3, 0.3, 0.3];
+    this.tertiary = [0.5, 0.5, 0.5];
+    this.initalize();
+
+    this.angVelocity = [0, 0.001, 0];
+  }
+
+  update() {
+    this.Move();
+  }
+}
+
+class UFOTop extends Icosohedron {
+  constructor() {
+    super();
+    this.primary = [0.1, 0.1, 0.5];
+    this.secondary = [0.3, 0.3, 0.7];
+    this.tertiary = [0.5, 0.5, 1];
+    this.scale = [0.3, 0.3, 0.3];
+    this.initalize();
+
+    this.angVelocity = [0, 0.001, 0];
+  }
+
+  update() {
+    this.Move();
+  }
 }
 
 function createIcosahedronVertices() {
@@ -350,17 +622,14 @@ function createIcosahedronVertices() {
   // Define the vertices of a regular icosahedron
   let B = [0, 1, phi]; // A -> B FIXED
   let C = [0, -1, phi]; // C CORRECT
-
   let I = [0, -1, -phi]; //? D -> I
-
   let H = [0, 1, -phi]; //? B -> H
   let F = [1, phi, 0]; // E -> F
-  let E = [phi, 0, -1]; // I -> E
-
   let D = [1, -phi, 0]; // F -> D FIXED
   let G = [-1, phi, 0]; //? G CORRECT
   let J = [-1, -phi, 0]; //? H -> J
   let A = [phi, 0, 1]; //* J -> A FIXED
+  let E = [phi, 0, -1]; // I -> E
   let K = [-phi, 0, 1]; //? K CORRECT
   let M = [-phi, 0, -1]; //*M CORRECT
 
@@ -416,4 +685,104 @@ function createIcosahedronVertices() {
   }
 
   return vertices;
+}
+
+/**
+ * @param {number[][]} colors
+ */
+function hexPrism(colors) {
+  let brown = colors[0];
+  let dbrown = colors[1];
+
+  return [
+    -0.5,
+    -0.5,
+    -0.25,
+    ...dbrown,
+
+    -0.5,
+    0.5,
+    -0.25,
+    ...brown,
+
+    -0.25,
+    -0.5,
+    -0.5,
+    ...dbrown,
+
+    -0.25,
+    0.5,
+    -0.5,
+    ...brown,
+
+    0.25,
+    -0.5,
+    -0.5,
+    ...dbrown,
+
+    0.25,
+    0.5,
+    -0.5,
+    ...brown,
+
+    0.5,
+    -0.5,
+    -0.25,
+    ...dbrown,
+
+    0.5,
+    0.5,
+    -0.25,
+    ...brown,
+
+    0.5,
+    -0.5,
+    0.25,
+    ...dbrown,
+
+    0.5,
+    0.5,
+    0.25,
+    ...brown,
+
+    0.25,
+    -0.5,
+    0.5,
+    ...dbrown,
+
+    0.25,
+    0.5,
+    0.5,
+    ...brown,
+
+    -0.25,
+    -0.5,
+    0.5,
+    ...dbrown,
+
+    -0.25,
+    0.5,
+    0.5,
+    ...brown,
+
+    -0.5,
+    -0.5,
+    0.25,
+    ...dbrown,
+
+    -0.5,
+    0.5,
+    0.25,
+    ...brown,
+
+    -0.5,
+    -0.5,
+    -0.25,
+    ...dbrown,
+
+    -0.5,
+    0.5,
+    -0.25,
+    ...brown,
+  ];
 }

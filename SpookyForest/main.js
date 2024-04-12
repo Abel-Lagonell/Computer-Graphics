@@ -27,8 +27,10 @@ class Main {
     gl.uniform1f(tempLoc, 0.1);
 
     this.createObject(1, Camera);
-    //this.createObject(0, Floor, [0, -0.1, 0], [0, 0, 0], [10, 10, 10]);
-    this.createObject(0, TreeLeaves, [0, 0, 2], [0, 0, 0], [0.5, 0.5, 0.5]);
+    this.createObject(0, Floor, [0, -0.3, 0], [0, 0, 0], [20]);
+    this.createObject(0, UFOBase, [0, 5, 2]);
+    this.createObject(0, UFOTop, [0, 0.2 + 5, 2]);
+    this.createObjects();
   }
 
   /** @param {KeyboardEvent} event */
@@ -45,6 +47,96 @@ class Main {
     _main.updateAll();
     _main.renderAll();
     requestAnimationFrame(Main.mainLoop);
+  }
+  createObjects() {
+    this.createObject(0, Moon, [-59.42, 161.7, 101.6], [0, 0, 0], [2]);
+    for (let i = 0; i < 100; i++) {
+      if ((randNum([0, 1], 1, 1)[0] * 10) % 3) {
+        this.createTree(randNum([-10, 10], 2, 2, [-0.25, 0.25]));
+      } else {
+        let coords = randNum([-10, 10], 2, 2, [-0.25, 0.25]);
+        this.createObject(
+          1,
+          Rock,
+          [coords[0], -0.5, coords[1]],
+          [0, randNum([0, 1], 1, 1)[0], 0],
+          [0.5, 1.5, 0.5],
+        );
+      }
+    }
+    this.createCandle([0.5, 0.4], 0.08);
+    this.createCandle([0, 0.4], 0.08);
+    this.createCandle([0 - 0.5, 0.4], 0.08);
+    this.createCandle([1, 0.4], 0.08);
+  }
+
+  /**
+   *
+   * @param {number[]} loc
+   * @param {number} scale
+   */
+  createCandle(loc, scale) {
+    const scalingFactor = 0.9;
+    this.createObject(
+      0,
+      CandleBase,
+      [loc[0], -0.26, loc[1]],
+      [0, 0, 0],
+      [scale],
+    );
+    this.createObject(
+      0,
+      CandleTop,
+      [loc[0], ((1 / 2) * scalingFactor - 1) * scale - scale * 2, loc[1]],
+      [0, 0, 0],
+      [scale, scale / 2.5, scale],
+    );
+    scale /= 3;
+    for (let i = 0; i < 7; i++) {
+      let height = ((i / 2) * scalingFactor - 1) * scale - scale * 6;
+      this.createObject(
+        0,
+        Fire,
+        [
+          randNum([-0.1 * scale, 0.1 * scale], 2, 1)[0] + loc[0],
+          height,
+          randNum([-0.1 * scale, 0.1 * scale], 2, 1)[0] + loc[1],
+        ],
+        randNum([0, 1], 1, 3),
+        [scalingFactor ** (3 * i) * scale],
+      );
+    }
+  }
+
+  /**
+   * @param {number[]} loc
+   */
+  createTree(loc = [0, 0]) {
+    let x = loc[0];
+    let z = loc[1];
+    this.createObject(
+      1,
+      TreeLeaves,
+      [0.15 + x, 0.7, 0.05 + z],
+      randNum([0, 1], 2, 3),
+      [0.5],
+    );
+    this.createObject(
+      1,
+      TreeLeaves,
+      [-0.15 + x, 0.7, 0.2 + z],
+      randNum([0, 1], 2, 3),
+      [0.5],
+    );
+    this.createObject(
+      1,
+      TreeLeaves,
+      [x, 0.7, -0.05 + z],
+      randNum([0, 1], 2, 3),
+      [0.5],
+    );
+    this.createObject(1, TreeLeaves, [x, 0.8, z], randNum([0, 1], 2, 3), [0.6]);
+    this.createObject(1, TreeTrunk, [x, 0, z], [0, 0, 0], [0.5, 1, 0.5]);
   }
 
   updateAll() {
@@ -221,13 +313,7 @@ class Main {
    * @param {number[]} rot
    * @param {number[]} scale
    */
-  createObject(
-    type,
-    prefab,
-    loc = [0, 0, 0],
-    rot = [0, 0, 0],
-    scale = [1, 1, 1],
-  ) {
+  createObject(type, prefab, loc = [0, 0, 0], rot = [0, 0, 0], scale = [1]) {
     let temp = new prefab(); //Yes this dark sorcery will work.
     const id = "ID" + this.objectCount;
     this.objectCount++;
@@ -236,14 +322,20 @@ class Main {
     for (let i = 0; i < 3; i++) {
       temp.loc[i] = loc[i];
       temp.rot[i] = rot[i];
-      temp.scale[i] *= scale[i];
+      if (scale.length === 1) {
+        temp.scale[i] *= scale[0];
+      } else {
+        temp.scale[i] *= scale[i];
+      }
     }
-    if (scale[0] === scale[1] && scale[1] === scale[2]) {
-      temp.circleCollider *= scale[0];
-    } else {
-      temp.boxCollider[0] *= scale[0];
-      temp.boxCollider[1] *= scale[1];
-      temp.boxCollider[2] *= scale[2];
+    if (temp.circleCollider || temp.boxCollider) {
+      if (scale.length === 1) {
+        temp.circleCollider *= scale[0];
+      } else {
+        temp.boxCollider[0] *= scale[0];
+        temp.boxCollider[1] *= scale[1];
+        temp.boxCollider[2] *= scale[2];
+      }
     }
     switch (type) {
       case 0:
@@ -283,4 +375,47 @@ class Main {
   checkKey(key) {
     return !!(key in this.keys && this.keys[key]);
   }
+}
+
+/**
+ * Generate an array of random numbers within a specified range and precision, avoiding an exclusion range.
+ * @param {number[]} range - An array [min, max] specifying the inclusive range of random numbers.
+ * @param {number} precision - Number of decimal places to round each random number to.
+ * @param {number} num - Number of random numbers to generate.
+ * @param {number[]} exclusionRange - An array [excludeMin, excludeMax] specifying a range to avoid.
+ * @returns {number[]} An array of random numbers.
+ */
+function randNum(range, precision, num, exclusionRange = []) {
+  // Calculate the minimum and maximum values based on the range
+  const min = range[0];
+  const max = range[1];
+
+  // Array to store the random numbers
+  const randomNumbers = [];
+
+  // Function to check if a number is within the exclusion range
+  const isInExclusionRange = (number) => {
+    if (exclusionRange.length === 2) {
+      const excludeMin = exclusionRange[0];
+      const excludeMax = exclusionRange[1];
+      return number >= excludeMin && number <= excludeMax;
+    }
+    return false;
+  };
+
+  // Generate the specified number of random numbers
+  while (randomNumbers.length < num) {
+    // Generate a random number within the specified range
+    const randomNumber = Math.random() * (max - min) + min;
+
+    // Round the random number to the specified precision
+    const roundedNumber = +randomNumber.toFixed(precision);
+
+    // Check if the rounded number is not in the exclusion range
+    if (!isInExclusionRange(roundedNumber)) {
+      randomNumbers.push(roundedNumber);
+    }
+  }
+
+  return randomNumbers;
 }
