@@ -6,8 +6,11 @@ class Main {
 
     //Added these for Game Engine
     this.objectCount = 0;
+    // @type {GameObject[]}
     this.visual = [];
+    // @type {GameObject[]}
     this.solid = [];
+    // @type {GameObject[]}
     this.trigger = [];
     this.keys = [];
 
@@ -27,7 +30,7 @@ class Main {
     gl.uniform1f(tempLoc, 0.1);
 
     let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
-    gl.uniform3fv(moonLoc, new Float32Array([-59.42, 161.7, 101.6]));
+    gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
 
     this.createObject(1, Camera);
     this.createObject(0, Floor, [0, -0.3, 0]);
@@ -71,10 +74,22 @@ class Main {
     this.createCandle([0, 0.4], 0.08);
     this.createCandle([0 - 0.5, 0.4], 0.08);
     this.createCandle([1, 0.4], 0.08);
+    this.createCandle([0, -0.4], 0.08);
+    this.createCandle([0 - 0.5, -0.4], 0.08);
+    this.createCandle([1, -0.4], 0.08);
+
+    //! Need to fix this
+    /** @type {number[][]} */
+    let locations = [];
+    this.visual.forEach((value, index, array) => {
+      if (value.tag === "WaxyTop")
+        locations.push(value.loc[0], value.loc[1] + 0.05, value.loc[2]);
+    });
+    const spotLoc = gl.getUniformLocation(this.program, "spotLoc");
+    gl.uniform3fv(spotLoc, new Float32Array(locations.map((value) => value)));
   }
 
   /**
-   *
    * @param {number[]} loc
    * @param {number} scale
    */

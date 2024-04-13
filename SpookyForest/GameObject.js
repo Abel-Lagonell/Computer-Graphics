@@ -299,6 +299,8 @@ class Rock extends GameObject {
     this.collisionType = collision.Box;
     this.boxCollider = [0.75, 1, 0.75];
 
+    this.tag = "ROCK";
+
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
@@ -339,6 +341,8 @@ class TreeTrunk extends GameObject {
     this.collisionType = collision.Box;
     this.boxCollider = [0.6, 1, 0.6];
 
+    this.tag = "Trunk";
+
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     let brown = [0.44, 0.27, 0.0];
@@ -361,6 +365,8 @@ class CandleBase extends GameObject {
     super();
     this.collisionType = collision.Box;
     this.boxCollider = [0.6, 1, 0.6];
+
+    this.tag = "Wax";
 
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
@@ -386,6 +392,7 @@ class CandleTop extends GameObject {
     super();
     this.collisionType = collision.Box;
     this.boxCollider = [0.6, 1, 0.6];
+    this.tag = "WaxTop";
 
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
@@ -403,71 +410,13 @@ class CandleTop extends GameObject {
     this.primitiveType = gl.TRIANGLE_STRIP;
   }
   update() {}
-
-  render(program) {
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
-
-    //First we bind the buffer for triangle 1
-    let positionAttributeLocation = this.gl.getAttribLocation(
-      program,
-      "a_position",
-    );
-    let size = 3; // 2 components per iteration
-    let type = this.gl.FLOAT; // the data is 32bit floats
-    let normalize = false; // don't normalize the data
-    let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
-    let offset = 0; // start at the beginning of the buffer
-    this.gl.enableVertexAttribArray(positionAttributeLocation);
-    this.gl.vertexAttribPointer(
-      positionAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset,
-    );
-
-    //Now we have to do this for color
-    const colorAttributeLocation = this.gl.getAttribLocation(
-      program,
-      "vert_color",
-    );
-    //We don't have to bind because we already have the correct buffer bound.
-    size = 3;
-    type = this.gl.FLOAT;
-    normalize = false;
-    stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
-    offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
-    this.gl.enableVertexAttribArray(colorAttributeLocation);
-    this.gl.vertexAttribPointer(
-      colorAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset,
-    );
-
-    const tranLoc = this.gl.getUniformLocation(program, "u_transform");
-    const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
-    const scaleLoc = this.gl.getUniformLocation(program, "u_scale");
-    const spotLoc = gl.getUniformLocation(program, "spotLoc");
-    this.gl.uniform3fv(
-      spotLoc,
-      new Float32Array([this.loc[0], this.loc[1] + 0.05, this.loc[2]]),
-    ); //Only does it for one
-    this.gl.uniform3fv(tranLoc, new Float32Array(this.loc));
-    this.gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
-    this.gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
-
-    offset = 0;
-    this.gl.drawArrays(this.primitiveType, offset, this.vertCount);
-  }
 }
 
 class Icosohedron extends GameObject {
   constructor() {
     super();
+
+    this.tag = "Sphere";
 
     this.collisionType = collision.Sphere;
     this.circleCollider = 1;
@@ -515,6 +464,7 @@ class Icosohedron extends GameObject {
 class TreeLeaves extends Icosohedron {
   constructor() {
     super();
+    this.tag = "Leaves";
     this.primary = [60 / 255, 78 / 255, 15 / 255];
     this.secondary = [80 / 255, 104 / 255, 20 / 255];
     this.tertiary = [100 / 255, 130 / 255, 25 / 255];
@@ -526,6 +476,7 @@ class TreeLeaves extends Icosohedron {
 class Moon extends Icosohedron {
   constructor() {
     super();
+    this.tag = "Moon";
     this.primary = [0.6, 0.6, 0.6];
     this.secondary = [0.8, 0.8, 0.8];
     this.tertiary = [0.7, 0.7, 0.7];
@@ -540,7 +491,7 @@ class Moon extends Icosohedron {
 class Fire extends Icosohedron {
   constructor() {
     super();
-
+    this.tag = "Fire";
     this.primary = [1, 0, 0];
     this.secondary = [1, 1, 0];
     this.tertiary = [1, 0.5, 0];
@@ -555,6 +506,8 @@ class Fire extends Icosohedron {
 class UFOBase extends Icosohedron {
   constructor() {
     super();
+
+    this.tag = "AlienBase";
     this.scale = [1, 0.2, 1];
     this.primary = [0.1, 0.1, 0.1];
     this.secondary = [0.3, 0.3, 0.3];
@@ -572,6 +525,7 @@ class UFOBase extends Icosohedron {
 class UFOTop extends Icosohedron {
   constructor() {
     super();
+    this.tag = "AlienTop";
     this.primary = [0.1, 0.1, 0.5];
     this.secondary = [0.3, 0.3, 0.7];
     this.tertiary = [0.5, 0.5, 1];

@@ -17,7 +17,7 @@ class I_WebGL {
     //setup our viewport
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     //set clear colors
-    gl.clearColor(1, 1, 1, 1);
+    gl.clearColor(0.2, 0.2, 0.7, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     //We will need this for now!
@@ -32,18 +32,13 @@ class I_WebGL {
    * @returns {WebGLShader}
    */
   createShader(type, source) {
-    var shader = gl.createShader(type);
-    if (shader != null) {
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-      if (success) {
-        return shader;
-      }
-      //Else it didn't work
-      console.error(gl.getShaderInfoLog(shader));
-      gl.deleteShader(shader);
-    }
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (success) return shader;
+    console.error(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
   }
 
   /**
@@ -52,17 +47,13 @@ class I_WebGL {
    * @returns {WebGLProgram}
    */
   createProgram(vs, fs) {
-    var program = gl.createProgram();
-    if (program != null) {
-      gl.attachShader(program, vs);
-      gl.attachShader(program, fs);
-      gl.linkProgram(program);
-      var succsess = gl.getProgramParameter(program, gl.LINK_STATUS);
-      if (succsess) {
-        return program;
-      }
-      console.error(gl.getProgramInfoLog(program));
-      gl.deleteProgram(program);
-    }
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    const success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (success) return program;
+    console.error(gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
   }
 }

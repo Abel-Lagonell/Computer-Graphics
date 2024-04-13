@@ -25,9 +25,9 @@
       uniform float t;
 
       //Lighting
-      uniform vec3 spotLoc;
+      uniform vec3 spotLoc[7];
       varying vec3 fakeNormal;
-      varying vec3 v_surfaceToLight;
+      varying vec3 v_surfaceToLight[7];
       varying vec3 v_surfaceToView;
       varying vec3 v_spot_surfaceToLight;
 
@@ -137,7 +137,11 @@
           vec4 worldSpace = PositionObject(RotateObject(ScaleObject(a_position)));
 
           // Lighting Stuff
-          v_surfaceToLight = spotLoc - worldSpace.xyz; // Can make this uniform controls point light
+          for (int j = 0; j < 7; j+= 1){
+            v_surfaceToLight[j] = spotLoc[j] - worldSpace.xyz;
+          }
+
+          //v_surfaceToLight = spotLoc - worldSpace.xyz; // Can make this uniform controls point light
           v_surfaceToView = cameraLoc - worldSpace.xyz;
           v_spot_surfaceToLight = vec3(5.0, 0.0, -2.0); // Can you make this uniform
 
@@ -152,16 +156,19 @@
       uniform vec3 moonLoc;
       varying vec3 fragColor;
       varying vec3 fakeNormal;
-      varying vec3 v_surfaceToLight;
+      varying vec3 v_surfaceToLight[7];
       varying vec3 v_surfaceToView;
       varying vec3 v_spot_surfaceToLight;
 
       void main(){
         float ambient = .1;
-        float d_light = dot(normalize(fakeNormal), normalize(moonLoc));
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) *.25;
         if (d_light < 0.0) d_light = 0.0;
 
-        float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight))*1.0/(length(v_surfaceToLight));
+        float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));
+        for (int j = 1; j < 7; j += 1){
+          p_light += dot(normalize(fakeNormal), normalize(v_surfaceToLight[j]))*1.0/(length(v_surfaceToLight[j]));
+        }
         if (p_light < 0.0) p_light = 0.0;
 
         //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
@@ -185,7 +192,7 @@
     <canvas
       height="1280"
       id="mainCanvas"
-      style="border: 2px black solid; width: 100%; max-width: 90rem"
+      style="border: 2px black solid; width: 100%; max-width: 97vh"
       width="1280"
     >
       Your Browser does not support Canvas Objects
