@@ -1,172 +1,205 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
     <title>3D Demonstration</title>
 
     <!-- WebGL Scripts -->
     <script id="2dVertexShader" type="notjs">
-        attribute vec4 a_position;
-        attribute vec3 vert_color;
-        varying vec3 fragColor;
+      attribute vec4 a_position;
+      attribute vec3 vert_color;
+      varying vec3 fragColor;
 
-        //This is added to place the object
-        uniform vec3 u_transform;
-        uniform vec3 u_rotation;
-        uniform vec3 u_scale;
+      //This is added to place the object
+      uniform vec3 u_transform;
+      uniform vec3 u_rotation;
+      uniform vec3 u_scale;
 
-        //This was added for camera move
-        uniform vec3 cameraLoc;
-        uniform vec3 cameraRotation;
-        uniform float n;
-        uniform float f;
-        uniform float r;
-        uniform float t;
+      //This was added for camera move
+      uniform vec3 cameraLoc;
+      uniform vec3 cameraRotation;
+      uniform float n;
+      uniform float f;
+      uniform float r;
+      uniform float t;
 
-        vec4 PositionObject(vec4 pos){
-            mat4 translateM = mat4(
-                1.0,             0.0,             0.0,             0.0,
-                0.0,             1.0,             0.0,             0.0,
-                0.0,             0.0,             1.0,             0.0,
-                u_transform.x, u_transform.y, u_transform.z, 1.0
-            );
-            return translateM * pos;
-        }
+      //Lighting
+      uniform vec3 spotLoc;
+      varying vec3 fakeNormal;
+      varying vec3 v_surfaceToLight;
+      varying vec3 v_surfaceToView;
+      varying vec3 v_spot_surfaceToLight;
 
-        vec4 ScaleObject(vec4 pos){
-            if (length(u_scale) == 0.0) return pos;
-            mat4 scaleM = mat4(
-                u_scale.x, 0.0,       0.0,       0.0,
-                0.0,       u_scale.y, 0.0,       0.0,
-                0.0,       0.0,       u_scale.z, 0.0,
-                0.0,       0.0,       0.0,       1.0
-            );
-            return scaleM * pos;
-        }
+      vec4 PositionObject(vec4 pos){
+          mat4 translateM = mat4(
+              1.0,             0.0,             0.0,             0.0,
+              0.0,             1.0,             0.0,             0.0,
+              0.0,             0.0,             1.0,             0.0,
+              u_transform.x, u_transform.y, u_transform.z, 1.0
+          );
+          return translateM * pos;
+      }
 
-        vec4 RotateObject(vec4 pos){
-            vec3 c = cos(u_rotation);
-            vec3 s = sin(u_rotation);
+      vec4 ScaleObject(vec4 pos){
+          if (length(u_scale) == 0.0) return pos;
+          mat4 scaleM = mat4(
+              u_scale.x, 0.0,       0.0,       0.0,
+              0.0,       u_scale.y, 0.0,       0.0,
+              0.0,       0.0,       u_scale.z, 0.0,
+              0.0,       0.0,       0.0,       1.0
+          );
+          return scaleM * pos;
+      }
 
-            mat4 rotateX = mat4(
-                1.0, 0.0,      0.0, 0.0,
-                0.0, c.x,      s.x, 0.0,
-                0.0, -s.x,     c.x, 0.0,
-                0.0, 0.0,      0.0, 1.0
-            );
+      vec4 RotateObject(vec4 pos){
+          vec3 c = cos(u_rotation);
+          vec3 s = sin(u_rotation);
 
-            mat4 rotateY = mat4(
-                c.y, 0.0, -s.y, 0.0,
-                0.0, 1.0, 0.0,  0.0,
-                s.y, 0.0, c.y,  0.0,
-                0.0, 0.0, 0.0,  1.0
-            );
-
-            mat4 rotateZ = mat4(
-                c.z,  s.z, 0.0, 0.0,
-                -s.z, c.z, 0.0, 0.0,
-                0.0,  0.0, 1.0, 0.0,
-                0.0,  0.0, 0.0, 1.0
-            );
-
-            return rotateX * rotateY * rotateZ * pos;
-        }
-
-        vec4 MoveCamera(vec4 pos){
-          vec3 cw = cos(cameraRotation);
-          vec3 sw = sin(cameraRotation);
-
-          mat4 translateView = mat4(
-              1.0, 0.0, 0.0, 0.0,
-              0.0, 1.0, 0.0, 0.0,
-              0.0, 0.0, -1.0, 0.0,
-              -1.0*cameraLoc.x, -1.0*cameraLoc.y, cameraLoc.z, 1.0
+          mat4 rotateX = mat4(
+              1.0, 0.0,      0.0, 0.0,
+              0.0, c.x,      s.x, 0.0,
+              0.0, -s.x,     c.x, 0.0,
+              0.0, 0.0,      0.0, 1.0
           );
 
-          mat4 rotateViewX = mat4(
-                1.0, 0.0,      0.0, 0.0,
-                0.0, cw.x,      sw.x, 0.0,
-                0.0, -sw.x,     cw.x, 0.0,
-                0.0, 0.0,      0.0, 1.0
-            );
-
-          mat4 rotateViewY = mat4(
-                cw.y, 0.0, -sw.y, 0.0,
-                0.0, 1.0, 0.0,  0.0,
-                sw.y, 0.0, cw.y,  0.0,
-                0.0, 0.0, 0.0,  1.0
-            );
-
-          mat4 rotateViewZ = mat4(
-                cw.z,  sw.z, 0.0, 0.0,
-                -sw.z, cw.z, 0.0, 0.0,
-                0.0,  0.0, 1.0, 0.0,
-                0.0,  0.0, 0.0, 1.0
-            );
-
-          return rotateViewX*rotateViewY*rotateViewZ*translateView*pos;
-        }
-
-        vec4 ApplyProjection(vec4 pos){
-          mat4 ComplexPerspective = mat4(
-              n/r, 0.0, 0.0, 0.0,
-              0.0, n/t, 0.0, 0.0,
-              0.0, 0.0, -1.0*(f+n)/(f-n), -1.0,
-              0.0, 0.0, -2.0*f*n/(f-n), 0.0
+          mat4 rotateY = mat4(
+              c.y, 0.0, -s.y, 0.0,
+              0.0, 1.0, 0.0,  0.0,
+              s.y, 0.0, c.y,  0.0,
+              0.0, 0.0, 0.0,  1.0
           );
 
-          return ComplexPerspective*pos;
-        }
+          mat4 rotateZ = mat4(
+              c.z,  s.z, 0.0, 0.0,
+              -s.z, c.z, 0.0, 0.0,
+              0.0,  0.0, 1.0, 0.0,
+              0.0,  0.0, 0.0, 1.0
+          );
 
-        void main()
-        {
-            fragColor = vert_color;
-            //Now the final gl_Position will be the world space coordinates.
-            gl_Position = ApplyProjection(MoveCamera(PositionObject(RotateObject(ScaleObject(a_position)))));
-        }
+          return rotateX * rotateY * rotateZ * pos;
+      }
+
+      vec4 MoveCamera(vec4 pos){
+        vec3 cw = cos(cameraRotation);
+        vec3 sw = sin(cameraRotation);
+
+        mat4 translateView = mat4(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, -1.0, 0.0,
+            -1.0*cameraLoc.x, -1.0*cameraLoc.y, cameraLoc.z, 1.0
+        );
+
+        mat4 rotateViewX = mat4(
+              1.0, 0.0,      0.0, 0.0,
+              0.0, cw.x,      sw.x, 0.0,
+              0.0, -sw.x,     cw.x, 0.0,
+              0.0, 0.0,      0.0, 1.0
+          );
+
+        mat4 rotateViewY = mat4(
+              cw.y, 0.0, -sw.y, 0.0,
+              0.0, 1.0, 0.0,  0.0,
+              sw.y, 0.0, cw.y,  0.0,
+              0.0, 0.0, 0.0,  1.0
+          );
+
+        mat4 rotateViewZ = mat4(
+              cw.z,  sw.z, 0.0, 0.0,
+              -sw.z, cw.z, 0.0, 0.0,
+              0.0,  0.0, 1.0, 0.0,
+              0.0,  0.0, 0.0, 1.0
+          );
+
+        return rotateViewX*rotateViewY*rotateViewZ*translateView*pos;
+      }
+
+      vec4 ApplyProjection(vec4 pos){
+        mat4 ComplexPerspective = mat4(
+            n/r, 0.0, 0.0, 0.0,
+            0.0, n/t, 0.0, 0.0,
+            0.0, 0.0, -1.0*(f+n)/(f-n), -1.0,
+            0.0, 0.0, -2.0*f*n/(f-n), 0.0
+        );
+
+        return ComplexPerspective*pos;
+      }
+
+      void main()
+      {
+          if (length(a_position)<5.0){
+              fakeNormal = RotateObject(a_position).xyz;
+          } else {
+              fakeNormal = vec3(0.0,1.0,0.0);
+          }
+
+          vec4 worldSpace = PositionObject(RotateObject(ScaleObject(a_position)));
+
+          // Lighting Stuff
+          v_surfaceToLight = spotLoc - worldSpace.xyz; // Can make this uniform controls point light
+          v_surfaceToView = cameraLoc - worldSpace.xyz;
+          v_spot_surfaceToLight = vec3(5.0, 0.0, -2.0); // Can you make this uniform
+
+          fragColor = vert_color;
+          vec4 cameraSpace = MoveCamera(worldSpace);
+          gl_Position = ApplyProjection(cameraSpace);
+      }
     </script>
     <script id="2dFragmentShader" type="notjs">
-        //Fragment shaders do not have precision so we have to set it.
-        precision mediump float;
-        varying vec3 fragColor;
-        void main(){
-            //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
-            gl_FragColor = vec4(fragColor,1);
-        }
+      //Fragment shaders do not have precision so we have to set it.
+      precision mediump float;
+      uniform vec3 moonLoc;
+      varying vec3 fragColor;
+      varying vec3 fakeNormal;
+      varying vec3 v_surfaceToLight;
+      varying vec3 v_surfaceToView;
+      varying vec3 v_spot_surfaceToLight;
+
+      void main(){
+        float ambient = .1;
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc));
+        if (d_light < 0.0) d_light = 0.0;
+
+        float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight))*1.0/(length(v_surfaceToLight));
+        if (p_light < 0.0) p_light = 0.0;
+
+        //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+      	gl_FragColor = vec4(fragColor*(ambient+d_light+p_light),1);
+      }
     </script>
 
     <!-- Scripts -->
     <script src="GameObject.js"></script>
     <script src="I_WebGL.js"></script>
     <script src="main.js"></script>
-</head>
-<body
-        style="
+  </head>
+  <body
+    style="
       display: flex;
       justify-items: center;
       align-items: center;
       flex-flow: column;
     "
->
-<canvas
-        height="1280"
-        id="mainCanvas"
-        style="border: 2px black solid; width: 100%; max-width: 90rem"
-        width="1280"
->
-    Your Browser does not support Canvas Objects
-</canvas>
+  >
+    <canvas
+      height="1280"
+      id="mainCanvas"
+      style="border: 2px black solid; width: 100%; max-width: 90rem"
+      width="1280"
+    >
+      Your Browser does not support Canvas Objects
+    </canvas>
 
-<!-- Active Script -->
-<script>
-    /** @type {HTMLCanvasElement} */
-    const myCanvas = document.getElementsByTagName("canvas")[0];
-    const gl = myCanvas.getContext("webgl");
-    const _main = new Main();
-    window.onkeydown = Main.keyD;
-    window.onkeyup = Main.keyU;
-    requestAnimationFrame(Main.mainLoop);
-</script>
-</body>
+    <!-- Active Script -->
+    <script>
+      /** @type {HTMLCanvasElement} */
+      const myCanvas = document.getElementsByTagName("canvas")[0];
+      const gl = myCanvas.getContext("webgl");
+      const _main = new Main();
+      window.onkeydown = Main.keyD;
+      window.onkeyup = Main.keyU;
+      requestAnimationFrame(Main.mainLoop);
+    </script>
+  </body>
 </html>

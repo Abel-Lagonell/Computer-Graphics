@@ -457,9 +457,9 @@
 
                 this.vertCount = this.vertices.length / 6;
                 this.primitiveType = gl.TRIANGLE_STRIP;
-                this.angVelocity[0] = Math.floor(Math.random() * 500) / 1000;
-                this.angVelocity[1] = Math.floor(Math.random() * 500) / 1000;
-                this.angVelocity[2] = Math.floor(Math.random() * 500) / 1000;
+                this.angVelocity[0] = Math.floor(Math.random() * 50 + 1) / 100;
+                this.angVelocity[1] = Math.floor(Math.random() * 50 + 1) / 100;
+                this.angVelocity[2] = Math.floor(Math.random() * 50 + 1) / 100;
             }
 
             update() {
@@ -633,12 +633,12 @@
 
                 this.createObject(1, Camera);
                 for (let i = 0; i < 200; i++) {
-                    let x = Math.floor(Math.random() * 200 - 100);
-                    let y = Math.floor(Math.random() * 200 - 100);
+                    let x = Math.floor(Math.random() * 100 - 50);
+                    let y = Math.floor(Math.random() * 100 - 50);
                     let z = Math.floor(Math.random() * 20 - 10);
                     let s = Math.floor(Math.random() * 10 + 1) / 10;
 
-                    this.createObject(1, Asteroid, [x, y, z], [0, 0, 0], [s, s, s]);
+                    this.createObject(1, Asteroid, [x, z, y], [0, 0, 0], [s, s, s]);
                 }
             }
 

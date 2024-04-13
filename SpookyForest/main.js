@@ -26,8 +26,11 @@ class Main {
     tempLoc = gl.getUniformLocation(this.program, "t");
     gl.uniform1f(tempLoc, 0.1);
 
+    let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
+    gl.uniform3fv(moonLoc, new Float32Array([-59.42, 161.7, 101.6]));
+
     this.createObject(1, Camera);
-    this.createObject(0, Floor, [0, -0.3, 0], [0, 0, 0], [20]);
+    this.createObject(0, Floor, [0, -0.3, 0]);
     this.createObject(0, UFOBase, [0, 5, 2]);
     this.createObject(0, UFOTop, [0, 0.2 + 5, 2]);
     this.createObjects();
@@ -52,9 +55,9 @@ class Main {
     this.createObject(0, Moon, [-59.42, 161.7, 101.6], [0, 0, 0], [2]);
     for (let i = 0; i < 100; i++) {
       if ((randNum([0, 1], 1, 1)[0] * 10) % 3) {
-        this.createTree(randNum([-10, 10], 2, 2, [-0.25, 0.25]));
+        this.createTree(randNum([-10, 10], 2, 2, [-0.3, 0.3]));
       } else {
-        let coords = randNum([-10, 10], 2, 2, [-0.25, 0.25]);
+        let coords = randNum([-10, 10], 2, 2, [-0.3, 0.3]);
         this.createObject(
           1,
           Rock,
