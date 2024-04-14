@@ -25,11 +25,15 @@
       uniform float t;
 
       //Lighting
-      uniform vec3 spotLoc[7];
+      const int NUMBER_OF_LIGHTS = 10;
+
+      uniform vec3 spotLoc[NUMBER_OF_LIGHTS];
       varying vec3 fakeNormal;
-      varying vec3 v_surfaceToLight[7];
+      varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
       varying vec3 v_surfaceToView;
       varying vec3 v_spot_surfaceToLight;
+
+
 
       vec4 PositionObject(vec4 pos){
           mat4 translateM = mat4(
@@ -137,7 +141,7 @@
           vec4 worldSpace = PositionObject(RotateObject(ScaleObject(a_position)));
 
           // Lighting Stuff
-          for (int j = 0; j < 7; j+= 1){
+          for (int j = 0; j < NUMBER_OF_LIGHTS; j+= 1){
             v_surfaceToLight[j] = spotLoc[j] - worldSpace.xyz;
           }
 
@@ -152,21 +156,22 @@
     </script>
     <script id="2dFragmentShader" type="notjs">
       //Fragment shaders do not have precision so we have to set it.
+      const int NUMBER_OF_LIGHTS = 10;
       precision mediump float;
       uniform vec3 moonLoc;
       varying vec3 fragColor;
       varying vec3 fakeNormal;
-      varying vec3 v_surfaceToLight[7];
+      varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
       varying vec3 v_surfaceToView;
       varying vec3 v_spot_surfaceToLight;
 
       void main(){
-        float ambient = .1;
+        float ambient = 0.1;
         float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) *.25;
         if (d_light < 0.0) d_light = 0.0;
 
         float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));
-        for (int j = 1; j < 7; j += 1){
+        for (int j = 1; j < NUMBER_OF_LIGHTS; j += 1){
           p_light += dot(normalize(fakeNormal), normalize(v_surfaceToLight[j]))*1.0/(length(v_surfaceToLight[j]));
         }
         if (p_light < 0.0) p_light = 0.0;

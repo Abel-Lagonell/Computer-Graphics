@@ -1,7 +1,10 @@
+const NUMBER_OF_LIGHTS = 10; //? If changed, change in two other places
+
 class Main {
   constructor() {
     this.webGL = new I_WebGL();
     this.program = this.webGL.program;
+    gl.useProgram(this.program);
     requestAnimationFrame(Main.mainLoop); //Static call
 
     //Added these for Game Engine
@@ -50,8 +53,9 @@ class Main {
   }
 
   static mainLoop() {
-    _main.updateAll();
+    //gl.clear(gl.COLOR_BUFFER_BIT);
     _main.renderAll();
+    _main.updateAll();
     requestAnimationFrame(Main.mainLoop);
   }
   createObjects() {
@@ -70,23 +74,12 @@ class Main {
         );
       }
     }
-    this.createCandle([0.5, 0.4], 0.08);
-    this.createCandle([0, 0.4], 0.08);
-    this.createCandle([0 - 0.5, 0.4], 0.08);
-    this.createCandle([1, 0.4], 0.08);
-    this.createCandle([0, -0.4], 0.08);
-    this.createCandle([0 - 0.5, -0.4], 0.08);
-    this.createCandle([1, -0.4], 0.08);
+    for (let i = 0; i < NUMBER_OF_LIGHTS; i++) {
+      let coords = randNum([-10, 10], 2, 2, [-0.3, 0.3]);
+      this.createCandle(coords, 0.08);
+    }
 
-    //! Need to fix this
-    /** @type {number[][]} */
-    let locations = [];
-    this.visual.forEach((value, index, array) => {
-      if (value.tag === "WaxyTop")
-        locations.push(value.loc[0], value.loc[1] + 0.05, value.loc[2]);
-    });
-    const spotLoc = gl.getUniformLocation(this.program, "spotLoc");
-    gl.uniform3fv(spotLoc, new Float32Array(locations.map((value) => value)));
+    this.assignLights();
   }
 
   /**
@@ -155,6 +148,27 @@ class Main {
     );
     this.createObject(1, TreeLeaves, [x, 0.8, z], randNum([0, 1], 2, 3), [0.6]);
     this.createObject(1, TreeTrunk, [x, 0, z], [0, 0, 0], [0.5, 1, 0.5]);
+  }
+
+  assignLights() {
+    let tags = [];
+    for (let i in this.visual) {
+      if (this.visual[i].tag === "WaxTop") {
+        tags.push(this.visual[i]);
+      }
+    }
+    console.log(tags);
+
+    const spotLoc = new Array(NUMBER_OF_LIGHTS);
+    for (let j in tags) {
+      spotLoc[j] = gl.getUniformLocation(this.program, "spotLoc[" + j + "]");
+      gl.uniform3f(
+        spotLoc[j],
+        tags[j].loc[0],
+        tags[j].loc[1] + 0.07,
+        tags[j].loc[2],
+      );
+    }
   }
 
   updateAll() {

@@ -17,13 +17,11 @@ class I_WebGL {
     //setup our viewport
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     //set clear colors
-    gl.clearColor(0.2, 0.2, 0.7, 1);
+    gl.clearColor(0.0, 0.0, 0.1, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     //We will need this for now!
     gl.enable(gl.DEPTH_TEST);
-
-    gl.useProgram(this.program);
   }
 
   /**
