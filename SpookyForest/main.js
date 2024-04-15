@@ -16,6 +16,7 @@ class Main {
     // @type {GameObject[]}
     this.trigger = [];
     this.keys = [];
+    this.state = document.getElementById("GameState");
 
     //Added for Camera move!
     let camLoc = gl.getUniformLocation(this.program, "cameraLoc");
@@ -35,10 +36,18 @@ class Main {
     let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
     gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
 
+    this.playArea = 10;
+    const coordWin = randNum([-this.playArea + 1, this.playArea + 1], 2, 2, [
+      -this.playArea,
+      this.playArea,
+    ]);
+
     this.createObject(1, Camera);
     this.createObject(0, Floor, [0, -0.3, 0]);
     this.createObject(0, UFOBase, [0, 5, 2]);
     this.createObject(0, UFOTop, [0, 0.2 + 5, 2]);
+    this.createObject(2, Beam, [0, 0, 2]);
+    this.createObject(2, Icosohedron, [coordWin[0], 0, coordWin[1]]);
     this.createObjects();
   }
 
@@ -53,7 +62,7 @@ class Main {
   }
 
   static mainLoop() {
-    //gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     _main.renderAll();
     _main.updateAll();
     requestAnimationFrame(Main.mainLoop);
@@ -62,9 +71,16 @@ class Main {
     this.createObject(0, Moon, [-59.42, 161.7, 101.6], [0, 0, 0], [2]);
     for (let i = 0; i < 100; i++) {
       if ((randNum([0, 1], 1, 1)[0] * 10) % 3) {
-        this.createTree(randNum([-10, 10], 2, 2, [-0.3, 0.3]));
+        this.createTree(
+          randNum([-this.playArea, this.playArea], 2, 2, [-0.3, 0.3]),
+        );
       } else {
-        let coords = randNum([-10, 10], 2, 2, [-0.3, 0.3]);
+        let coords = randNum(
+          [-this.playArea, this.playArea],
+          2,
+          2,
+          [-0.3, 0.3],
+        );
         this.createObject(
           1,
           Rock,
@@ -75,7 +91,12 @@ class Main {
       }
     }
     for (let i = 0; i < NUMBER_OF_LIGHTS; i++) {
-      let coords = randNum([-10, 10], 2, 2, [-0.3, 0.3]);
+      let coords = randNum(
+        [-this, this.playArea, this, this.playArea],
+        2,
+        2,
+        [-0.3, 0.3],
+      );
       this.createCandle(coords, 0.08);
     }
 
@@ -157,7 +178,6 @@ class Main {
         tags.push(this.visual[i]);
       }
     }
-    console.log(tags);
 
     const spotLoc = new Array(NUMBER_OF_LIGHTS);
     for (let j in tags) {
@@ -174,6 +194,17 @@ class Main {
   updateAll() {
     for (let i in this.visual) {
       this.visual[i].update();
+
+      this.visual["ID3"].loc = [
+        this.visual["ID2"].loc[0],
+        this.visual["ID2"].loc[1] + 0.2,
+        this.visual["ID2"].loc[2],
+      ];
+      this.trigger["ID4"].loc = [
+        this.visual["ID2"].loc[0],
+        0,
+        this.visual["ID2"].loc[2],
+      ];
     }
     for (let i in this.solid) {
       this.solid[i].update();

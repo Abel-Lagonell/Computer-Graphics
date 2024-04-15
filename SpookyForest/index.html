@@ -6,7 +6,7 @@
     <title>3D Demonstration</title>
 
     <!-- WebGL Scripts -->
-    <script id="2dVertexShader" type="notjs">
+    <script id="2dVertexShader" type="x-shader/x-vertex">
       attribute vec4 a_position;
       attribute vec3 vert_color;
       varying vec3 fragColor;
@@ -26,7 +26,7 @@
 
       //Lighting
       const int NUMBER_OF_LIGHTS = 10;
-
+      uniform vec3 spotLightLoc;
       uniform vec3 spotLoc[NUMBER_OF_LIGHTS];
       varying vec3 fakeNormal;
       varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
@@ -145,16 +145,17 @@
             v_surfaceToLight[j] = spotLoc[j] - worldSpace.xyz;
           }
 
-          //v_surfaceToLight = spotLoc - worldSpace.xyz; // Can make this uniform controls point light
           v_surfaceToView = cameraLoc - worldSpace.xyz;
-          v_spot_surfaceToLight = vec3(5.0, 0.0, -2.0); // Can you make this uniform
+
+          v_spot_surfaceToLight = spotLightLoc - worldSpace.xyz;
+
 
           fragColor = vert_color;
           vec4 cameraSpace = MoveCamera(worldSpace);
           gl_Position = ApplyProjection(cameraSpace);
       }
     </script>
-    <script id="2dFragmentShader" type="notjs">
+    <script id="2dFragmentShader" type="x-shader/x-fragment">
       //Fragment shaders do not have precision so we have to set it.
       const int NUMBER_OF_LIGHTS = 10;
       precision mediump float;
@@ -176,8 +177,17 @@
         }
         if (p_light < 0.0) p_light = 0.0;
 
+        float s_light_power = 0.0;
+        float s_light = dot(normalize(v_spot_surfaceToLight), vec3(0,1,0));
+        if (s_light >= .98){
+          s_light_power = dot(normalize(fakeNormal), normalize(v_spot_surfaceToLight));
+          if(s_light_power < 0.0){
+            s_light_power = 0.0;
+          }
+        }
+
         //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
-      	gl_FragColor = vec4(fragColor*(ambient+d_light+p_light),1);
+      	gl_FragColor = vec4(fragColor*(ambient+d_light+p_light+s_light_power),1);
       }
     </script>
 
@@ -197,11 +207,13 @@
     <canvas
       height="1280"
       id="mainCanvas"
-      style="border: 2px black solid; width: 100%; max-width: 97vh"
+      style="border: 2px black solid; width: 100%; max-width: 90vh"
       width="1280"
     >
       Your Browser does not support Canvas Objects
     </canvas>
+
+    <p id="GameState" style="font-size: 30px">Playing</p>
 
     <!-- Active Script -->
     <script>

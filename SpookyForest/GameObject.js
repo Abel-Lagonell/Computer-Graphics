@@ -1,4 +1,3 @@
-//@ts-check
 class Transform {
   constructor() {
     this.forward = [0, 0, 1];
@@ -255,6 +254,16 @@ class Camera extends GameObject {
     let worldLoc = gl.getUniformLocation(program, "cameraRotation");
     gl.uniform3fv(worldLoc, new Float32Array(this.rot));
   }
+
+  /** @param {GameObject} other */
+  OnTriggerEnter(other) {
+    if (other.tag === "Beam") {
+      this.loc = [0, 0, 0];
+    }
+    if (other.tag === "Sphere") {
+      _main.state.innerHTML = "WIN";
+    }
+  }
 }
 
 class Floor extends GameObject {
@@ -297,7 +306,7 @@ class Rock extends GameObject {
   constructor() {
     super();
     this.collisionType = collision.Box;
-    this.boxCollider = [0.75, 1, 0.75];
+    this.boxCollider = [0.9, 1, 0.9];
 
     this.tag = "ROCK";
 
@@ -420,9 +429,11 @@ class Icosohedron extends GameObject {
 
     this.collisionType = collision.Sphere;
     this.circleCollider = 1;
-    this.primary = [0, 0, 0];
-    this.secondary = [0, 0, 0];
-    this.tertiary = [0, 0, 0];
+    this.primary = [0, 1, 1];
+    this.secondary = [0, 1, 1];
+    this.tertiary = [0, 1, 1];
+
+    this.initalize();
 
     this.angVelocity = [0.0, 0.001, 0.001];
   }
@@ -430,7 +441,7 @@ class Icosohedron extends GameObject {
   makeVerts() {
     /** @type number[][]*/
     const vertArray = createIcosahedronVertices();
-    let verts = vertArray.map((value, index) => {
+    let verts = vertArray.map((value) => {
       switch (Math.floor(Math.random() * 10) % 3) {
         case 0:
           return [...value, ...this.primary];
@@ -460,6 +471,10 @@ class Icosohedron extends GameObject {
     this.vertCount = this.vertices.length / 6;
     this.primitiveType = gl.TRIANGLE_STRIP;
   }
+
+  update() {
+    this.Move();
+  }
 }
 class TreeLeaves extends Icosohedron {
   constructor() {
@@ -483,10 +498,6 @@ class Moon extends Icosohedron {
 
     this.initalize();
   }
-
-  update() {
-    this.Move();
-  }
 }
 class Fire extends Icosohedron {
   constructor() {
@@ -496,10 +507,6 @@ class Fire extends Icosohedron {
     this.secondary = [1, 1, 0];
     this.tertiary = [1, 0.5, 0];
     this.initalize();
-  }
-
-  update() {
-    this.Move();
   }
 }
 
@@ -513,12 +520,28 @@ class UFOBase extends Icosohedron {
     this.secondary = [0.3, 0.3, 0.3];
     this.tertiary = [0.5, 0.5, 0.5];
     this.initalize();
-
+    this.theta = 3.14;
+    this.radius = 25;
     this.angVelocity = [0, 0.001, 0];
   }
 
   update() {
+    this.loc[0] =
+      this.radius *
+      (Math.cos(this.theta * 0.8) * Math.sin(this.theta * 0.8)) *
+      Math.cos(this.theta);
+    this.loc[2] =
+      this.radius *
+      (Math.cos(this.theta * 0.8) * Math.sin(this.theta * 0.8)) *
+      Math.sin(this.theta);
+    this.theta += 0.0025 / 4;
     this.Move();
+  }
+
+  render(program) {
+    super.render(program);
+    let s_light = gl.getUniformLocation(program, "spotLightLoc");
+    gl.uniform3fv(s_light, this.loc);
   }
 }
 
@@ -533,11 +556,21 @@ class UFOTop extends Icosohedron {
     this.initalize();
 
     this.angVelocity = [0, 0.001, 0];
+    this.velocity = [0, 0, 1];
+  }
+}
+
+class Beam extends GameObject {
+  constructor() {
+    super();
+    this.tag = "Beam";
+
+    this.collisionType = collision.Sphere;
+    this.circleCollider = 1;
   }
 
-  update() {
-    this.Move();
-  }
+  update() {}
+  render() {}
 }
 
 /**
@@ -560,46 +593,21 @@ function createIcosahedronVertices() {
   let K = [-phi, 0, 1]; //? K CORRECT
   let M = [-phi, 0, -1]; //*M CORRECT
 
+  //prettier-ignore
   let vertices = [
-    M,
-    K,
-    G,
-    B,
-    K,
-    C,
-    B,
-    A,
-    C,
-    D,
-    J,
-    C,
-    K,
-    J,
-    M,
-    I,
-    J,
-    D,
-    I,
-    E,
-    D,
-    A,
-    E,
-    F,
-    H,
-    E,
-    I,
-    H,
-    M,
-    G,
-    H,
-    G,
-    G,
-    B,
-    F,
-    A,
-    F,
-    G,
-    H,
+    M, K, G,
+    B, K, C,
+    B, A, C,
+    D, J, C,
+    K, J, M,
+    I, J, D,
+    I, E, D,
+    A, E, F,
+    H, E, I,
+    H, M, G,
+    H, G, G, 
+    B, F, A,
+    F, G, H,
   ];
   // Normalize the vertices to the given radius */
   for (let i = 0; i < vertices.length; i++) {
