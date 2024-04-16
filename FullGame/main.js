@@ -37,6 +37,7 @@ class Main {
 
     this.createObject(1, Camera);
     this.createObject(0, Floor, [0, -0.3, 0]);
+    this.createObject(1, Prism, [0, 0.2, 2], [0, 0, 0], [2, 2, 2]);
     this.createObjects();
   }
 
@@ -75,7 +76,7 @@ class Main {
         spotLoc[j],
         tags[j].loc[0],
         tags[j].loc[1] + 0.07,
-        tags[j].loc[2]
+        tags[j].loc[2],
       );
     }
   }
@@ -269,7 +270,10 @@ class Main {
         temp.scale[i] *= scale[i];
       }
     }
-    if (temp.circleCollider || temp.boxCollider) {
+    if (temp.tag === "Prism") {
+      temp.circleCollider *= scale[0];
+      console.log(temp.circleCollider);
+    } else if (temp.circleCollider || temp.boxCollider) {
       if (scale.length === 1) {
         temp.circleCollider *= scale[0];
       } else {
@@ -359,4 +363,29 @@ function randNum(range, precision, num, exclusionRange = []) {
   }
 
   return randomNumbers;
+}
+
+/**
+ * @param {string} hexString
+ */
+function hexToRGB(hexString) {
+  // Remove '#' from the beginning of the string if present
+  hexString = hexString.replace(/^#/, "");
+
+  // Expand shorthand hex color (e.g., #FFF to #FFFFFF)
+  if (hexString.length === 3) {
+    hexString = hexString
+      .split("")
+      .map(function (c) {
+        return c + c;
+      })
+      .join("");
+  }
+
+  // Convert hexadecimal to RGB
+  var r = parseInt(hexString.substring(0, 2), 16) / 255.0;
+  var g = parseInt(hexString.substring(2, 4), 16) / 255.0;
+  var b = parseInt(hexString.substring(4, 6), 16) / 255.0;
+
+  return [r, g, b];
 }

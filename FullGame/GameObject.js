@@ -267,17 +267,17 @@ class Floor extends GameObject {
     const B = [0, 0, 1000];
     const C = [-1000, 0, 0];
     const D = [0, 0, -1000];
-    const green = [20 / 255, 30.5 / 255, 12.5 / 255];
+    const color = hexToRGB("#ffd1dc");
 
     this.vertices = [
       ...A,
-      ...green,
+      ...color,
       ...B,
-      ...green,
+      ...color,
       ...C,
-      ...green,
+      ...color,
       ...D,
-      ...green,
+      ...color,
     ];
     gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -300,9 +300,9 @@ class Icosohedron extends GameObject {
 
     this.collisionType = collision.Sphere;
     this.circleCollider = 1;
-    this.primary = [0, 0, 0];
-    this.secondary = [0, 0, 0];
-    this.tertiary = [0, 0, 0];
+    this.primary = hexToRGB("#000");
+    this.secondary = hexToRGB("#000");
+    this.tertiary = hexToRGB("#000");
 
     this.angVelocity = [0.0, 0.001, 0.001];
   }
@@ -342,6 +342,87 @@ class Icosohedron extends GameObject {
   }
 }
 
+class Cube extends GameObject {
+  constructor() {
+    super();
+    this.collisionType = collision.Box;
+    this.boxCollider = [0.6, 0.6, 0.6];
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    this.tag = "Cube";
+    const color = hexToRGB("#F00");
+    const A = [-0.5, -0.5, 0.5];
+    const B = [-0.5, 0.5, -0.5];
+    const C = [-0.5, 0.5, 0.5];
+    const D = [0.5, -0.5, -0.5];
+    const E = [0.5, -0.5, 0.5];
+    const F = [0.5, 0.5, -0.5];
+    const G = [0.5, 0.5, 0.5];
+    const H = [-0.5, -0.5, -0.5];
+
+    //prettier-ignore
+    let verts = [
+      G, F, E,
+      D, A, E,
+      C, G, B, 
+      C, H, A, 
+      D, H, F,
+      B, G
+    ];
+    verts = verts.map((value) => {
+      return [...value, ...color];
+    });
+
+    this.vertices = [];
+    verts.map((value) => this.vertices.push(...value));
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLE_STRIP;
+    this.angVelocity = [0.001, 0.001, 0.001];
+  }
+
+  update() {}
+}
+
+class Prism extends GameObject {
+  constructor() {
+    super();
+    this.tag = "Prism";
+    this.collisionType = collision.Sphere;
+    this.circleCollider = 0.6;
+    this.primary = hexToRGB("#F00");
+    this.secondary = hexToRGB("#0F0");
+    this.initalize(3);
+  }
+
+  /** @param {number} sides */
+  initalize(sides) {
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    let verts = nPrism(sides);
+    this.vertices = [];
+    verts.map((value, index) => {
+      this.vertices.push(...value);
+      this.vertices.push(...(index % 2 ? this.primary : this.secondary));
+    });
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLES;
+  }
+
+  update() {}
+}
+
 /**
  * @return {number[][]}
  */
@@ -349,18 +430,18 @@ function createIcosahedronVertices() {
   const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
 
   // Define the vertices of a regular icosahedron
-  let B = [0, 1, phi]; // A -> B FIXED
+  let B = [0, 1, phi]; // A -> B
   let C = [0, -1, phi]; // C CORRECT
   let I = [0, -1, -phi]; //? D -> I
   let H = [0, 1, -phi]; //? B -> H
   let F = [1, phi, 0]; // E -> F
-  let D = [1, -phi, 0]; // F -> D FIXED
+  let D = [1, -phi, 0]; // F -> D
   let G = [-1, phi, 0]; //? G CORRECT
   let J = [-1, -phi, 0]; //? H -> J
-  let A = [phi, 0, 1]; //* J -> A FIXED
+  let A = [phi, 0, 1]; //* J -> A
   let E = [phi, 0, -1]; // I -> E
   let K = [-phi, 0, 1]; //? K CORRECT
-  let M = [-phi, 0, -1]; //*M CORRECT
+  let M = [-phi, 0, -1]; // M
 
   //prettier-ignore
   let vertices = [
@@ -392,69 +473,57 @@ function createIcosahedronVertices() {
 }
 
 /**
- * @param {number[][]} colors
- * @param {boolean} pyramid
+ * @param {number} baseSides
  */
-function hexPrism(colors, pyramid = false) {
-  let brown = colors[0];
-  let dbrown = colors[1];
+function nPrism(baseSides) {
+  const vertices = [];
 
-  let A = [-0.5, -0.5, -0.25];
-  let B = [-0.25, -0.5, -0.5];
-  return [
-    ...A,
-    ...dbrown,
-    ...A.map((value, index) => (index === 1 ? -value : value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...B,
-    ...dbrown,
-    ...B.map((value, index) => (index === 1 ? -value : value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...B.map((value, index) => (index === 0 ? -value : value)),
-    ...dbrown,
-    ...B.map((value, index) => (index === 2 ? value : -value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...A.map((value, index) => (index === 0 ? -value : value)),
-    ...dbrown,
-    ...A.map((value, index) => (index === 2 ? value : -value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...A.map((value, index) => (index === 1 ? value : -value)),
-    ...dbrown,
-    ...A.map((value) => -value).map((value, index) =>
-      index !== 1 && pyramid ? 0 : value,
-    ),
-    ...brown,
-    ...B.map((value, index) => (index === 1 ? value : -value)),
-    ...dbrown,
-    ...B.map((value, index) => (index === 3 ? value : -value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...B.map((value, index) => (index === 2 ? -value : value)),
-    ...dbrown,
-    ...B.map((value, index) => (index === 0 ? value : -value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...A.map((value, index) => (index === 2 ? -value : value)),
-    ...dbrown,
-    ...A.map((value, index) => (index === 0 ? value : -value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-    ...A,
-    ...dbrown,
-    ...A.map((value, index) => (index === 1 ? -value : value)).map(
-      (value, index) => (index !== 1 && pyramid ? 0 : value),
-    ),
-    ...brown,
-  ];
+  // Generate vertices for the base of the prism
+  const baseVertices = [];
+  for (let i = 0; i < baseSides; i++) {
+    const angle = (i / baseSides) * Math.PI * 2;
+    const x = 0.5 * Math.cos(angle);
+    const y = 0.5 * Math.sin(angle);
+    const z = -0.5; // Base of the prism is at z = -0.5 (halfway down the cube)
+    baseVertices.push([x, z, y]);
+  }
+
+  // Duplicate base vertices for the top face (height = 1, z = 0.5)
+  const topVertices = baseVertices.map((vertex) => [vertex[0], 0.5, vertex[2]]);
+
+  // Push base and top vertices to the final vertices array
+  // vertices.push(...baseVertices, ...topVertices);
+
+  // Generate side faces by connecting base and top vertices
+  for (let i = 0; i < baseSides; i++) {
+    const nextIndex = (i + 1) % baseSides; // Wrap around for the last vertex
+    const baseVertex1 = baseVertices[i];
+    const baseVertex2 = baseVertices[nextIndex];
+    const topVertex1 = topVertices[i];
+    const topVertex2 = topVertices[nextIndex];
+
+    // Side face triangles
+    vertices.push(baseVertex1, baseVertex2, topVertex1);
+    vertices.push(baseVertex2, topVertex2, topVertex1);
+  }
+
+  for (let i = 0; i < topVertices.length; i++) {
+    if (i === topVertices.length - 1) {
+      vertices.push(topVertices[0], [0, 0.5, 0], topVertices[i]);
+      continue;
+    }
+
+    vertices.push(topVertices[i], [0, 0.5, 0], topVertices[i + 1]);
+  }
+
+  for (let i = 0; i < baseVertices.length; i++) {
+    if (i === baseVertices.length - 1) {
+      vertices.push(baseVertices[0], [0, -0.5, 0], baseVertices[i]);
+      continue;
+    }
+
+    vertices.push(baseVertices[i], [0, -0.5, 0], baseVertices[i + 1]);
+  }
+
+  return vertices;
 }

@@ -5,18 +5,18 @@ class I_WebGL {
       document.getElementById("2dFragmentShader").text;
     this.vertexShader = this.createShader(
       gl.VERTEX_SHADER,
-      this.vertexShaderSource
+      this.vertexShaderSource,
     );
     this.fragmenShader = this.createShader(
       gl.FRAGMENT_SHADER,
-      this.fragmentShaderSource
+      this.fragmentShaderSource,
     );
     //Link to program
     this.program = this.createProgram(this.vertexShader, this.fragmenShader);
     //setup our viewport
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     //set clear colors
-    gl.clearColor(0.0, 0.0, 0.01, 1.0);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     //We will need this for now!
