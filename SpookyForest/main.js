@@ -91,12 +91,7 @@ class Main {
       }
     }
     for (let i = 0; i < NUMBER_OF_LIGHTS; i++) {
-      let coords = randNum(
-        [-this, this.playArea, this, this.playArea],
-        2,
-        2,
-        [-0.3, 0.3],
-      );
+      let coords = randNum([-this.playArea, this.playArea], 2, 2, [-0.3, 0.3]);
       this.createCandle(coords, 0.08);
     }
 
