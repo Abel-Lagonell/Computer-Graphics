@@ -314,19 +314,19 @@ class Rock extends GameObject {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
 
     let c = randNum([0.6, 1], 1, 1)[0];
-    let p = randNum([0, c - 0.1], 2, 2);
-    let q = randNum([-c + 0.1, 0], 2, 2);
-    let w = randNum([0.5, 0.8], 2, 2);
+    let p = randNum([0, c - 0.1], 2, 3);
+    let q = randNum([-c + 0.1, 0], 2, 3);
+    let w = randNum([0.5, 0.8], 2, 3);
 
     const B = [q[0], w[0], q[1]]; // TOP
     const E = [p[0], w[1], p[1]]; // TOP
-    const A = [c, 0, 0];
-    const C = [-c, 0, 0];
+    const A = [q[2], w[2], p[2]];
+    const C = [c, 0, 0];
     const D = [0, 0, c];
     const F = [0, 0, -c];
     let vertSequence = [E, C, B, F, A, D, F, C, D, E, A, B];
-    let colorVerts = vertSequence.map((value) => {
-      let graycolor = randNum([0.3, 0.6], 3, 1)[0];
+    let colorVerts = vertSequence.map((value, index) => {
+      let graycolor = randNum([0.3, 0.8], 3, 1)[0];
       return [...value, graycolor, graycolor, graycolor];
     });
 
