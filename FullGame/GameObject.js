@@ -25,7 +25,6 @@ class Transform {
       [0, 0, 1, 0],
       [0, 0, 0, 1],
     ];
-    //this.forward = this.crossMultiply(xRot,[0,0,1,0]);
     this.forward = this.crossMultiply(
       this.zRot,
       this.crossMultiply(
@@ -423,6 +422,42 @@ class Prism extends GameObject {
   update() {}
 }
 
+class Pyramid extends GameObject {
+  constructor() {
+    super();
+
+    this.tag = "Pyramid";
+    this.collisionType = collision.Sphere;
+    this.circleCollider = 0.4;
+    this.primary = hexToRGB("#F00");
+    this.secondary = hexToRGB("#0F0");
+    this.initalize(3);
+  }
+
+  /** @param {number} sides */
+  initalize(sides) {
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+    let verts = nPyramid(sides);
+    this.vertices = [];
+    verts.map((value, index) => {
+      this.vertices.push(...value);
+      this.vertices.push(...(index % 2 ? this.primary : this.secondary));
+    });
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 6;
+    this.primitiveType = gl.TRIANGLES;
+  }
+
+  update() {}
+}
+
 /**
  * @return {number[][]}
  */
@@ -523,6 +558,34 @@ function nPrism(baseSides) {
     }
 
     vertices.push(baseVertices[i], [0, -0.5, 0], baseVertices[i + 1]);
+  }
+
+  return vertices;
+}
+
+/**
+ * @param {number} baseSides
+ */
+function nPyramid(baseSides) {
+  const vertices = [];
+
+  // Generate vertices for the base of the prism
+  const baseVertices = [];
+  for (let i = 0; i < baseSides; i++) {
+    const angle = (i / baseSides) * Math.PI * 2;
+    const x = 0.5 * Math.cos(angle);
+    const y = 0.5 * Math.sin(angle);
+    const z = -0.5; // Base of the prism is at z = -0.5 (halfway down the cube)
+    baseVertices.push([x, z, y]);
+  }
+
+  for (let i = 0; i < baseVertices.length; i++) {
+    if (i === baseVertices.length - 1) {
+      vertices.push(baseVertices[0], [0, 0.5, 0], baseVertices[i]);
+      continue;
+    }
+
+    vertices.push(baseVertices[i], [0, 0.5, 0], baseVertices[i + 1]);
   }
 
   return vertices;

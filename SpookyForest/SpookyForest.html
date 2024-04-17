@@ -1,0 +1,1460 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>3D Demonstration</title>
+
+    <!-- WebGL Scripts -->
+    <script id="2dVertexShader" type="x-shader/x-vertex">
+      attribute vec4 a_position;
+      attribute vec3 vert_color;
+      varying vec3 fragColor;
+
+      //This is added to place the object
+      uniform vec3 u_transform;
+      uniform vec3 u_rotation;
+      uniform vec3 u_scale;
+
+      //This was added for camera move
+      uniform vec3 cameraLoc;
+      uniform vec3 cameraRotation;
+      uniform float n;
+      uniform float f;
+      uniform float r;
+      uniform float t;
+
+      //Lighting
+      const int NUMBER_OF_LIGHTS = 10;
+      uniform vec3 spotLightLoc;
+      uniform vec3 spotLoc[NUMBER_OF_LIGHTS];
+      varying vec3 fakeNormal;
+      varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
+      varying vec3 v_surfaceToView;
+      varying vec3 v_spot_surfaceToLight;
+
+
+
+      vec4 PositionObject(vec4 pos){
+          mat4 translateM = mat4(
+              1.0,             0.0,             0.0,             0.0,
+              0.0,             1.0,             0.0,             0.0,
+              0.0,             0.0,             1.0,             0.0,
+              u_transform.x, u_transform.y, u_transform.z, 1.0
+          );
+          return translateM * pos;
+      }
+
+      vec4 ScaleObject(vec4 pos){
+          if (length(u_scale) == 0.0) return pos;
+          mat4 scaleM = mat4(
+              u_scale.x, 0.0,       0.0,       0.0,
+              0.0,       u_scale.y, 0.0,       0.0,
+              0.0,       0.0,       u_scale.z, 0.0,
+              0.0,       0.0,       0.0,       1.0
+          );
+          return scaleM * pos;
+      }
+
+      vec4 RotateObject(vec4 pos){
+          vec3 c = cos(u_rotation);
+          vec3 s = sin(u_rotation);
+
+          mat4 rotateX = mat4(
+              1.0, 0.0,      0.0, 0.0,
+              0.0, c.x,      s.x, 0.0,
+              0.0, -s.x,     c.x, 0.0,
+              0.0, 0.0,      0.0, 1.0
+          );
+
+          mat4 rotateY = mat4(
+              c.y, 0.0, -s.y, 0.0,
+              0.0, 1.0, 0.0,  0.0,
+              s.y, 0.0, c.y,  0.0,
+              0.0, 0.0, 0.0,  1.0
+          );
+
+          mat4 rotateZ = mat4(
+              c.z,  s.z, 0.0, 0.0,
+              -s.z, c.z, 0.0, 0.0,
+              0.0,  0.0, 1.0, 0.0,
+              0.0,  0.0, 0.0, 1.0
+          );
+
+          return rotateX * rotateY * rotateZ * pos;
+      }
+
+      vec4 MoveCamera(vec4 pos){
+        vec3 cw = cos(cameraRotation);
+        vec3 sw = sin(cameraRotation);
+
+        mat4 translateView = mat4(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, -1.0, 0.0,
+            -1.0*cameraLoc.x, -1.0*cameraLoc.y, cameraLoc.z, 1.0
+        );
+
+        mat4 rotateViewX = mat4(
+              1.0, 0.0,      0.0, 0.0,
+              0.0, cw.x,      sw.x, 0.0,
+              0.0, -sw.x,     cw.x, 0.0,
+              0.0, 0.0,      0.0, 1.0
+          );
+
+        mat4 rotateViewY = mat4(
+              cw.y, 0.0, -sw.y, 0.0,
+              0.0, 1.0, 0.0,  0.0,
+              sw.y, 0.0, cw.y,  0.0,
+              0.0, 0.0, 0.0,  1.0
+          );
+
+        mat4 rotateViewZ = mat4(
+              cw.z,  sw.z, 0.0, 0.0,
+              -sw.z, cw.z, 0.0, 0.0,
+              0.0,  0.0, 1.0, 0.0,
+              0.0,  0.0, 0.0, 1.0
+          );
+
+        return rotateViewX*rotateViewY*rotateViewZ*translateView*pos;
+      }
+
+      vec4 ApplyProjection(vec4 pos){
+        mat4 ComplexPerspective = mat4(
+            n/r, 0.0, 0.0, 0.0,
+            0.0, n/t, 0.0, 0.0,
+            0.0, 0.0, -1.0*(f+n)/(f-n), -1.0,
+            0.0, 0.0, -2.0*f*n/(f-n), 0.0
+        );
+
+        return ComplexPerspective*pos;
+      }
+
+      void main()
+      {
+          if (length(a_position)<5.0){
+              fakeNormal = RotateObject(a_position).xyz;
+          } else {
+              fakeNormal = vec3(0.0,1.0,0.0);
+          }
+
+          vec4 worldSpace = PositionObject(RotateObject(ScaleObject(a_position)));
+
+          // Lighting Stuff
+          for (int j = 0; j < NUMBER_OF_LIGHTS; j+= 1){
+            v_surfaceToLight[j] = spotLoc[j] - worldSpace.xyz;
+          }
+
+          v_surfaceToView = cameraLoc - worldSpace.xyz;
+
+          v_spot_surfaceToLight = spotLightLoc - worldSpace.xyz;
+
+
+          fragColor = vert_color;
+          vec4 cameraSpace = MoveCamera(worldSpace);
+          gl_Position = ApplyProjection(cameraSpace);
+      }
+    </script>
+    <script id="2dFragmentShader" type="x-shader/x-fragment">
+      //Fragment shaders do not have precision so we have to set it.
+      const int NUMBER_OF_LIGHTS = 10;
+      precision mediump float;
+      uniform vec3 moonLoc;
+      varying vec3 fragColor;
+      varying vec3 fakeNormal;
+      varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
+      varying vec3 v_surfaceToView;
+      varying vec3 v_spot_surfaceToLight;
+
+      void main(){
+        float ambient = 0.1;
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) *.25;
+        if (d_light < 0.0) d_light = 0.0;
+
+        float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));
+        for (int j = 1; j < NUMBER_OF_LIGHTS; j += 1){
+          p_light += dot(normalize(fakeNormal), normalize(v_surfaceToLight[j]))*1.0/(length(v_surfaceToLight[j]));
+        }
+        if (p_light < 0.0) p_light = 0.0;
+
+        float s_light_power = 0.0;
+        float s_light = dot(normalize(v_spot_surfaceToLight), vec3(0,1,0));
+        if (s_light >= .98){
+          s_light_power = dot(normalize(fakeNormal), normalize(v_spot_surfaceToLight));
+          if(s_light_power < 0.0){
+            s_light_power = 0.0;
+          }
+        }
+
+        //gl_FragColor = vec4(0,0,1,1); //Between 0 and 1.
+      	gl_FragColor = vec4(fragColor*(ambient+d_light+p_light+s_light_power),1);
+      }
+    </script>
+
+    <!-- Scripts -->
+    <script>
+      class Transform {
+        constructor() {
+          this.forward = [0, 0, 1];
+          this.right = [1, 0, 0];
+          this.up = [0, 1, 0];
+        }
+
+        /**@param {number[]} RotAngles*/
+        doRotations(RotAngles) {
+          this.xRot = [
+            [1, 0, 0, 0],
+            [0, Math.cos(RotAngles[0]), -1 * Math.sin(RotAngles[0]), 0],
+            [0, Math.sin(RotAngles[0]), Math.cos(RotAngles[0]), 0],
+            [0, 0, 0, 1],
+          ];
+          this.yRot = [
+            [Math.cos(RotAngles[1]), 0, Math.sin(RotAngles[1]), 0],
+            [0, 1, 0, 0],
+            [-1 * Math.sin(RotAngles[1]), 0, Math.cos(RotAngles[1]), 0],
+            [0, 0, 0, 1],
+          ];
+          this.zRot = [
+            [Math.cos(RotAngles[2]), -1 * Math.sin(RotAngles[2]), 0, 0],
+            [Math.sin(RotAngles[2]), Math.cos(RotAngles[2]), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+          ];
+          //this.forward = this.crossMultiply(xRot,[0,0,1,0]);
+          this.forward = this.crossMultiply(
+                  this.zRot,
+                  this.crossMultiply(
+                          this.yRot,
+                          this.crossMultiply(this.xRot, [0, 0, 1, 0]),
+                  ),
+          );
+          this.right = this.crossMultiply(
+                  this.zRot,
+                  this.crossMultiply(
+                          this.yRot,
+                          this.crossMultiply(this.xRot, [1, 0, 0, 0]),
+                  ),
+          );
+          this.up = this.crossMultiply(
+                  this.zRot,
+                  this.crossMultiply(
+                          this.yRot,
+                          this.crossMultiply(this.xRot, [0, 1, 0, 0]),
+                  ),
+          );
+        }
+
+        /**
+         * @param {number[][]} M
+         * @param {number[]} V
+         */
+        crossMultiply(M, V) {
+          return [
+            M[0][0] * V[0] + M[0][1] * V[1] + M[0][2] * V[2] + M[0][3] * V[3],
+            M[1][0] * V[0] + M[1][1] * V[1] + M[1][2] * V[2] + M[1][3] * V[3],
+            M[2][0] * V[0] + M[2][1] * V[1] + M[2][2] * V[2] + M[2][3] * V[3],
+            M[3][0] * V[0] + M[3][1] * V[1] + M[3][2] * V[2] + M[3][3] * V[3],
+          ];
+        }
+      }
+
+      const collision = Object.freeze({
+        Sphere: 0,
+        Box: 1,
+        undefined: undefined,
+      });
+
+      class GameObject {
+        constructor() {
+          this.gl = gl;
+          this.isTrigger = false;
+          this.id = 0;
+
+          this.loc = [0, 0, 0];
+          this.rot = [0, 0, 0];
+          this.scale = [1, 1, 1];
+
+          this.velocity = [0, 0, 0];
+          this.angVelocity = [0, 0, 0];
+
+          /** @type {number | undefined} */
+          this.collisionType = collision.undefined;
+          /** @type {number[] | undefined} [x, y, z] with each one describing how far in each direction it's going*/
+          this.boxCollider = undefined;
+          /** @type {number | undefined} Must be positive */
+          this.circleCollider = undefined;
+
+          this.transform = new Transform();
+          this.vertCount = 0;
+          this.primitiveType = this.gl.TRIANGLES;
+          this.buffer = this.gl.createBuffer();
+          this.tag = "Default";
+        }
+
+        Move() {
+          let tempP = [0, 0, 0];
+          for (let i = 0; i < 3; i++) {
+            tempP[i] = this.loc[i];
+            tempP[i] += this.velocity[i];
+            this.rot[i] += this.angVelocity[i];
+          }
+
+          let clear = true;
+          for (let so in _main.solid) {
+            if (_main.solid[so] !== this) {
+              if (_main.checkCollision(tempP, this, _main.solid[so])) {
+                if (!this.isTrigger) {
+                  this.OnCollisionEnter(_main.solid[so]);
+                  _main.solid[so]?.OnCollisionEnter(this);
+                  clear = false;
+                } else {
+                  this.OnTriggerEnter(_main.solid[so]);
+                  _main.solid[so]?.OnTriggerEnter(this);
+                }
+              }
+            }
+          }
+          if (clear) {
+            this.loc = tempP;
+          }
+          //what happens if a trigger object collides with another trigger object
+          for (let to in _main.trigger) {
+            if (_main.trigger[to] !== this) {
+              if (_main.checkCollision(tempP, this, _main.trigger[to])) {
+                this.OnTriggerEnter(_main.trigger[to]);
+                _main.trigger[to]?.OnTriggerEnter(this);
+              }
+            }
+          }
+        }
+
+        //Abstract functions, think Unity
+        update() {
+          console.error(this.tag + " update() is NOT IMPLEMENTED!");
+        }
+
+        /**@param {WebGLProgram} program*/
+        render(program) {
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
+
+          //First we bind the buffer for triangle 1
+          let positionAttributeLocation = this.gl.getAttribLocation(
+                  program,
+                  "a_position",
+          );
+          let size = 3; // 2 components per iteration
+          let type = this.gl.FLOAT; // the data is 32bit floats
+          let normalize = false; // don't normalize the data
+          let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+          let offset = 0; // start at the beginning of the buffer
+          this.gl.enableVertexAttribArray(positionAttributeLocation);
+          this.gl.vertexAttribPointer(
+                  positionAttributeLocation,
+                  size,
+                  type,
+                  normalize,
+                  stride,
+                  offset,
+          );
+
+          //Now we have to do this for color
+          const colorAttributeLocation = this.gl.getAttribLocation(
+                  program,
+                  "vert_color",
+          );
+          //We don't have to bind because we already have the correct buffer bound.
+          size = 3;
+          type = this.gl.FLOAT;
+          normalize = false;
+          stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
+          offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
+          this.gl.enableVertexAttribArray(colorAttributeLocation);
+          this.gl.vertexAttribPointer(
+                  colorAttributeLocation,
+                  size,
+                  type,
+                  normalize,
+                  stride,
+                  offset,
+          );
+
+          const tranLoc = this.gl.getUniformLocation(program, "u_transform");
+          const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
+          const scaleLoc = this.gl.getUniformLocation(program, "u_scale");
+          this.gl.uniform3fv(tranLoc, new Float32Array(this.loc));
+          this.gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
+          this.gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
+
+          offset = 0;
+          this.gl.drawArrays(this.primitiveType, offset, this.vertCount);
+        }
+
+        /**@param {GameObject} other*/
+        OnTriggerEnter(other) {}
+
+        /**@param {GameObject} other*/
+        OnCollisionEnter(other) {}
+      }
+
+      class Camera extends GameObject {
+        constructor() {
+          super();
+
+          this.collisionType = collision.Sphere;
+          this.circleCollider = 0.1;
+          this.tag = "Player";
+        }
+
+        update() {
+          if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
+          if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
+          if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
+          if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
+
+          if (this.rot[0] <= -1) this.rot[0] = -1;
+          if (this.rot[0] >= 1) this.rot[0] = 1;
+
+          this.velocity = [0, 0, 0];
+          if (_main.checkKey("W")) {
+            this.transform.doRotations(this.rot);
+            for (let i = 0; i < 3; i += 2) {
+              this.velocity[i] += this.transform.forward[i] * 0.01;
+            }
+          }
+          if (_main.checkKey("S")) {
+            this.transform.doRotations(this.rot);
+            for (let i = 0; i < 3; i += 2) {
+              this.velocity[i] += this.transform.forward[i] * -0.01;
+            }
+          }
+          if (_main.checkKey("A")) {
+            this.transform.doRotations(this.rot);
+            for (let i = 0; i < 3; i++) {
+              this.velocity[i] += this.transform.right[i] * -0.01;
+            }
+          }
+          if (_main.checkKey("D")) {
+            this.transform.doRotations(this.rot);
+            for (let i = 0; i < 3; i++) {
+              this.velocity[i] += this.transform.right[i] * 0.01;
+            }
+          }
+
+          this.Move();
+        }
+
+        render(program) {
+          let camLoc = gl.getUniformLocation(program, "cameraLoc");
+          gl.uniform3fv(camLoc, new Float32Array(this.loc));
+          let worldLoc = gl.getUniformLocation(program, "cameraRotation");
+          gl.uniform3fv(worldLoc, new Float32Array(this.rot));
+        }
+
+        /** @param {GameObject} other */
+        OnTriggerEnter(other) {
+          if (other.tag === "Beam") {
+            this.loc = [0, 0, 0];
+          }
+          if (other.tag === "Sphere") {
+            _main.state.innerHTML = "WIN";
+          }
+        }
+      }
+
+      class Floor extends GameObject {
+        constructor() {
+          super();
+          this.tag = "Floor";
+
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+          const A = [1000, 0, 0]; //red
+          const B = [0, 0, 1000]; //red+green
+          const C = [-1000, 0, 0]; //green
+          const D = [0, 0, -1000]; //green+blue
+          const green = [20 / 255, 30.5 / 255, 12.5 / 255];
+
+          this.vertices = [
+            ...A,
+            ...green,
+            ...B,
+            ...green,
+            ...C,
+            ...green,
+            ...D,
+            ...green,
+          ];
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_FAN;
+        }
+
+        update() {}
+      }
+
+      class Rock extends GameObject {
+        constructor() {
+          super();
+          this.collisionType = collision.Box;
+          this.boxCollider = [0.9, 1, 0.9];
+
+          this.tag = "ROCK";
+
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+          let c = randNum([0.6, 1], 1, 1)[0];
+          let p = randNum([0, c - 0.1], 2, 3);
+          let q = randNum([-c + 0.1, 0], 2, 3);
+          let w = randNum([0.5, 0.8], 2, 3);
+
+          const B = [q[0], w[0], q[1]]; // TOP
+          const E = [p[0], w[1], p[1]]; // TOP
+          const A = [q[2], w[2], p[2]];
+          const C = [c, 0, 0];
+          const D = [0, 0, c];
+          const F = [0, 0, -c];
+          let vertSequence = [E, C, B, F, A, D, F, C, D, E, A, B];
+          let colorVerts = vertSequence.map((value, index) => {
+            let graycolor = randNum([0.3, 0.8], 3, 1)[0];
+            return [...value, graycolor, graycolor, graycolor];
+          });
+
+          this.vertices = [];
+          colorVerts.map((value) => value.map((value) => this.vertices.push(value)));
+
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_STRIP;
+        }
+        update() {}
+      }
+
+      class TreeTrunk extends GameObject {
+        constructor() {
+          super();
+          this.collisionType = collision.Box;
+          this.boxCollider = [0.6, 1, 0.6];
+
+          this.tag = "Trunk";
+
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+          let brown = [0.44, 0.27, 0.0];
+          let dbrown = [0.2, 0.13, 0.0];
+
+          this.vertices = hexPrism([brown, dbrown]);
+
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_STRIP;
+        }
+        update() {}
+      }
+      class CandleBase extends GameObject {
+        constructor() {
+          super();
+          this.collisionType = collision.Box;
+          this.boxCollider = [0.6, 1, 0.6];
+
+          this.tag = "Wax";
+
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+          let brown = [240 / 250, 235 / 250, 210 / 250];
+          let dbrown = brown.map((value) => {
+            return value / 2;
+          });
+
+          this.vertices = hexPrism([brown, dbrown]);
+
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_STRIP;
+        }
+        update() {}
+      }
+      class CandleTop extends GameObject {
+        constructor() {
+          super();
+          this.collisionType = collision.Box;
+          this.boxCollider = [0.6, 1, 0.6];
+          this.tag = "WaxTop";
+
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+          let brown = [240 / 250, 235 / 250, 210 / 250];
+          let lbrown = brown.map((value) => value / 0.8);
+
+          this.vertices = hexPrism([lbrown, brown], true);
+
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_STRIP;
+        }
+        update() {}
+      }
+
+      class Icosohedron extends GameObject {
+        constructor() {
+          super();
+
+          this.tag = "Sphere";
+
+          this.collisionType = collision.Sphere;
+          this.circleCollider = 1;
+          this.primary = [0, 1, 1];
+          this.secondary = [0, 1, 1];
+          this.tertiary = [0, 1, 1];
+
+          this.initalize();
+
+          this.angVelocity = [0.0, 0.001, 0.001];
+        }
+
+        makeVerts() {
+          /** @type number[][]*/
+          const vertArray = createIcosahedronVertices();
+          let verts = vertArray.map((value) => {
+            switch (Math.floor(Math.random() * 10) % 3) {
+              case 0:
+                return [...value, ...this.primary];
+              case 1:
+                return [...value, ...this.secondary];
+              case 2:
+                return [...value, ...this.tertiary];
+            }
+          });
+          let vert = [];
+          verts.map((value) => value.map((value) => vert.push(value)));
+          return vert;
+        }
+
+        initalize() {
+          this.buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
+          this.vertices = this.makeVerts();
+
+          gl.bufferData(
+                  gl.ARRAY_BUFFER,
+                  new Float32Array(this.vertices),
+                  gl.STATIC_DRAW,
+          );
+
+          this.vertCount = this.vertices.length / 6;
+          this.primitiveType = gl.TRIANGLE_STRIP;
+        }
+
+        update() {
+          this.Move();
+        }
+      }
+      class TreeLeaves extends Icosohedron {
+        constructor() {
+          super();
+          this.tag = "Leaves";
+          this.primary = [60 / 255, 78 / 255, 15 / 255];
+          this.secondary = [80 / 255, 104 / 255, 20 / 255];
+          this.tertiary = [100 / 255, 130 / 255, 25 / 255];
+          this.initalize();
+        }
+
+        update() {}
+      }
+      class Moon extends Icosohedron {
+        constructor() {
+          super();
+          this.tag = "Moon";
+          this.primary = [0.6, 0.6, 0.6];
+          this.secondary = [0.8, 0.8, 0.8];
+          this.tertiary = [0.7, 0.7, 0.7];
+
+          this.initalize();
+        }
+      }
+      class Fire extends Icosohedron {
+        constructor() {
+          super();
+          this.tag = "Fire";
+          this.primary = [1, 0, 0];
+          this.secondary = [1, 1, 0];
+          this.tertiary = [1, 0.5, 0];
+          this.initalize();
+        }
+      }
+
+      class UFOBase extends Icosohedron {
+        constructor() {
+          super();
+
+          this.tag = "AlienBase";
+          this.scale = [1, 0.2, 1];
+          this.primary = [0.1, 0.1, 0.1];
+          this.secondary = [0.3, 0.3, 0.3];
+          this.tertiary = [0.5, 0.5, 0.5];
+          this.initalize();
+          this.theta = 3.14;
+          this.radius = 25;
+          this.angVelocity = [0, 0.001, 0];
+        }
+
+        update() {
+          this.loc[0] =
+                  this.radius *
+                  (Math.cos(this.theta * 0.8) * Math.sin(this.theta * 0.8)) *
+                  Math.cos(this.theta);
+          this.loc[2] =
+                  this.radius *
+                  (Math.cos(this.theta * 0.8) * Math.sin(this.theta * 0.8)) *
+                  Math.sin(this.theta);
+          this.theta += 0.0025 / 4;
+          this.Move();
+        }
+
+        render(program) {
+          super.render(program);
+          let s_light = gl.getUniformLocation(program, "spotLightLoc");
+          gl.uniform3fv(s_light, this.loc);
+        }
+      }
+
+      class UFOTop extends Icosohedron {
+        constructor() {
+          super();
+          this.tag = "AlienTop";
+          this.primary = [0.1, 0.1, 0.5];
+          this.secondary = [0.3, 0.3, 0.7];
+          this.tertiary = [0.5, 0.5, 1];
+          this.scale = [0.3, 0.3, 0.3];
+          this.initalize();
+
+          this.angVelocity = [0, 0.001, 0];
+          this.velocity = [0, 0, 1];
+        }
+      }
+
+      class Beam extends GameObject {
+        constructor() {
+          super();
+          this.tag = "Beam";
+
+          this.collisionType = collision.Sphere;
+          this.circleCollider = 1;
+        }
+
+        update() {}
+        render() {}
+      }
+
+      /**
+       * @return {number[][]}
+       */
+      function createIcosahedronVertices() {
+        const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
+
+        // Define the vertices of a regular icosahedron
+        let B = [0, 1, phi]; // A -> B FIXED
+        let C = [0, -1, phi]; // C CORRECT
+        let I = [0, -1, -phi]; //? D -> I
+        let H = [0, 1, -phi]; //? B -> H
+        let F = [1, phi, 0]; // E -> F
+        let D = [1, -phi, 0]; // F -> D FIXED
+        let G = [-1, phi, 0]; //? G CORRECT
+        let J = [-1, -phi, 0]; //? H -> J
+        let A = [phi, 0, 1]; //* J -> A FIXED
+        let E = [phi, 0, -1]; // I -> E
+        let K = [-phi, 0, 1]; //? K CORRECT
+        let M = [-phi, 0, -1]; //*M CORRECT
+
+        //prettier-ignore
+        let vertices = [
+          M, K, G,
+          B, K, C,
+          B, A, C,
+          D, J, C,
+          K, J, M,
+          I, J, D,
+          I, E, D,
+          A, E, F,
+          H, E, I,
+          H, M, G,
+          H, G, G,
+          B, F, A,
+          F, G, H,
+        ];
+        // Normalize the vertices to the given radius */
+        for (let i = 0; i < vertices.length; i++) {
+          const length = Math.sqrt(
+                  vertices[i][0] ** 2 + vertices[i][1] ** 2 + vertices[i][2] ** 2,
+          );
+          vertices[i][0] = vertices[i][0] / length;
+          vertices[i][1] = vertices[i][1] / length;
+          vertices[i][2] = vertices[i][2] / length;
+        }
+
+        return vertices;
+      }
+
+      /**
+       * @param {number[][]} colors
+       * @param {boolean} pyramid
+       */
+      function hexPrism(colors, pyramid = false) {
+        let brown = colors[0];
+        let dbrown = colors[1];
+
+        let A = [-0.5, -0.5, -0.25];
+        let B = [-0.25, -0.5, -0.5];
+        return [
+          ...A,
+          ...dbrown,
+          ...A.map((value, index) => (index === 1 ? -value : value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...B,
+          ...dbrown,
+          ...B.map((value, index) => (index === 1 ? -value : value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...B.map((value, index) => (index === 0 ? -value : value)),
+          ...dbrown,
+          ...B.map((value, index) => (index === 2 ? value : -value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...A.map((value, index) => (index === 0 ? -value : value)),
+          ...dbrown,
+          ...A.map((value, index) => (index === 2 ? value : -value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...A.map((value, index) => (index === 1 ? value : -value)),
+          ...dbrown,
+          ...A.map((value, index) => -value).map((value, index) =>
+                  index !== 1 && pyramid ? 0 : value,
+          ),
+          ...brown,
+          ...B.map((value, index) => (index === 1 ? value : -value)),
+          ...dbrown,
+          ...B.map((value, index) => (index === 3 ? value : -value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...B.map((value, index) => (index === 2 ? -value : value)),
+          ...dbrown,
+          ...B.map((value, index) => (index === 0 ? value : -value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...A.map((value, index) => (index === 2 ? -value : value)),
+          ...dbrown,
+          ...A.map((value, index) => (index === 0 ? value : -value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+          ...A,
+          ...dbrown,
+          ...A.map((value, index) => (index === 1 ? -value : value)).map(
+                  (value, index) => (index !== 1 && pyramid ? 0 : value),
+          ),
+          ...brown,
+        ];
+      }
+    </script>
+    <script>
+      //@ts-check
+      class I_WebGL {
+        constructor() {
+          this.vertexShaderSource = document.getElementById("2dVertexShader").text;
+          this.fragmentShaderSource =
+                  document.getElementById("2dFragmentShader").text;
+          this.vertexShader = this.createShader(
+                  gl.VERTEX_SHADER,
+                  this.vertexShaderSource,
+          );
+          this.fragmenShader = this.createShader(
+                  gl.FRAGMENT_SHADER,
+                  this.fragmentShaderSource,
+          );
+          //Link to program
+          this.program = this.createProgram(this.vertexShader, this.fragmenShader);
+          //setup our viewport
+          gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+          //set clear colors
+          gl.clearColor(0.0, 0.0, 0.01, 1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+
+          //We will need this for now!
+          gl.enable(gl.DEPTH_TEST);
+        }
+
+        /**
+         * @param {GLenum} type    gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+         * @param {string} source  A string containing the GLSL source code to set
+         * @returns {WebGLShader}
+         */
+        createShader(type, source) {
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+          if (success) return shader;
+          console.error(gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+        }
+
+        /**
+         * @param {WebGLShader} vs Vertex Shader
+         * @param {WebGLShader} fs Fragment Shader
+         * @returns {WebGLProgram}
+         */
+        createProgram(vs, fs) {
+          const program = gl.createProgram();
+          gl.attachShader(program, vs);
+          gl.attachShader(program, fs);
+          gl.linkProgram(program);
+          const success = gl.getProgramParameter(program, gl.LINK_STATUS);
+          if (success) return program;
+          console.error(gl.getProgramInfoLog(program));
+          gl.deleteProgram(program);
+        }
+      }
+    </script>
+    <script>
+      const NUMBER_OF_LIGHTS = 10; //? If changed, change in two other places
+
+      class Main {
+        constructor() {
+          this.webGL = new I_WebGL();
+          this.program = this.webGL.program;
+          gl.useProgram(this.program);
+          requestAnimationFrame(Main.mainLoop); //Static call
+
+          //Added these for Game Engine
+          this.objectCount = 0;
+          // @type {GameObject[]}
+          this.visual = [];
+          // @type {GameObject[]}
+          this.solid = [];
+          // @type {GameObject[]}
+          this.trigger = [];
+          this.keys = [];
+          this.state = document.getElementById("GameState");
+
+          //Added for Camera move!
+          let camLoc = gl.getUniformLocation(this.program, "cameraLoc");
+          gl.uniform3fv(camLoc, new Float32Array([0, 0, 0]));
+          let worldLoc = gl.getUniformLocation(this.program, "cameraRotation");
+          gl.uniform3fv(worldLoc, new Float32Array([0, 0, 0]));
+
+          let tempLoc = gl.getUniformLocation(this.program, "n");
+          gl.uniform1f(tempLoc, 0.1);
+          tempLoc = gl.getUniformLocation(this.program, "f");
+          gl.uniform1f(tempLoc, 500);
+          tempLoc = gl.getUniformLocation(this.program, "r");
+          gl.uniform1f(tempLoc, 0.1);
+          tempLoc = gl.getUniformLocation(this.program, "t");
+          gl.uniform1f(tempLoc, 0.1);
+
+          let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
+          gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
+
+          this.playArea = 10;
+          const coordWin = randNum([-this.playArea + 1, this.playArea + 1], 2, 2, [
+            -this.playArea,
+            this.playArea,
+          ]);
+
+          this.createObject(1, Camera);
+          this.createObject(0, Floor, [0, -0.3, 0]);
+          this.createObject(0, UFOBase, [0, 5, 2]);
+          this.createObject(0, UFOTop, [0, 0.2 + 5, 2]);
+          this.createObject(2, Beam, [0, 0, 2]);
+          this.createObject(2, Icosohedron, [coordWin[0], 0, coordWin[1]]);
+          this.createObjects();
+        }
+
+        /** @param {KeyboardEvent} event */
+        static keyD(event) {
+          _main.keyDown(event);
+        }
+
+        /** @param {KeyboardEvent} event */
+        static keyU(event) {
+          _main.keyUp(event);
+        }
+
+        static mainLoop() {
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+          _main.renderAll();
+          _main.updateAll();
+          requestAnimationFrame(Main.mainLoop);
+        }
+        createObjects() {
+          this.createObject(0, Moon, [-59.42, 161.7, 101.6], [0, 0, 0], [2]);
+          for (let i = 0; i < 100; i++) {
+            if ((randNum([0, 1], 1, 1)[0] * 10) % 3) {
+              this.createTree(
+                      randNum([-this.playArea, this.playArea], 2, 2, [-0.3, 0.3]),
+              );
+            } else {
+              let coords = randNum(
+                      [-this.playArea, this.playArea],
+                      2,
+                      2,
+                      [-0.3, 0.3],
+              );
+              this.createObject(
+                      1,
+                      Rock,
+                      [coords[0], -0.5, coords[1]],
+                      [0, randNum([0, 1], 1, 1)[0], 0],
+                      [0.5, 1.5, 0.5],
+              );
+            }
+          }
+          for (let i = 0; i < NUMBER_OF_LIGHTS; i++) {
+            let coords = randNum([-this.playArea, this.playArea], 2, 2, [-0.3, 0.3]);
+            this.createCandle(coords, 0.08);
+          }
+
+          this.assignLights();
+        }
+
+        /**
+         * @param {number[]} loc
+         * @param {number} scale
+         */
+        createCandle(loc, scale) {
+          const scalingFactor = 0.9;
+          this.createObject(
+                  0,
+                  CandleBase,
+                  [loc[0], -0.26, loc[1]],
+                  [0, 0, 0],
+                  [scale],
+          );
+          this.createObject(
+                  0,
+                  CandleTop,
+                  [loc[0], ((1 / 2) * scalingFactor - 1) * scale - scale * 2, loc[1]],
+                  [0, 0, 0],
+                  [scale, scale / 2.5, scale],
+          );
+          scale /= 3;
+          for (let i = 0; i < 7; i++) {
+            let height = ((i / 2) * scalingFactor - 1) * scale - scale * 6;
+            this.createObject(
+                    0,
+                    Fire,
+                    [
+                      randNum([-0.1 * scale, 0.1 * scale], 2, 1)[0] + loc[0],
+                      height,
+                      randNum([-0.1 * scale, 0.1 * scale], 2, 1)[0] + loc[1],
+                    ],
+                    randNum([0, 1], 1, 3),
+                    [scalingFactor ** (3 * i) * scale],
+            );
+          }
+        }
+
+        /**
+         * @param {number[]} loc
+         */
+        createTree(loc = [0, 0]) {
+          let x = loc[0];
+          let z = loc[1];
+          this.createObject(
+                  1,
+                  TreeLeaves,
+                  [0.15 + x, 0.7, 0.05 + z],
+                  randNum([0, 1], 2, 3),
+                  [0.5],
+          );
+          this.createObject(
+                  1,
+                  TreeLeaves,
+                  [-0.15 + x, 0.7, 0.2 + z],
+                  randNum([0, 1], 2, 3),
+                  [0.5],
+          );
+          this.createObject(
+                  1,
+                  TreeLeaves,
+                  [x, 0.7, -0.05 + z],
+                  randNum([0, 1], 2, 3),
+                  [0.5],
+          );
+          this.createObject(1, TreeLeaves, [x, 0.8, z], randNum([0, 1], 2, 3), [0.6]);
+          this.createObject(1, TreeTrunk, [x, 0, z], [0, 0, 0], [0.5, 1, 0.5]);
+        }
+
+        assignLights() {
+          let tags = [];
+          for (let i in this.visual) {
+            if (this.visual[i].tag === "WaxTop") {
+              tags.push(this.visual[i]);
+            }
+          }
+
+          const spotLoc = new Array(NUMBER_OF_LIGHTS);
+          for (let j in tags) {
+            spotLoc[j] = gl.getUniformLocation(this.program, "spotLoc[" + j + "]");
+            gl.uniform3f(
+                    spotLoc[j],
+                    tags[j].loc[0],
+                    tags[j].loc[1] + 0.07,
+                    tags[j].loc[2],
+            );
+          }
+        }
+
+        updateAll() {
+          for (let i in this.visual) {
+            this.visual[i].update();
+
+            this.visual["ID3"].loc = [
+              this.visual["ID2"].loc[0],
+              this.visual["ID2"].loc[1] + 0.2,
+              this.visual["ID2"].loc[2],
+            ];
+            this.trigger["ID4"].loc = [
+              this.visual["ID2"].loc[0],
+              0,
+              this.visual["ID2"].loc[2],
+            ];
+          }
+          for (let i in this.solid) {
+            this.solid[i].update();
+          }
+          for (let i in this.trigger) {
+            this.trigger[i].update();
+          }
+        }
+
+        renderAll() {
+          for (let i in this.visual) {
+            this.visual[i].render(this.program);
+          }
+          for (let i in this.solid) {
+            this.solid[i].render(this.program);
+          }
+          for (let i in this.trigger) {
+            this.trigger[i].render(this.program);
+          }
+        }
+
+        /** @param {KeyboardEvent} event */
+        keyDown(event) {
+          this.keys[event.key.toUpperCase()] = true;
+        }
+
+        /** @param {KeyboardEvent} event */
+        keyUp(event) {
+          this.keys[event.key.toUpperCase()] = false;
+        }
+
+        /**
+         * @param {number[]} point1
+         * @param {number[]} point2
+         */
+        calculateDistance(point1, point2) {
+          const dx = point2[0] - point1[0];
+          const dy = point2[1] - point1[1];
+          const dz = point2[2] - point1[2];
+          return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        /**
+         * @param {number[]} proposedLocation
+         * @param {GameObject} self
+         * @param {GameObject} other
+         */
+        checkCollision(proposedLocation, self, other) {
+          if (
+                  other.collisionType === collision.undefined ||
+                  self.collisionType === collision.undefined
+          ) {
+            console.error("Collision type is missing");
+          } else if (
+                  other.collisionType === collision.Sphere &&
+                  self.collisionType === collision.Sphere
+          ) {
+            if (other.circleCollider < 0 || self.circleCollider < 0) {
+              console.error("Collision Radius is negative");
+              return false;
+            }
+            let distance = this.calculateDistance(proposedLocation, other.loc);
+            return distance < self.circleCollider + other.circleCollider;
+          } else if (
+                  other.collisionType === collision.Sphere &&
+                  self.collisionType === collision.Box
+          ) {
+            if (other.circleCollider < 0 || self.circleCollider < 0) {
+              console.error("Collision Radius is negative");
+              return false;
+            }
+            //? Further testing is needed
+            const x_bounds = [
+              proposedLocation[0] - self.boxCollider[0],
+              proposedLocation[0] + self.boxCollider[0],
+            ];
+            const y_bounds = [
+              proposedLocation[1] - self.boxCollider[1],
+              proposedLocation[1] + self.boxCollider[1],
+            ];
+            const z_bounds = [
+              proposedLocation[2] - self.boxCollider[2],
+              proposedLocation[2] + self.boxCollider[2],
+            ];
+
+            return (
+                    other.loc[0] + other.circleCollider < x_bounds[1] &&
+                    other.loc[0] + other.circleCollider < x_bounds[0] &&
+                    other.loc[1] + other.circleCollider < y_bounds[1] &&
+                    other.loc[1] + other.circleCollider < y_bounds[0] &&
+                    other.loc[2] + other.circleCollider < z_bounds[1] &&
+                    other.loc[2] + other.circleCollider < z_bounds[0]
+            );
+          } else if (
+                  other.collisionType === collision.Box &&
+                  self.collisionType === collision.Sphere
+          ) {
+            if (other.circleCollider < 0 || self.circleCollider < 0) {
+              console.error("Collision Radius is negative");
+              return false;
+            }
+            const x_bounds = [
+              other.loc[0] - other.boxCollider[0],
+              other.loc[0] + other.boxCollider[0],
+            ];
+            const y_bounds = [
+              other.loc[1] - other.boxCollider[1],
+              other.loc[1] + other.boxCollider[1],
+            ];
+            const z_bounds = [
+              other.loc[2] - other.boxCollider[2],
+              other.loc[2] + other.boxCollider[2],
+            ];
+
+            return (
+                    proposedLocation[0] - self.circleCollider < x_bounds[1] &&
+                    proposedLocation[0] + self.circleCollider > x_bounds[0] &&
+                    proposedLocation[1] - self.circleCollider < y_bounds[1] &&
+                    proposedLocation[1] + self.circleCollider > y_bounds[0] &&
+                    proposedLocation[2] - self.circleCollider < z_bounds[1] &&
+                    proposedLocation[2] + self.circleCollider > z_bounds[0]
+            );
+          } else if (
+                  other.collisionType === collision.Box &&
+                  self.collisionType === collision.Box
+          ) {
+            const otherX_bounds = [
+                      other.loc[0] - other.boxCollider[0],
+                      other.loc[0] + other.boxCollider[0],
+                    ],
+                    otherY_bounds = [
+                      other.loc[1] - other.boxCollider[1],
+                      other.loc[1] + other.boxCollider[1],
+                    ],
+                    otherZ_bounds = [
+                      other.loc[2] - other.boxCollider[2],
+                      other.loc[2] + other.boxCollider[2],
+                    ],
+                    selfX_bounds = [
+                      proposedLocation[0] - self.boxCollider[0],
+                      proposedLocation[0] + self.boxCollider[0],
+                    ],
+                    selfY_bounds = [
+                      proposedLocation[1] - self.boxCollider[1],
+                      proposedLocation[1] + self.boxCollider[1],
+                    ],
+                    selfZ_bounds = [
+                      proposedLocation[2] - self.boxCollider[2],
+                      proposedLocation[2] + self.boxCollider[2],
+                    ];
+
+            return (
+                    otherX_bounds[0] < selfX_bounds[1] &&
+                    otherY_bounds[0] < selfY_bounds[1] &&
+                    otherZ_bounds[0] < selfZ_bounds[1] &&
+                    otherX_bounds[1] > selfX_bounds[0] &&
+                    otherY_bounds[1] > selfY_bounds[0] &&
+                    otherZ_bounds[1] > selfZ_bounds[0]
+            );
+          }
+
+          return false;
+        }
+
+        /**
+         * @param {number} type 0->V 1->S 2->T
+         * @param {GameObject} prefab
+         * @param {number[]} loc
+         * @param {number[]} rot
+         * @param {number[]} scale
+         */
+        createObject(type, prefab, loc = [0, 0, 0], rot = [0, 0, 0], scale = [1]) {
+          let temp = new prefab(); //Yes this dark sorcery will work.
+          const id = "ID" + this.objectCount;
+          this.objectCount++;
+          temp.id = id;
+          temp.prefab = prefab;
+          for (let i = 0; i < 3; i++) {
+            temp.loc[i] = loc[i];
+            temp.rot[i] = rot[i];
+            if (scale.length === 1) {
+              temp.scale[i] *= scale[0];
+            } else {
+              temp.scale[i] *= scale[i];
+            }
+          }
+          if (temp.circleCollider || temp.boxCollider) {
+            if (scale.length === 1) {
+              temp.circleCollider *= scale[0];
+            } else {
+              temp.boxCollider[0] *= scale[0];
+              temp.boxCollider[1] *= scale[1];
+              temp.boxCollider[2] *= scale[2];
+            }
+          }
+          switch (type) {
+            case 0:
+              this.visual[id] = temp;
+              break;
+            case 1:
+              this.solid[id] = temp;
+              break;
+            case 2:
+              this.trigger[id] = temp;
+              break;
+            default:
+              break;
+          }
+          return temp;
+        }
+
+        /** @param {string} id */
+        destroyObject(id) {
+          if (id in this.visual) {
+            delete this.visual[id];
+            return true;
+          }
+          if (id in this.solid) {
+            delete this.solid[id];
+            return true;
+          }
+
+          if (id in this.trigger) {
+            delete this.trigger[id];
+            return true;
+          }
+          return false;
+        }
+
+        /** @param {string} key */
+        checkKey(key) {
+          return !!(key in this.keys && this.keys[key]);
+        }
+      }
+
+      /**
+       * Generate an array of random numbers within a specified range and precision, avoiding an exclusion range.
+       * @param {number[]} range - An array [min, max] specifying the inclusive range of random numbers.
+       * @param {number} precision - Number of decimal places to round each random number to.
+       * @param {number} num - Number of random numbers to generate.
+       * @param {number[]} exclusionRange - An array [excludeMin, excludeMax] specifying a range to avoid.
+       * @returns {number[]} An array of random numbers.
+       */
+      function randNum(range, precision, num, exclusionRange = []) {
+        // Calculate the minimum and maximum values based on the range
+        const min = range[0];
+        const max = range[1];
+
+        // Array to store the random numbers
+        const randomNumbers = [];
+
+        // Function to check if a number is within the exclusion range
+        const isInExclusionRange = (number) => {
+          if (exclusionRange.length === 2) {
+            const excludeMin = exclusionRange[0];
+            const excludeMax = exclusionRange[1];
+            return number >= excludeMin && number <= excludeMax;
+          }
+          return false;
+        };
+
+        // Generate the specified number of random numbers
+        while (randomNumbers.length < num) {
+          // Generate a random number within the specified range
+          const randomNumber = Math.random() * (max - min) + min;
+
+          // Round the random number to the specified precision
+          const roundedNumber = +randomNumber.toFixed(precision);
+
+          // Check if the rounded number is not in the exclusion range
+          if (!isInExclusionRange(roundedNumber)) {
+            randomNumbers.push(roundedNumber);
+          }
+        }
+
+        return randomNumbers;
+      }
+
+    </script>
+  </head>
+  <body
+    style="
+      display: flex;
+      justify-items: center;
+      align-items: center;
+      flex-flow: column;
+    "
+  >
+    <canvas
+      height="1280"
+      id="mainCanvas"
+      style="border: 2px black solid; width: 100%; max-width: 90vh"
+      width="1280"
+    >
+      Your Browser does not support Canvas Objects
+    </canvas>
+
+    <p id="GameState" style="font-size: 30px">Playing</p>
+
+    <!-- Active Script -->
+    <script>
+      /** @type {HTMLCanvasElement} */
+      const myCanvas = document.getElementsByTagName("canvas")[0];
+      const gl = myCanvas.getContext("webgl");
+      const _main = new Main();
+      window.onkeydown = Main.keyD;
+      window.onkeyup = Main.keyU;
+      requestAnimationFrame(Main.mainLoop);
+    </script>
+  </body>
+</html>

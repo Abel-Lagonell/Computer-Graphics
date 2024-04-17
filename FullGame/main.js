@@ -37,7 +37,6 @@ class Main {
 
     this.createObject(1, Camera);
     this.createObject(0, Floor, [0, -0.3, 0]);
-    this.createObject(1, Prism, [0, 0.2, 2], [0, 0, 0], [2, 2, 2]);
     this.createObjects();
   }
 
@@ -270,7 +269,7 @@ class Main {
         temp.scale[i] *= scale[i];
       }
     }
-    if (temp.tag === "Prism") {
+    if (temp.tag === "Prism" || temp.tag === "Pyramid") {
       temp.circleCollider *= scale[0];
       console.log(temp.circleCollider);
     } else if (temp.circleCollider || temp.boxCollider) {
