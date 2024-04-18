@@ -207,6 +207,7 @@ class Camera extends GameObject {
     this.collisionType = collision.Sphere;
     this.circleCollider = 0.1;
     this.tag = "Player";
+    this.shooting = false;
   }
 
   update() {
@@ -242,6 +243,22 @@ class Camera extends GameObject {
       for (let i = 0; i < 3; i++) {
         this.velocity[i] += this.transform.right[i] * 0.01;
       }
+    }
+
+    if (_main.checkKey(" ") && !this.shooting) {
+      this.shooting = true;
+      this.transform.doRotations(this.rot);
+
+      let lilinfront = this.loc.map(
+        (value, index) => value + this.transform.forward[index] / 5,
+      );
+      lilinfront[1] -= 0.2;
+
+      _main.createObject(2, Bullet, lilinfront, this.rot, [0.01]);
+    }
+
+    if (!_main.checkKey(" ")) {
+      this.shooting = false;
     }
 
     this.Move();
@@ -349,7 +366,11 @@ class Cube extends GameObject {
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.tag = "Cube";
-    const color = hexToRGB("#F00");
+    this.color = hexToRGB("#F00");
+    this.initalize();
+  }
+
+  initalize() {
     const A = [-0.5, -0.5, 0.5];
     const B = [-0.5, 0.5, -0.5];
     const C = [-0.5, 0.5, 0.5];
@@ -368,8 +389,9 @@ class Cube extends GameObject {
       D, H, F,
       B, G
     ];
+
     verts = verts.map((value) => {
-      return [...value, ...color];
+      return [...value, ...this.color];
     });
 
     this.vertices = [];
@@ -381,10 +403,120 @@ class Cube extends GameObject {
     );
     this.vertCount = this.vertices.length / 6;
     this.primitiveType = gl.TRIANGLE_STRIP;
-    this.angVelocity = [0.001, 0.001, 0.001];
   }
 
   update() {}
+}
+
+class BreakableCube extends Cube {
+  constructor() {
+    super();
+    this.color = hexToRGB("#F44");
+    this.tag = "BreakableCube";
+  }
+
+  update() {}
+}
+
+class Enemy extends Cube {
+  constructor() {
+    super();
+    this.tag = "Enemy";
+    this.scale = [0.5, 1, 0.5];
+    this.color = hexToRGB("#303");
+    this.health = 3;
+  }
+
+  lookAtPlayer() {
+    this.player = _main.solid["ID0"];
+    const otherLoc = this.player.loc;
+
+    const direction = [
+      this.loc[0] - otherLoc[0],
+      this.loc[1] - otherLoc[1],
+      this.loc[2] - otherLoc[2],
+    ];
+
+    const magnitude = Math.sqrt(
+      direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2,
+    );
+
+    const directionNormalized = direction.map((value) => value / magnitude);
+
+
+    // Calculate rotation matrix
+    // Assuming Object A's forward direction is initially along the positive z-axis
+    let zAxis = { x: 0, y: 0, z: 1 }; // Initial forward direction of Object A
+
+    // Compute the axis of rotation (cross product of zAxis and directionNormalized)
+    let axis = {
+      x: zAxis.y * directionNormalized[2] - zAxis.z * directionNormalized[1],
+      y: zAxis.z * directionNormalized[0] - zAxis.x * directionNormalized[2],
+      z: zAxis.x * directionNormalized[1] - zAxis.y * directionNormalized[0],
+    };
+
+    // Compute the angle of rotation (dot product of zAxis and directionNormalized)
+    let angle = Math.acos(
+      zAxis.x * directionNormalized[0] +
+        zAxis.y * directionNormalized[1] +
+        zAxis.z * directionNormalized[2],
+    );
+
+    // Create rotation matrix around 'axis' by 'angle' using Rodrigues' rotation formula
+    function rotationMatrix(axis, angle) {
+      let c = Math.cos(angle);
+      let s = Math.sin(angle);
+      let t = 1 - c;
+
+      return [
+        [
+          t * axis.x * axis.x + c,
+          t * axis.x * axis.y - s * axis.z,
+          t * axis.x * axis.z + s * axis.y,
+        ],
+        [
+          t * axis.x * axis.y + s * axis.z,
+          t * axis.y * axis.y + c,
+          t * axis.y * axis.z - s * axis.x,
+        ],
+        [
+          t * axis.x * axis.z - s * axis.y,
+          t * axis.y * axis.z + s * axis.x,
+          t * axis.z * axis.z + c,
+        ],
+      ];
+    }
+
+    let rotation = rotationMatrix(axis, angle);
+
+    let rotatedPosition = {
+      x:
+        rotation[0][0] * this.rot[0] +
+        rotation[0][1] * this.rot[1] +
+        rotation[0][2] * this.rot[2],
+      y:
+        rotation[1][0] * this.rot[0] +
+        rotation[1][1] * this.rot[1] +
+        rotation[1][2] * this.rot[2],
+      z:
+        rotation[2][0] * this.rot[0] +
+        rotation[2][1] * this.rot[1] +
+        rotation[2][2] * this.rot[2],
+    };
+
+    this.rot = [rotatedPosition.x, rotatedPosition.y, rotatedPosition.z];
+  }
+
+  takeDmg() {
+    this.health--;
+  }
+
+  update() {
+    if (this.health <= 0) {
+      _main.destroyObject(this.id);
+    }
+    this.lookAtPlayer();
+  }
 }
 
 class Prism extends GameObject {
@@ -456,6 +588,49 @@ class Pyramid extends GameObject {
   }
 
   update() {}
+}
+
+class Bullet extends Icosohedron {
+  constructor() {
+    super();
+    this.primary = hexToRGB("#700");
+    this.secondary = hexToRGB("#500");
+    this.tertiary = hexToRGB("#900");
+    this.initalize();
+
+    this.angVelocity = [0, 0, 0];
+  }
+
+  update() {
+    this.transform.doRotations(this.rot);
+    for (let i = 0; i < 3; i++) {
+      this.velocity[i] += this.transform.forward[i] * 0.0001;
+    }
+
+    this.Move();
+  }
+
+  /**
+   * @param {GameObject} other
+   */
+  OnCollisionEnter(other) {
+    switch (other.tag) {
+      case "Floor":
+      case "Cube":
+        _main.destroyObject(this.id);
+        break;
+      case "BreakableCube":
+        _main.destroyObject(other.id);
+        _main.destroyObject(this.id);
+        break;
+      case "Enemy":
+        other.takeDmg();
+        _main.destroyObject(this.id);
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 /**

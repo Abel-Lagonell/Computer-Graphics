@@ -36,7 +36,10 @@ class Main {
     gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
 
     this.createObject(1, Camera);
-    this.createObject(0, Floor, [0, -0.3, 0]);
+    this.createObject(0, Floor, [0, -0.5, 0]);
+    this.createObject(1, BreakableCube, [0, 0, 2]);
+    this.createObject(1, Cube, [0, 0, 3]);
+    this.createObject(1, Enemy, [0, 0, -3]);
     this.createObjects();
   }
 
