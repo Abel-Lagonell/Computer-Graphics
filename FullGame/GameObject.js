@@ -418,107 +418,6 @@ class BreakableCube extends Cube {
   update() {}
 }
 
-class Enemy extends Cube {
-  constructor() {
-    super();
-    this.tag = "Enemy";
-    this.scale = [0.5, 1, 0.5];
-    this.color = hexToRGB("#303");
-    this.health = 3;
-  }
-
-  lookAtPlayer() {
-    this.player = _main.solid["ID0"];
-    const otherLoc = this.player.loc;
-
-    const direction = [
-      this.loc[0] - otherLoc[0],
-      this.loc[1] - otherLoc[1],
-      this.loc[2] - otherLoc[2],
-    ];
-
-    const magnitude = Math.sqrt(
-      direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2,
-    );
-
-    const directionNormalized = direction.map((value) => value / magnitude);
-
-
-    // Calculate rotation matrix
-    // Assuming Object A's forward direction is initially along the positive z-axis
-    let zAxis = { x: 0, y: 0, z: 1 }; // Initial forward direction of Object A
-
-    // Compute the axis of rotation (cross product of zAxis and directionNormalized)
-    let axis = {
-      x: zAxis.y * directionNormalized[2] - zAxis.z * directionNormalized[1],
-      y: zAxis.z * directionNormalized[0] - zAxis.x * directionNormalized[2],
-      z: zAxis.x * directionNormalized[1] - zAxis.y * directionNormalized[0],
-    };
-
-    // Compute the angle of rotation (dot product of zAxis and directionNormalized)
-    let angle = Math.acos(
-      zAxis.x * directionNormalized[0] +
-        zAxis.y * directionNormalized[1] +
-        zAxis.z * directionNormalized[2],
-    );
-
-    // Create rotation matrix around 'axis' by 'angle' using Rodrigues' rotation formula
-    function rotationMatrix(axis, angle) {
-      let c = Math.cos(angle);
-      let s = Math.sin(angle);
-      let t = 1 - c;
-
-      return [
-        [
-          t * axis.x * axis.x + c,
-          t * axis.x * axis.y - s * axis.z,
-          t * axis.x * axis.z + s * axis.y,
-        ],
-        [
-          t * axis.x * axis.y + s * axis.z,
-          t * axis.y * axis.y + c,
-          t * axis.y * axis.z - s * axis.x,
-        ],
-        [
-          t * axis.x * axis.z - s * axis.y,
-          t * axis.y * axis.z + s * axis.x,
-          t * axis.z * axis.z + c,
-        ],
-      ];
-    }
-
-    let rotation = rotationMatrix(axis, angle);
-
-    let rotatedPosition = {
-      x:
-        rotation[0][0] * this.rot[0] +
-        rotation[0][1] * this.rot[1] +
-        rotation[0][2] * this.rot[2],
-      y:
-        rotation[1][0] * this.rot[0] +
-        rotation[1][1] * this.rot[1] +
-        rotation[1][2] * this.rot[2],
-      z:
-        rotation[2][0] * this.rot[0] +
-        rotation[2][1] * this.rot[1] +
-        rotation[2][2] * this.rot[2],
-    };
-
-    this.rot = [rotatedPosition.x, rotatedPosition.y, rotatedPosition.z];
-  }
-
-  takeDmg() {
-    this.health--;
-  }
-
-  update() {
-    if (this.health <= 0) {
-      _main.destroyObject(this.id);
-    }
-    this.lookAtPlayer();
-  }
-}
-
 class Prism extends GameObject {
   constructor() {
     super();
@@ -630,6 +529,57 @@ class Bullet extends Icosohedron {
       default:
         break;
     }
+  }
+}
+
+class Enemy extends Cube {
+  constructor() {
+    super();
+    this.tag = "Enemy";
+    this.scale = [0.5, 1, 0.5];
+    this.boxCollider = [0.3, 0.6, 0.3];
+    this.color = hexToRGB("#303");
+    this.health = 3;
+    this.distToPlayer = 0;
+    this.initalize();
+  }
+
+  lookAtPlayer() {
+    const player = _main.solid["ID0"];
+
+    const dirVector = [
+      player.loc[0] - this.loc[0],
+      player.loc[1] - this.loc[1],
+      player.loc[2] - this.loc[2],
+    ];
+
+    const magnitude = Math.sqrt(
+      dirVector
+        .map((value) => value * value)
+        .reduce((total, current) => (total += current)),
+    );
+    this.distToPlayer = magnitude;
+    const normalDirVector = dirVector.map((value) => value / magnitude);
+    this.rot[1] = Math.atan2(normalDirVector[0], normalDirVector[2]);
+  }
+
+  takeDmg() {
+    this.health--;
+  }
+
+  update() {
+    if (this.health <= 0) {
+      _main.destroyObject(this.id);
+    }
+    this.lookAtPlayer();
+    this.transform.doRotations(this.rot);
+    for (let i = 0; i < 3; i++) {
+      this.velocity[i] = this.transform.forward[i] * 0.005;
+    }
+    if (this.distToPlayer < 0.4) {
+      this.velocity = [0, 0, 0];
+    }
+    this.Move();
   }
 }
 
