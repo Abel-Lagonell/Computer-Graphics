@@ -5,7 +5,6 @@ class Main {
     this.webGL = new I_WebGL();
     this.program = this.webGL.program;
     gl.useProgram(this.program);
-    requestAnimationFrame(Main.mainLoop); //Static call
 
     //Added these for Game Engine
     this.objectCount = 0;
@@ -36,11 +35,13 @@ class Main {
     gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
 
     this.createObject(1, Camera);
-    this.createObject(0, Floor, [0, -0.5, 0]);
+    this.createObject(0, Ground, [-250, -0.5, -250]);
     //this.createObject(1, BreakableCube, [0, 0, -2]);
-    //this.createObject(1, Cube, [0, 0, -3]);
-    this.createObject(1, Enemy, [0, 0, 3]);
+    this.createObject(1, Cube, [0, 0, -3]);
+    //this.createObject(1, Enemy, [0, 0, 3]);
     this.createObjects();
+
+    requestAnimationFrame(Main.mainLoop); //Static call
   }
 
   /** @param {KeyboardEvent} event */
@@ -55,9 +56,18 @@ class Main {
 
   static mainLoop() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    _main.renderAll();
-    _main.updateAll();
-    requestAnimationFrame(Main.mainLoop);
+    if (_main.gameState()) {
+      _main.renderAll();
+      _main.updateAll();
+      requestAnimationFrame(Main.mainLoop);
+    }
+  }
+
+  gameState() {
+    if (_main.solid["ID0"].health > 0) {
+      return true;
+    }
+    return false;
   }
 
   createObjects() {}
@@ -390,4 +400,18 @@ function hexToRGB(hexString) {
   var b = parseInt(hexString.substring(4, 6), 16) / 255.0;
 
   return [r, g, b];
+}
+
+function CreateCheckered() {
+  let myPic = [];
+  for (let i = 0; i < 16; i++) {
+    for (let j = 0; j < 16; j++) {
+      if (i % 2 === j % 2) {
+        myPic.push(...hexToRGB("#F0F").map((value) => value * 255), 255);
+      } else {
+        myPic.push(0, 0, 0, 255);
+      }
+    }
+  }
+  return myPic;
 }

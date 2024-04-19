@@ -74,6 +74,8 @@ class GameObject {
     this.isTrigger = false;
     this.id = 0;
 
+    this.picture = CreateCheckered();
+
     this.loc = [0, 0, 0];
     this.rot = [0, 0, 0];
     this.scale = [1, 1, 1];
@@ -139,8 +141,6 @@ class GameObject {
 
   /**@param {WebGLProgram} program*/
   render(program) {
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer);
-
     //First we bind the buffer for triangle 1
     let positionAttributeLocation = this.gl.getAttribLocation(
       program,
@@ -149,7 +149,7 @@ class GameObject {
     let size = 3; // 2 components per iteration
     let type = this.gl.FLOAT; // the data is 32bit floats
     let normalize = false; // don't normalize the data
-    let stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+    let stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
     let offset = 0; // start at the beginning of the buffer
     this.gl.enableVertexAttribArray(positionAttributeLocation);
     this.gl.vertexAttribPointer(
@@ -161,26 +161,34 @@ class GameObject {
       offset,
     );
 
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!TEXTURE CHANGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Now we have to do this for color
-    const colorAttributeLocation = this.gl.getAttribLocation(
-      program,
-      "vert_color",
-    );
+    var TexAttributeLocation = gl.getAttribLocation(program, "texcord");
     //We don't have to bind because we already have the correct buffer bound.
-    size = 3;
-    type = this.gl.FLOAT;
+    size = 2;
+    type = gl.FLOAT;
     normalize = false;
-    stride = 6 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
+    stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
     offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
-    this.gl.enableVertexAttribArray(colorAttributeLocation);
-    this.gl.vertexAttribPointer(
-      colorAttributeLocation,
+    gl.enableVertexAttribArray(TexAttributeLocation);
+    gl.vertexAttribPointer(
+      TexAttributeLocation,
       size,
       type,
       normalize,
       stride,
       offset,
     );
+
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+    //setup S
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
+    //Sets up our T
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     const tranLoc = this.gl.getUniformLocation(program, "u_transform");
     const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
@@ -204,13 +212,20 @@ class Camera extends GameObject {
   constructor() {
     super();
 
+    this.interval = 60;
+
     this.collisionType = collision.Sphere;
     this.circleCollider = 0.1;
     this.tag = "Player";
     this.shooting = false;
+    this.health = 5;
+    this.timer = this.interval;
+    this.healthTake = false;
   }
 
   update() {
+    if (this.timer > 0) this.timer--;
+
     if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
     if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
     if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
@@ -264,6 +279,13 @@ class Camera extends GameObject {
     this.Move();
   }
 
+  takeDmg() {
+    if (!this.healthTake && this.timer === 0) {
+      this.health--;
+      this.timer = this.interval;
+    }
+  }
+
   render(program) {
     let camLoc = gl.getUniformLocation(program, "cameraLoc");
     gl.uniform3fv(camLoc, new Float32Array(this.loc));
@@ -272,39 +294,41 @@ class Camera extends GameObject {
   }
 }
 
-class Floor extends GameObject {
+class Ground extends GameObject {
   constructor() {
     super();
-    this.tag = "Floor";
-
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    const A = [1000, 0, 0];
-    const B = [0, 0, 1000];
-    const C = [-1000, 0, 0];
-    const D = [0, 0, -1000];
-    const color = hexToRGB("#ffd1dc");
 
+    //prettier-ignore
     this.vertices = [
-      ...A,
-      ...color,
-      ...B,
-      ...color,
-      ...C,
-      ...color,
-      ...D,
-      ...color,
-    ];
+      0, 0, 0, 0, 0,
+      1000, 0, 0,    100, 0,
+      0, 0, 1000,  0,  100,
+      1000, 0, 1000,   100,100,
+    ]
+    this.vertCount = this.vertices.length / 5;
+    this.MyTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      16,
+      16,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(this.picture),
+    );
+
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
-
-    this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLE_FAN;
   }
-
   update() {}
 }
 
@@ -366,7 +390,7 @@ class Cube extends GameObject {
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.tag = "Cube";
-    this.color = hexToRGB("#F00");
+
     this.initalize();
   }
 
@@ -391,18 +415,37 @@ class Cube extends GameObject {
     ];
 
     verts = verts.map((value) => {
-      return [...value, ...this.color];
+      if (value === A || value === F) return [...value, 0, 0];
+      else if (value === H || value  === G) return [...value, 0, 100];
+      else if (value === C || value === D) return [...value, 100, 0];
+      else if (value === B || value === E) return [...value, 100, 100];
     });
 
     this.vertices = [];
     verts.map((value) => this.vertices.push(...value));
+    this.vertCount = this.vertices/ 5;
+    this.MyTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+    console.log(this.vertices)
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      16,
+      16,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(this.picture),
+    );
+
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
-    this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLE_STRIP;
+
   }
 
   update() {}
@@ -413,41 +456,6 @@ class BreakableCube extends Cube {
     super();
     this.color = hexToRGB("#F44");
     this.tag = "BreakableCube";
-  }
-
-  update() {}
-}
-
-class Prism extends GameObject {
-  constructor() {
-    super();
-    this.tag = "Prism";
-    this.collisionType = collision.Sphere;
-    this.circleCollider = 0.6;
-    this.primary = hexToRGB("#F00");
-    this.secondary = hexToRGB("#0F0");
-    this.initalize(3);
-  }
-
-  /** @param {number} sides */
-  initalize(sides) {
-    this.buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-
-    let verts = nPrism(sides);
-    this.vertices = [];
-    verts.map((value, index) => {
-      this.vertices.push(...value);
-      this.vertices.push(...(index % 2 ? this.primary : this.secondary));
-    });
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(this.vertices),
-      gl.STATIC_DRAW,
-    );
-    this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLES;
   }
 
   update() {}
@@ -581,6 +589,12 @@ class Enemy extends Cube {
     }
     this.Move();
   }
+
+  OnCollisionEnter(other) {
+    if (other.tag === "Player") {
+      other.takeDmg();
+    }
+  }
 }
 
 /**
@@ -627,90 +641,6 @@ function createIcosahedronVertices() {
     vertices[i][0] = vertices[i][0] / length;
     vertices[i][1] = vertices[i][1] / length;
     vertices[i][2] = vertices[i][2] / length;
-  }
-
-  return vertices;
-}
-
-/**
- * @param {number} baseSides
- */
-function nPrism(baseSides) {
-  const vertices = [];
-
-  // Generate vertices for the base of the prism
-  const baseVertices = [];
-  for (let i = 0; i < baseSides; i++) {
-    const angle = (i / baseSides) * Math.PI * 2;
-    const x = 0.5 * Math.cos(angle);
-    const y = 0.5 * Math.sin(angle);
-    const z = -0.5; // Base of the prism is at z = -0.5 (halfway down the cube)
-    baseVertices.push([x, z, y]);
-  }
-
-  // Duplicate base vertices for the top face (height = 1, z = 0.5)
-  const topVertices = baseVertices.map((vertex) => [vertex[0], 0.5, vertex[2]]);
-
-  // Push base and top vertices to the final vertices array
-  // vertices.push(...baseVertices, ...topVertices);
-
-  // Generate side faces by connecting base and top vertices
-  for (let i = 0; i < baseSides; i++) {
-    const nextIndex = (i + 1) % baseSides; // Wrap around for the last vertex
-    const baseVertex1 = baseVertices[i];
-    const baseVertex2 = baseVertices[nextIndex];
-    const topVertex1 = topVertices[i];
-    const topVertex2 = topVertices[nextIndex];
-
-    // Side face triangles
-    vertices.push(baseVertex1, baseVertex2, topVertex1);
-    vertices.push(baseVertex2, topVertex2, topVertex1);
-  }
-
-  for (let i = 0; i < topVertices.length; i++) {
-    if (i === topVertices.length - 1) {
-      vertices.push(topVertices[0], [0, 0.5, 0], topVertices[i]);
-      continue;
-    }
-
-    vertices.push(topVertices[i], [0, 0.5, 0], topVertices[i + 1]);
-  }
-
-  for (let i = 0; i < baseVertices.length; i++) {
-    if (i === baseVertices.length - 1) {
-      vertices.push(baseVertices[0], [0, -0.5, 0], baseVertices[i]);
-      continue;
-    }
-
-    vertices.push(baseVertices[i], [0, -0.5, 0], baseVertices[i + 1]);
-  }
-
-  return vertices;
-}
-
-/**
- * @param {number} baseSides
- */
-function nPyramid(baseSides) {
-  const vertices = [];
-
-  // Generate vertices for the base of the prism
-  const baseVertices = [];
-  for (let i = 0; i < baseSides; i++) {
-    const angle = (i / baseSides) * Math.PI * 2;
-    const x = 0.5 * Math.cos(angle);
-    const y = 0.5 * Math.sin(angle);
-    const z = -0.5; // Base of the prism is at z = -0.5 (halfway down the cube)
-    baseVertices.push([x, z, y]);
-  }
-
-  for (let i = 0; i < baseVertices.length; i++) {
-    if (i === baseVertices.length - 1) {
-      vertices.push(baseVertices[0], [0, 0.5, 0], baseVertices[i]);
-      continue;
-    }
-
-    vertices.push(baseVertices[i], [0, 0.5, 0], baseVertices[i + 1]);
   }
 
   return vertices;
