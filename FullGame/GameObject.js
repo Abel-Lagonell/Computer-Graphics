@@ -299,7 +299,7 @@ class Ground extends GameObject {
     super();
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-
+    this.MyPicture = CreateCheckered();
     //prettier-ignore
     this.vertices = [
       0, 0, 0, 0, 0,
@@ -320,7 +320,7 @@ class Ground extends GameObject {
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      new Uint8Array(this.picture),
+      new Uint8Array(this.MyPicture),
     );
 
     gl.bufferData(
@@ -382,6 +382,48 @@ class Icosohedron extends GameObject {
   }
 }
 
+class Plane extends GameObject {
+  constructor() {
+    super();
+
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    this.tag = "Plane";
+    //prettier-ignore
+    this.vertices = [
+      -1, -1, 0, 0, 1, 
+      1, -1, 0, 1, 1, 
+      -1, 1, 0, 0, 0, 
+      1, 1, 0, 1, 0,
+    ];
+    this.vertCount = this.vertices.length / 5;
+    this.primitiveType = gl.TRIANGLE_STRIP;
+    this.MyTexture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      16,
+      16,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(this.picture),
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+  }
+
+  update() {}
+}
+
 class Cube extends GameObject {
   constructor() {
     super();
@@ -390,11 +432,8 @@ class Cube extends GameObject {
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.tag = "Cube";
+    this.primitiveType = gl.TRIANGLE_STRIP;
 
-    this.initalize();
-  }
-
-  initalize() {
     const A = [-0.5, -0.5, 0.5];
     const B = [-0.5, 0.5, -0.5];
     const C = [-0.5, 0.5, 0.5];
@@ -416,18 +455,17 @@ class Cube extends GameObject {
 
     verts = verts.map((value) => {
       if (value === A || value === F) return [...value, 0, 0];
-      else if (value === H || value  === G) return [...value, 0, 100];
+      else if (value === H || value === G) return [...value, 0, 100];
       else if (value === C || value === D) return [...value, 100, 0];
       else if (value === B || value === E) return [...value, 100, 100];
     });
 
     this.vertices = [];
     verts.map((value) => this.vertices.push(...value));
-    this.vertCount = this.vertices/ 5;
+
     this.MyTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
-    console.log(this.vertices)
-
+    //We only want to do this once.
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -445,56 +483,71 @@ class Cube extends GameObject {
       new Float32Array(this.vertices),
       gl.STATIC_DRAW,
     );
-
+    this.vertCount = this.vertices.length / 5;
   }
 
   update() {}
-}
 
-class BreakableCube extends Cube {
-  constructor() {
-    super();
-    this.color = hexToRGB("#F44");
-    this.tag = "BreakableCube";
-  }
-
-  update() {}
-}
-
-class Pyramid extends GameObject {
-  constructor() {
-    super();
-
-    this.tag = "Pyramid";
-    this.collisionType = collision.Sphere;
-    this.circleCollider = 0.4;
-    this.primary = hexToRGB("#F00");
-    this.secondary = hexToRGB("#0F0");
-    this.initalize(3);
-  }
-
-  /** @param {number} sides */
-  initalize(sides) {
-    this.buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-
-    let verts = nPyramid(sides);
-    this.vertices = [];
-    verts.map((value, index) => {
-      this.vertices.push(...value);
-      this.vertices.push(...(index % 2 ? this.primary : this.secondary));
-    });
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(this.vertices),
-      gl.STATIC_DRAW,
+  render(program) {
+    //First we bind the buffer for triangle 1
+    let positionAttributeLocation = this.gl.getAttribLocation(
+      program,
+      "a_position",
     );
-    this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLES;
-  }
+    let size = 3; // 2 components per iteration
+    let type = this.gl.FLOAT; // the data is 32bit floats
+    let normalize = false; // don't normalize the data
+    let stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
+    let offset = 0; // start at the beginning of the buffer
+    this.gl.enableVertexAttribArray(positionAttributeLocation);
+    this.gl.vertexAttribPointer(
+      positionAttributeLocation,
+      size,
+      type,
+      normalize,
+      stride,
+      offset,
+    );
 
-  update() {}
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!TEXTURE CHANGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //Now we have to do this for color
+    var TexAttributeLocation = gl.getAttribLocation(program, "texcord");
+    //We don't have to bind because we already have the correct buffer bound.
+    size = 2;
+    type = gl.FLOAT;
+    normalize = false;
+    stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
+    offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
+    gl.enableVertexAttribArray(TexAttributeLocation);
+    gl.vertexAttribPointer(
+      TexAttributeLocation,
+      size,
+      type,
+      normalize,
+      stride,
+      offset,
+    );
+
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+    //setup S
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
+    //Sets up our T
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    const tranLoc = this.gl.getUniformLocation(program, "u_transform");
+    const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
+    const scaleLoc = this.gl.getUniformLocation(program, "u_scale");
+    this.gl.uniform3fv(tranLoc, new Float32Array(this.loc));
+    this.gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
+    this.gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
+
+    offset = 0;
+    this.gl.drawArrays(this.primitiveType, offset, this.vertCount);
+  }
 }
 
 class Bullet extends Icosohedron {

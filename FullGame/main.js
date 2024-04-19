@@ -37,7 +37,7 @@ class Main {
     this.createObject(1, Camera);
     this.createObject(0, Ground, [-250, -0.5, -250]);
     //this.createObject(1, BreakableCube, [0, 0, -2]);
-    this.createObject(1, Cube, [0, 0, -3]);
+    this.createObject(0, Cube, [0, 0, 3]);
     //this.createObject(1, Enemy, [0, 0, 3]);
     this.createObjects();
 
