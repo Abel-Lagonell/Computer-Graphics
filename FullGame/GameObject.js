@@ -74,7 +74,7 @@ class GameObject {
     this.isTrigger = false;
     this.id = 0;
 
-    this.picture = CreateCheckered();
+    this.picture = CreateCheckered("#F0F");
 
     this.loc = [0, 0, 0];
     this.rot = [0, 0, 0];
@@ -95,6 +95,7 @@ class GameObject {
     this.primitiveType = this.gl.TRIANGLES;
     this.buffer = this.gl.createBuffer();
     this.tag = "Default";
+    this.faceCam = false;
   }
 
   Move() {
@@ -146,6 +147,7 @@ class GameObject {
       program,
       "a_position",
     );
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     let size = 3; // 2 components per iteration
     let type = this.gl.FLOAT; // the data is 32bit floats
     let normalize = false; // don't normalize the data
@@ -193,12 +195,16 @@ class GameObject {
     const tranLoc = this.gl.getUniformLocation(program, "u_transform");
     const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
     const scaleLoc = this.gl.getUniformLocation(program, "u_scale");
+    const faceCameLoc = this.gl.getUniformLocation(program, "FaceCam");
     this.gl.uniform3fv(tranLoc, new Float32Array(this.loc));
     this.gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
     this.gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
+    this.gl.uniform1i(faceCameLoc, this.faceCam);
 
     offset = 0;
     this.gl.drawArrays(this.primitiveType, offset, this.vertCount);
+
+    this.gl.uniform1i(faceCameLoc, false);
   }
 
   /**@param {GameObject} other*/
@@ -219,13 +225,9 @@ class Camera extends GameObject {
     this.tag = "Player";
     this.shooting = false;
     this.health = 5;
-    this.timer = this.interval;
-    this.healthTake = false;
   }
 
   update() {
-    if (this.timer > 0) this.timer--;
-
     if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
     if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
     if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
@@ -260,6 +262,7 @@ class Camera extends GameObject {
       }
     }
 
+    //Shooting
     if (_main.checkKey(" ") && !this.shooting) {
       this.shooting = true;
       this.transform.doRotations(this.rot);
@@ -269,7 +272,7 @@ class Camera extends GameObject {
       );
       lilinfront[1] -= 0.2;
 
-      _main.createObject(2, Bullet, lilinfront, this.rot, [0.01]);
+      _main.createObject(2, Bullet, lilinfront, this.rot, [0.1]);
     }
 
     if (!_main.checkKey(" ")) {
@@ -280,17 +283,14 @@ class Camera extends GameObject {
   }
 
   takeDmg() {
-    if (!this.healthTake && this.timer === 0) {
-      this.health--;
-      this.timer = this.interval;
-    }
+    this.health--;
   }
 
   render(program) {
     let camLoc = gl.getUniformLocation(program, "cameraLoc");
     gl.uniform3fv(camLoc, new Float32Array(this.loc));
-    let worldLoc = gl.getUniformLocation(program, "cameraRotation");
-    gl.uniform3fv(worldLoc, new Float32Array(this.rot));
+    let camRot = gl.getUniformLocation(program, "cameraRotation");
+    gl.uniform3fv(camRot, new Float32Array(this.rot));
   }
 }
 
@@ -299,13 +299,13 @@ class Ground extends GameObject {
     super();
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    this.MyPicture = CreateCheckered();
+    this.picture = floor;
     //prettier-ignore
     this.vertices = [
       0, 0, 0, 0, 0,
-      1000, 0, 0,    100, 0,
-      0, 0, 1000,  0,  100,
-      1000, 0, 1000,   100,100,
+      1000, 0, 0,    500, 0,
+      0, 0, 1000,  0,  500,
+      1000, 0, 1000,   500,500,
     ]
     this.vertCount = this.vertices.length / 5;
     this.MyTexture = gl.createTexture();
@@ -315,12 +315,12 @@ class Ground extends GameObject {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      16,
-      16,
+      32,
+      32,
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      new Uint8Array(this.MyPicture),
+      new Uint8Array(this.picture),
     );
 
     gl.bufferData(
@@ -332,82 +332,40 @@ class Ground extends GameObject {
   update() {}
 }
 
-class Icosohedron extends GameObject {
-  constructor() {
-    super();
-
-    this.tag = "Sphere";
-
-    this.collisionType = collision.Sphere;
-    this.circleCollider = 1;
-    this.primary = hexToRGB("#000");
-    this.secondary = hexToRGB("#000");
-    this.tertiary = hexToRGB("#000");
-
-    this.angVelocity = [0.0, 0.001, 0.001];
-  }
-
-  makeVerts() {
-    /** @type number[][]*/
-    const vertArray = createIcosahedronVertices();
-    let verts = vertArray.map((value) => {
-      switch (Math.floor(Math.random() * 10) % 3) {
-        case 0:
-          return [...value, ...this.primary];
-        case 1:
-          return [...value, ...this.secondary];
-        case 2:
-          return [...value, ...this.tertiary];
-      }
-    });
-    let vert = [];
-    verts.map((value) => value.map((value) => vert.push(value)));
-    return vert;
-  }
-
-  initalize() {
-    this.buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-
-    this.vertices = this.makeVerts();
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(this.vertices),
-      gl.STATIC_DRAW,
-    );
-
-    this.vertCount = this.vertices.length / 6;
-    this.primitiveType = gl.TRIANGLE_STRIP;
-  }
-}
-
 class Plane extends GameObject {
   constructor() {
     super();
 
+    this.collisionType = collision.Box;
+    this.boxCollider = [1, 1, 0];
+    this.faceCam = true;
+    this.tag = "Plane";
+  }
+
+  initialize() {
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    this.tag = "Plane";
     //prettier-ignore
     this.vertices = [
-      -1, -1, 0, 0, 1, 
-      1, -1, 0, 1, 1, 
-      -1, 1, 0, 0, 0, 
-      1, 1, 0, 1, 0,
+      -0.5, -0.5, 0, 0, 1, 
+      0.5, -0.5, 0, 1, 1, 
+      -0.5, 0.5, 0, 0, 0, 
+      0.5, 0.5, 0, 1, 0,
     ];
     this.vertCount = this.vertices.length / 5;
     this.primitiveType = gl.TRIANGLE_STRIP;
     this.MyTexture = gl.createTexture();
+  }
 
+  updateTexture() {
     gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
 
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      16,
-      16,
+      32,
+      32,
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
@@ -432,37 +390,51 @@ class Cube extends GameObject {
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.tag = "Cube";
-    this.primitiveType = gl.TRIANGLE_STRIP;
+    this.primitiveType = gl.TRIANGLES;
 
-    const A = [-0.5, -0.5, 0.5];
-    const B = [-0.5, 0.5, -0.5];
-    const C = [-0.5, 0.5, 0.5];
-    const D = [0.5, -0.5, -0.5];
-    const E = [0.5, -0.5, 0.5];
-    const F = [0.5, 0.5, -0.5];
-    const G = [0.5, 0.5, 0.5];
-    const H = [-0.5, -0.5, -0.5];
+    //Box Points
+    const A = [-0.5, -0.5, 0.5]; //001
+    const B = [-0.5, 0.5, -0.5]; //010
+    const C = [-0.5, 0.5, 0.5]; //011
+    const D = [0.5, -0.5, -0.5]; //100
+    const E = [0.5, -0.5, 0.5]; //101
+    const F = [0.5, 0.5, -0.5]; //110
+    const G = [0.5, 0.5, 0.5]; //111
+    const H = [-0.5, -0.5, -0.5]; //000
+
+    //Texture Points
+    const T = [0, 0];
+    const Y = [0, 2];
+    const U = [2, 0];
+    const I = [2, 2];
 
     //prettier-ignore
     let verts = [
-      G, F, E,
-      D, A, E,
-      C, G, B, 
-      C, H, A, 
-      D, H, F,
-      B, G
+      A, B, C, A, B, H,//Left
+      A, C, E, G, C, E,//Back
+      A, D, E, A, H, D,//Bottom
+      F, B, C, F, G, C,//Top
+      F, G, E, F, D, E,//Back
+      F, D, H, F, B, H,//Front
+
     ];
 
-    verts = verts.map((value) => {
-      if (value === A || value === F) return [...value, 0, 0];
-      else if (value === H || value === G) return [...value, 0, 100];
-      else if (value === C || value === D) return [...value, 100, 0];
-      else if (value === B || value === E) return [...value, 100, 100];
-    });
+    //prettier-ignore
+    let uv = [
+      T, I, U, T, I, Y, //Left
+      T, Y, U, I, Y, U, //Back
+      T, I, U, T, Y, I, //Bottom
+      T, U, I, T, Y, I, //Top
+      Y, T, U, Y, I, U, //Right
+      Y, T, U, Y, I, U, //Front
+    ];
 
     this.vertices = [];
-    verts.map((value) => this.vertices.push(...value));
+    verts.map((value, index) => {
+      this.vertices.push(...value, ...uv[index]);
+    });
 
+    this.picture = wall;
     this.MyTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
     //We only want to do this once.
@@ -470,8 +442,8 @@ class Cube extends GameObject {
       gl.TEXTURE_2D,
       0,
       gl.RGBA,
-      16,
-      16,
+      32,
+      32,
       0,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
@@ -487,87 +459,65 @@ class Cube extends GameObject {
   }
 
   update() {}
+}
 
-  render(program) {
-    //First we bind the buffer for triangle 1
-    let positionAttributeLocation = this.gl.getAttribLocation(
-      program,
-      "a_position",
-    );
-    let size = 3; // 2 components per iteration
-    let type = this.gl.FLOAT; // the data is 32bit floats
-    let normalize = false; // don't normalize the data
-    let stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element     // 0 = move forward size * sizeof(type) each iteration to get the next position
-    let offset = 0; // start at the beginning of the buffer
-    this.gl.enableVertexAttribArray(positionAttributeLocation);
-    this.gl.vertexAttribPointer(
-      positionAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset,
-    );
+class BreakableCube extends Cube {
+  constructor() {
+    super();
+    this.tag = "BreakableCube";
 
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!TEXTURE CHANGE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //Now we have to do this for color
-    var TexAttributeLocation = gl.getAttribLocation(program, "texcord");
-    //We don't have to bind because we already have the correct buffer bound.
-    size = 2;
-    type = gl.FLOAT;
-    normalize = false;
-    stride = 5 * Float32Array.BYTES_PER_ELEMENT; //Size in bytes of each element
-    offset = 3 * Float32Array.BYTES_PER_ELEMENT; //size of the offset
-    gl.enableVertexAttribArray(TexAttributeLocation);
-    gl.vertexAttribPointer(
-      TexAttributeLocation,
-      size,
-      type,
-      normalize,
-      stride,
-      offset,
-    );
-
+    this.picture = crate;
+    this.MyTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
-    //setup S
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
-    //Sets up our T
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    //We only want to do this once.
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      32,
+      32,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(this.picture),
+    );
 
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    const tranLoc = this.gl.getUniformLocation(program, "u_transform");
-    const thetaLoc = this.gl.getUniformLocation(program, "u_rotation");
-    const scaleLoc = this.gl.getUniformLocation(program, "u_scale");
-    this.gl.uniform3fv(tranLoc, new Float32Array(this.loc));
-    this.gl.uniform3fv(thetaLoc, new Float32Array(this.rot));
-    this.gl.uniform3fv(scaleLoc, new Float32Array(this.scale));
-
-    offset = 0;
-    this.gl.drawArrays(this.primitiveType, offset, this.vertCount);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 5;
   }
 }
 
-class Bullet extends Icosohedron {
+class Bullet extends Plane {
   constructor() {
     super();
-    this.primary = hexToRGB("#700");
-    this.secondary = hexToRGB("#500");
-    this.tertiary = hexToRGB("#900");
-    this.initalize();
+    this.collisionType = collision.Sphere;
+    this.circleCollider = 1;
+    this.picture = brick;
 
-    this.angVelocity = [0, 0, 0];
+    this.initialize();
+    this.updateTexture();
   }
-
   update() {
     this.transform.doRotations(this.rot);
     for (let i = 0; i < 3; i++) {
-      this.velocity[i] += this.transform.forward[i] * 0.0001;
+      this.velocity[i] += this.transform.forward[i] * 0.00025;
     }
 
-    this.Move();
+    this.playExplosion();
+  }
+
+  initialize() {
+    super.initialize();
+
+    this.active = false;
+    this.explosionCycle = [Explosion1, Explosion2, Explosion3, Explosion4];
+    this.currentSprite = 0;
+    this.frameDuration = 20;
+    this.currentFrame = 20;
   }
 
   /**
@@ -575,34 +525,197 @@ class Bullet extends Icosohedron {
    */
   OnCollisionEnter(other) {
     switch (other.tag) {
-      case "Floor":
-      case "Cube":
-        _main.destroyObject(this.id);
-        break;
       case "BreakableCube":
         _main.destroyObject(other.id);
-        _main.destroyObject(this.id);
+        this.active = true;
         break;
       case "Enemy":
+      case "ChaseEnemy":
         other.takeDmg();
-        _main.destroyObject(this.id);
+        this.active = true;
         break;
       default:
+        this.active = true;
+        break;
+    }
+  }
+
+  playExplosion() {
+    if (!this.active) {
+      this.Move();
+      return;
+    }
+    if (this.currentFrame > 0) {
+      this.currentFrame--;
+      return;
+    }
+
+    this.currentFrame = this.frameDuration;
+    this.picture = this.explosionCycle[this.currentSprite];
+
+    this.scale = [1, 1, 1];
+    this.updateTexture();
+    this.currentSprite++;
+
+    if (this.currentSprite >= this.explosionCycle.length) {
+      _main.destroyObject(this.id);
+    }
+  }
+}
+
+class EnemyBullet extends Bullet {
+  constructor() {
+    super();
+    this.picture = CreateCheckered("#F0F");
+    this.initialize();
+    this.updateTexture();
+  }
+
+  OnCollisionEnter(other) {
+    switch (other.tag) {
+      case "Player":
+        other.takeDmg();
+        this.active = true;
+        break;
+      case "Enemy":
+        break;
+      default:
+        this.active = true;
         break;
     }
   }
 }
 
-class Enemy extends Cube {
+class Enemy extends Plane {
   constructor() {
     super();
     this.tag = "Enemy";
-    this.scale = [0.5, 1, 0.5];
-    this.boxCollider = [0.3, 0.6, 0.3];
-    this.color = hexToRGB("#303");
     this.health = 3;
+    this.picture = ghostWalk1;
+    this.velocity = [0, 0, 0.005];
+    this.initialize();
+    this.updateTexture();
+    this.walkCycle = [
+      ghostWalk1,
+      ghostWalk2,
+      ghostWalk3,
+      ghostWalk4,
+      ghostWalk5,
+      ghostWalk6,
+    ];
+  }
+
+  initialize() {
+    super.initialize();
+
     this.distToPlayer = 0;
-    this.initalize();
+    this.boxCollider = [0.2, 0.2, 0];
+    this.currentSprite = 0;
+    this.frameDuration = 30;
+    this.currentFrame = 10;
+  }
+
+  takeDmg() {
+    this.health--;
+  }
+
+  checkHealth() {
+    if (this.health <= 0) {
+      _main.destroyObject(this.id);
+    }
+  }
+
+  OnCollisionEnter(other) {
+    switch (other.tag) {
+      case "Player":
+        for (let i = 0; i < 5; i++) other.takeDmg();
+        break;
+      case "Cube":
+      case "BreakableCube":
+        this.changeVelocity();
+      default:
+        break;
+    }
+  }
+
+  calcDistanceToPlayer() {
+    const player = _main.solid["ID0"];
+
+    this.distToPlayer = Math.sqrt(
+      (player.loc[0] - this.loc[0]) * (player.loc[0] - this.loc[0]) +
+        (player.loc[1] - this.loc[1]) * (player.loc[1] - this.loc[1]) +
+        (player.loc[2] - this.loc[2]) * (player.loc[2] - this.loc[2]),
+    );
+  }
+
+  changeTextures() {
+    if (this.currentFrame > 0) {
+      this.currentFrame--;
+      return;
+    }
+    this.currentFrame = this.frameDuration;
+
+    if (this.currentSprite > this.walkCycle.length) this.currentSprite = 0;
+
+    this.picture = this.walkCycle[this.currentSprite];
+
+    this.updateTexture();
+    this.currentSprite++;
+  }
+
+  changeVelocity() {
+    this.velocity = this.velocity.map((value) => -value);
+  }
+
+  update() {
+    this.changeTextures();
+    this.checkHealth();
+    this.calcDistanceToPlayer();
+    this.Move();
+  }
+}
+
+class RandomEnemy extends Enemy {
+  constructor() {
+    super();
+    this.picture = MiniSkeletonMan5;
+    this.velocityxz = randNum([-1, 1], 2, 2).map((value) => value / 100);
+    this.velocity = [this.velocityxz[0], 0, this.velocityxz[1]];
+    this.initialize();
+    this.updateTexture();
+    this.health = 2;
+    this.walkCycle = [
+      MiniSkeletonMan5,
+      MiniSkeletonMan6,
+      MiniSkeletonMan7,
+      MiniSkeletonMan8,
+      MiniSkeletonMan9,
+      MiniSkeletonMan10,
+    ];
+  }
+
+  changeVelocity() {
+    this.velocityxz = randNum([-1, 1], 2, 2).map((value) => value / 100);
+    this.velocity = [this.velocityxz[0], 0, this.velocityxz[1]];
+  }
+}
+
+class ChaseEnemy extends Enemy {
+  constructor() {
+    super();
+    this.health = 2;
+    this.distToPlayer = 0;
+    this.picture = MiniZombieMan1;
+    this.initialize();
+    this.updateTexture();
+    this.walkCycle = [
+      MiniZombieMan1,
+      MiniZombieMan2,
+      MiniZombieMan3,
+      MiniZombieMan4,
+      MiniZombieMan5,
+      MiniZombieMan6,
+    ];
   }
 
   lookAtPlayer() {
@@ -624,77 +737,71 @@ class Enemy extends Cube {
     this.rot[1] = Math.atan2(normalDirVector[0], normalDirVector[2]);
   }
 
-  takeDmg() {
-    this.health--;
-  }
+  changeVelocity() {}
 
   update() {
-    if (this.health <= 0) {
-      _main.destroyObject(this.id);
-    }
+    this.checkHealth();
     this.lookAtPlayer();
+    this.changeTextures();
     this.transform.doRotations(this.rot);
     for (let i = 0; i < 3; i++) {
-      this.velocity[i] = this.transform.forward[i] * 0.005;
+      this.velocity[i] = this.transform.forward[i] * 0.0035;
     }
     if (this.distToPlayer < 0.4) {
       this.velocity = [0, 0, 0];
     }
     this.Move();
   }
-
-  OnCollisionEnter(other) {
-    if (other.tag === "Player") {
-      other.takeDmg();
-    }
-  }
 }
 
-/**
- * @return {number[][]}
- */
-function createIcosahedronVertices() {
-  const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
-
-  // Define the vertices of a regular icosahedron
-  let B = [0, 1, phi]; // A -> B
-  let C = [0, -1, phi]; // C CORRECT
-  let I = [0, -1, -phi]; //? D -> I
-  let H = [0, 1, -phi]; //? B -> H
-  let F = [1, phi, 0]; // E -> F
-  let D = [1, -phi, 0]; // F -> D
-  let G = [-1, phi, 0]; //? G CORRECT
-  let J = [-1, -phi, 0]; //? H -> J
-  let A = [phi, 0, 1]; //* J -> A
-  let E = [phi, 0, -1]; // I -> E
-  let K = [-phi, 0, 1]; //? K CORRECT
-  let M = [-phi, 0, -1]; // M
-
-  //prettier-ignore
-  let vertices = [
-    M, K, G,
-    B, K, C,
-    B, A, C,
-    D, J, C,
-    K, J, M,
-    I, J, D,
-    I, E, D,
-    A, E, F,
-    H, E, I,
-    H, M, G,
-    H, G, G,
-    B, F, A,
-    F, G, H,
-  ];
-  // Normalize the vertices to the given radius */
-  for (let i = 0; i < vertices.length; i++) {
-    const length = Math.sqrt(
-      vertices[i][0] ** 2 + vertices[i][1] ** 2 + vertices[i][2] ** 2,
-    );
-    vertices[i][0] = vertices[i][0] / length;
-    vertices[i][1] = vertices[i][1] / length;
-    vertices[i][2] = vertices[i][2] / length;
+class ShootingEnemy extends ChaseEnemy {
+  constructor() {
+    super();
+    this.health = 5;
+    this.picture = MiniLich1;
+    this.initialize();
+    this.updateTexture();
+    this.walkCycle = [
+      MiniLich1,
+      MiniLich2,
+      MiniLich3,
+      MiniLich4,
+      MiniLich5,
+      MiniLich6,
+    ];
+    this.timer = 240;
   }
 
-  return vertices;
+  update() {
+    this.checkHealth();
+    this.lookAtPlayer();
+    this.changeTextures();
+    this.tryShoot();
+
+    this.transform.doRotations(this.rot);
+    for (let i = 0; i < 3; i++) {
+      this.velocity[i] = this.transform.forward[i] * -0.005;
+    }
+    if (this.distToPlayer > 4) {
+      this.velocity = [0, 0, 0];
+    }
+    this.Move();
+  }
+
+  tryShoot() {
+    if (this.timer !== 0) {
+      this.timer--;
+      return;
+    }
+
+    this.timer = 240;
+    this.transform.doRotations(this.rot);
+
+    let lilinfront = this.loc.map(
+      (value, index) => value + this.transform.forward[index] / 3,
+    );
+    lilinfront[1] -= 0.1;
+
+    _main.createObject(2, EnemyBullet, lilinfront, this.rot, [0.1]);
+  }
 }

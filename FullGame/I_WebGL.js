@@ -1,8 +1,8 @@
 class I_WebGL {
   constructor() {
-    this.vertexShaderSource = document.getElementById("2dVertexShader").text;
+    this.vertexShaderSource = document.getElementById("3DVertexShader").text;
     this.fragmentShaderSource =
-      document.getElementById("2dFragmentShader").text;
+      document.getElementById("3DFragmentShader").text;
     this.vertexShader = this.createShader(
       gl.VERTEX_SHADER,
       this.vertexShaderSource,

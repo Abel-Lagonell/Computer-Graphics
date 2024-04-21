@@ -6,8 +6,7 @@
     <title>3D Demonstration</title>
 
     <!-- WebGL Scripts -->
-
-    <script id="2dVertexShader" type="x-shader/x-vertex">
+    <script id="3DVertexShader" type="x-shader/x-vertex">
           attribute vec4 a_position;
 
           //Textures
@@ -36,7 +35,6 @@
           varying vec3 fakeNormal;
           varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
           varying vec3 v_surfaceToView;
-          varying vec3 v_spot_surfaceToLight;
 
 
 
@@ -153,7 +151,7 @@
           vec4 worldSpace = vec4(0.0,0.0,0.0,1.0);
 
           if(FaceCam) {
-            vec3 F = normalize(vec3(cameraLoc.x,cameraLoc.y,- 1.0*cameraLoc.z)- u_transform);
+            vec3 F = normalize(vec3(cameraLoc.x,cameraLoc.y,1.0*cameraLoc.z)- u_transform);
             vec3 U = vec3(0.0,1.0,0.0);
             worldSpace = PositionObject(LookAt(F,U,ScaleObject(a_position)));
           } else {
@@ -167,7 +165,6 @@
           }
 
           v_surfaceToView = cameraLoc - worldSpace.xyz;
-          v_spot_surfaceToLight = vec3(5.0, 0.0, -2.0); // Can you make this uniform
 
           v_texcord = texcord;
 
@@ -176,7 +173,7 @@
           gl_Position = ApplyProjection(cameraSpace);
         }
     </script>
-    <script id="2dFragmentShader" type="x-shader/x-fragment">
+    <script id="3DFragmentShader" type="x-shader/x-fragment">
       //Fragment shaders do not have precision so we have to set it.
       const int NUMBER_OF_LIGHTS = 10;
       precision mediump float;
@@ -184,15 +181,14 @@
       varying vec3 fakeNormal;
       varying vec3 v_surfaceToLight[NUMBER_OF_LIGHTS];
       varying vec3 v_surfaceToView;
-      varying vec3 v_spot_surfaceToLight;
 
       //TEXTURES
       varying vec2 v_texcord;
       uniform sampler2D sampler;
 
       void main(){
-        float ambient = 0.1;
-        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) *.25;
+        float ambient = 0.5;
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) ;
         if (d_light < 0.0) d_light = 0.0;
 
         float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));
@@ -203,7 +199,8 @@
 
         vec4 tempColor = texture2D(sampler, v_texcord);
         if(tempColor.w<1.0) discard;
-        gl_FragColor = vec4(tempColor.z,tempColor.y,tempColor.x,1);
+        vec3 tempTexColor =vec3 (tempColor.z, tempColor.y, tempColor.x);
+        gl_FragColor = vec4(tempTexColor*(ambient+p_light+d_light),1);
       }
     </script>
 
@@ -211,6 +208,7 @@
     <script src="GameObject.js"></script>
     <script src="I_WebGL.js"></script>
     <script src="main.js"></script>
+    <script src="Sprites.js"></script>
   </head>
   <body
     style="

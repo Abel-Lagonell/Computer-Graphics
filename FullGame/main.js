@@ -32,13 +32,13 @@ class Main {
     gl.uniform1f(tempLoc, 0.1);
 
     let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
-    gl.uniform3fv(moonLoc, new Float32Array([20, 5, 20]));
+    gl.uniform3fv(moonLoc, new Float32Array([0, 0, 20]));
 
     this.createObject(1, Camera);
     this.createObject(0, Ground, [-250, -0.5, -250]);
-    //this.createObject(1, BreakableCube, [0, 0, -2]);
-    this.createObject(0, Cube, [0, 0, 3]);
-    //this.createObject(1, Enemy, [0, 0, 3]);
+    this.createObject(1, BreakableCube, [0, 0, -2]);
+    this.createObject(1, Cube, [0, 0, 5]);
+    this.createObject(1, ChaseEnemy, [0, 0, 3]);
     this.createObjects();
 
     requestAnimationFrame(Main.mainLoop); //Static call
@@ -402,12 +402,12 @@ function hexToRGB(hexString) {
   return [r, g, b];
 }
 
-function CreateCheckered() {
+function CreateCheckered(hexString) {
   let myPic = [];
   for (let i = 0; i < 16; i++) {
     for (let j = 0; j < 16; j++) {
       if (i % 2 === j % 2) {
-        myPic.push(...hexToRGB("#F0F").map((value) => value * 255), 255);
+        myPic.push(...hexToRGB(hexString).map((value) => value * 255), 255);
       } else {
         myPic.push(0, 0, 0, 255);
       }
