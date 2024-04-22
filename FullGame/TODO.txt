@@ -9,3 +9,5 @@ Player Options => Fire type DONE
 Title Menu: => DONE
   - Play Game 
   - Player Options
+
+  Boss doesnt reset to the middle

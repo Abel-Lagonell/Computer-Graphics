@@ -79,6 +79,7 @@ const gameObjects = Object.freeze({
   ChaseEnemy: 7,
   Light: 8,
   Exit: 9,
+  Boss: 10,
 });
 
 class GameObject {
@@ -412,6 +413,7 @@ class Plane extends GameObject {
   update() {}
 }
 
+//#Cube
 class Cube extends GameObject {
   constructor() {
     super();
@@ -522,6 +524,7 @@ class BreakableCube extends Cube {
   }
 }
 
+//#Bullet
 class Bullet extends Plane {
   constructor() {
     super();
@@ -539,7 +542,10 @@ class Bullet extends Plane {
   getVolume() {
     let distance = this.distToPlayer < 8 ? this.distToPlayer : 0;
     let percentage = 1 - distance / 10;
-    this.audio.volume = distance === 0 ? 0 : percentage;
+
+    let volume = distance === 0 ? 0 : percentage;
+    this.audio.volume = volume;
+    return volume;
   }
 
   calcDistanceToPlayer() {
@@ -578,6 +584,9 @@ class Bullet extends Plane {
       case "ChaseEnemy":
         other.takeDmg();
         break;
+      case "Boss":
+        other.takeDmg();
+        other.active = true;
       default:
         break;
     }
@@ -595,7 +604,17 @@ class EnemyBullet extends Bullet {
     this.updateTexture();
     this.speed = 0.0001;
     this.tag = "EnemyBullet";
+    this.once = false;
     this.audio = new Audio("./src/Ouch.mp3");
+    this.orb = new Audio("./src/Orb.mp3");
+  }
+
+  update() {
+    super.update();
+    if (!this.once) {
+      this.once = true;
+      this.orb.play();
+    }
   }
 
   OnCollisionEnter(other) {
@@ -611,6 +630,7 @@ class EnemyBullet extends Bullet {
   }
 }
 
+//#Enemies
 class Enemy extends Plane {
   constructor() {
     super();
@@ -867,15 +887,46 @@ class ShootingEnemy extends ChaseEnemy {
     this.transform.doRotations(this.rot);
 
     let lilinfront = this.loc.map(
-      (value, index) => value + this.transform.forward[index] / 2,
+      (value, index) => value + this.transform.forward[index],
     );
     lilinfront[1] -= 0.1;
-    this.orb.volume = this.getVolume();
-    this.orb.play();
     _main.createObject(2, EnemyBullet, lilinfront, this.rot, [0.25]);
   }
 }
 
+class BossEnemy extends ShootingEnemy {
+  constructor() {
+    super();
+    this.tag = "Boss";
+    this.health = 10;
+    this.initialize();
+    this.updateTexture();
+    this.active = false;
+    this.velocity = [0, 0, 0];
+  }
+
+  changeVelocity() {
+    if (!this.active) return;
+    let theta = randNum([0, 360], 1, 1)[0];
+    theta *= Math.PI / 180;
+    this.velocity = [0.005 * Math.cos(theta), 0, 0.005 * Math.sin(theta)];
+  }
+
+  update() {
+    this.checkHealth();
+    this.lookAtPlayer();
+    this.tryShoot();
+    this.Move();
+  }
+
+  takeDmg() {
+    this.health--;
+    this.active = true;
+    this.changeVelocity();
+  }
+}
+
+//#Other Objects
 class Exit extends Cube {
   constructor() {
     super();
@@ -929,6 +980,7 @@ class Light extends Plane {
   update() {}
 }
 
+//#Menu UI
 class Menu extends Plane {
   constructor() {
     super();
@@ -938,7 +990,6 @@ class Menu extends Plane {
     this.updateTexture();
   }
 }
-
 class PlayButton extends Plane {
   constructor() {
     super();
@@ -948,7 +999,6 @@ class PlayButton extends Plane {
     this.updateTexture();
   }
 }
-
 class BrickButton extends Plane {
   constructor() {
     super();

@@ -126,7 +126,7 @@ class Main {
       1,0,0,0,0, 0, 0,0,0,0,1, 
       1,0,0,0,0, 0, 0,0,0,0,1,
 
-      1,8,0,0,0, 0, 0,0,0,8,1, 
+      1,8,0,0,0, 10, 0,0,0,8,1, 
       
       1,0,0,0,0, 0, 0,0,0,0,1, 
       1,0,0,0,0, 0, 0,0,0,0,1, 
@@ -136,7 +136,7 @@ class Main {
     ];
 
     /**@type {number[][]}*/
-    this.levels = [this.level1, this.level2, this.level3];
+    this.levels = [this.level3, this.level2, this.level3];
     //this.makeLevel();
     //this.allowMovement = true;
     this.menuScreen();
@@ -390,6 +390,8 @@ class Main {
       case gameObjects.Exit:
         this.createObject(2, Exit, loc);
         break;
+      case gameObjects.Boss:
+        this.createObject(1, BossEnemy, loc);
       default:
         break;
     }
