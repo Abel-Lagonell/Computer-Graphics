@@ -188,7 +188,7 @@
 
       void main(){
         float ambient = 0.5;
-        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) ;
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) * 0.25 ;
         if (d_light < 0.0) d_light = 0.0;
 
         float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));

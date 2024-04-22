@@ -68,6 +68,19 @@ const collision = Object.freeze({
   undefined: undefined,
 });
 
+const gameObjects = Object.freeze({
+  Nothing: 0,
+  Cube: 1,
+  BreakableCube: 2,
+  EnemyX: 3,
+  EnemyZ: 4,
+  RandomEnemy: 5,
+  ShootingEnemy: 6,
+  ChaseEnemy: 7,
+  Light: 8,
+  Exit: 9,
+});
+
 class GameObject {
   constructor() {
     this.gl = gl;
@@ -225,13 +238,15 @@ class Camera extends GameObject {
     this.tag = "Player";
     this.shooting = false;
     this.health = 5;
+    this.exit = false;
   }
 
   update() {
     if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
     if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
-    if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
-    if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
+    //if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
+    //if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
+    if (_main.checkKey("R")) this.reset();
 
     if (this.rot[0] <= -1) this.rot[0] = -1;
     if (this.rot[0] >= 1) this.rot[0] = 1;
@@ -292,11 +307,26 @@ class Camera extends GameObject {
     let camRot = gl.getUniformLocation(program, "cameraRotation");
     gl.uniform3fv(camRot, new Float32Array(this.rot));
   }
+
+  reset() {
+    this.loc = [0, 0, 0];
+    this.rot = [0, 0, 0];
+    this.exit = false;
+    this.health = 5;
+  }
+
+  OnTriggerEnter(other) {
+    if (other.tag === "Exit" && !this.exit) {
+      this.exit = true;
+      console.log("done");
+    }
+  }
 }
 
 class Ground extends GameObject {
   constructor() {
     super();
+    this.tag = "Ground";
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.picture = floor;
@@ -337,9 +367,10 @@ class Plane extends GameObject {
     super();
 
     this.collisionType = collision.Box;
-    this.boxCollider = [1, 1, 0];
+    this.boxCollider = [1, 1, 1];
     this.faceCam = true;
     this.tag = "Plane";
+    this.scale = [2, 2, 2];
   }
 
   initialize() {
@@ -378,16 +409,15 @@ class Plane extends GameObject {
       gl.STATIC_DRAW,
     );
   }
-
-  update() {}
 }
 
 class Cube extends GameObject {
   constructor() {
     super();
     this.collisionType = collision.Box;
-    this.boxCollider = [0.6, 0.6, 0.6];
+    this.boxCollider = [1.2, 1.2, 1.2];
     this.buffer = gl.createBuffer();
+    this.scale = [2, 2, 2];
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     this.tag = "Cube";
     this.primitiveType = gl.TRIANGLES;
@@ -497,27 +527,42 @@ class Bullet extends Plane {
     this.collisionType = collision.Sphere;
     this.circleCollider = 1;
     this.picture = brick;
-
+    this.speed = 0.00025;
+    this.tag = "Bullet";
     this.initialize();
     this.updateTexture();
+    this.audio = new Audio("./src/BrickHit.mp3");
+    this.distToPlayer;
   }
+
+  getVolume() {
+    let distance = this.distToPlayer < 8 ? this.distToPlayer : 0;
+    let percentage = 1 - distance / 10;
+    this.audio.volume = distance === 0 ? 0 : percentage;
+  }
+
+  calcDistanceToPlayer() {
+    const player = _main.solid["ID0"];
+
+    this.distToPlayer = Math.sqrt(
+      (player.loc[0] - this.loc[0]) * (player.loc[0] - this.loc[0]) +
+        (player.loc[1] - this.loc[1]) * (player.loc[1] - this.loc[1]) +
+        (player.loc[2] - this.loc[2]) * (player.loc[2] - this.loc[2]),
+    );
+  }
+
   update() {
+    this.calcDistanceToPlayer();
     this.transform.doRotations(this.rot);
     for (let i = 0; i < 3; i++) {
-      this.velocity[i] += this.transform.forward[i] * 0.00025;
+      this.velocity[i] += this.transform.forward[i] * this.speed;
     }
-
-    this.playExplosion();
+    this.Move();
   }
 
   initialize() {
     super.initialize();
-
     this.active = false;
-    this.explosionCycle = [Explosion1, Explosion2, Explosion3, Explosion4];
-    this.currentSprite = 0;
-    this.frameDuration = 20;
-    this.currentFrame = 20;
   }
 
   /**
@@ -527,62 +572,41 @@ class Bullet extends Plane {
     switch (other.tag) {
       case "BreakableCube":
         _main.destroyObject(other.id);
-        this.active = true;
         break;
       case "Enemy":
       case "ChaseEnemy":
         other.takeDmg();
-        this.active = true;
         break;
       default:
-        this.active = true;
         break;
     }
-  }
-
-  playExplosion() {
-    if (!this.active) {
-      this.Move();
-      return;
-    }
-    if (this.currentFrame > 0) {
-      this.currentFrame--;
-      return;
-    }
-
-    this.currentFrame = this.frameDuration;
-    this.picture = this.explosionCycle[this.currentSprite];
-
-    this.scale = [1, 1, 1];
-    this.updateTexture();
-    this.currentSprite++;
-
-    if (this.currentSprite >= this.explosionCycle.length) {
-      _main.destroyObject(this.id);
-    }
+    this.getVolume();
+    this.audio.play();
+    _main.destroyObject(this.id);
   }
 }
 
 class EnemyBullet extends Bullet {
   constructor() {
     super();
-    this.picture = CreateCheckered("#F0F");
+    this.picture = orb;
     this.initialize();
     this.updateTexture();
+    this.speed = 0.0001;
+    this.tag = "EnemyBullet";
+    this.audio = new Audio("./src/Ouch.mp3");
   }
 
   OnCollisionEnter(other) {
     switch (other.tag) {
       case "Player":
+        this.audio.play();
         other.takeDmg();
-        this.active = true;
-        break;
-      case "Enemy":
         break;
       default:
-        this.active = true;
         break;
     }
+    _main.destroyObject(this.id);
   }
 }
 
@@ -595,6 +619,7 @@ class Enemy extends Plane {
     this.velocity = [0, 0, 0.005];
     this.initialize();
     this.updateTexture();
+    this.destroy = false;
     this.walkCycle = [
       ghostWalk1,
       ghostWalk2,
@@ -603,13 +628,25 @@ class Enemy extends Plane {
       ghostWalk5,
       ghostWalk6,
     ];
+    this.audio = new Audio("./src/Explosion.mp3");
+    this.audio2 = new Audio("./src/Ouch.mp3");
+  }
+
+  getVolume() {
+    let distance = this.distToPlayer < 8 ? this.distToPlayer : 0;
+    let percentage = 1 - distance / 10;
+
+    let volume = distance === 0 ? 0 : percentage;
+    this.audio.volume = volume;
+    return volume;
   }
 
   initialize() {
     super.initialize();
 
+    this.explosionCycle = [Explosion1, Explosion2, Explosion3, Explosion4];
     this.distToPlayer = 0;
-    this.boxCollider = [0.2, 0.2, 0];
+    this.boxCollider = [0.2, 0.2, 0.2];
     this.currentSprite = 0;
     this.frameDuration = 30;
     this.currentFrame = 10;
@@ -621,13 +658,24 @@ class Enemy extends Plane {
 
   checkHealth() {
     if (this.health <= 0) {
-      _main.destroyObject(this.id);
+      if (!this.destroy) {
+        this.currentSprite = 0;
+        this.destroy = true;
+      }
+      this.getVolume();
+      this.audio.play();
+      this.playExplosion();
+    } else {
+      this.changeTextures();
+      this.Move();
     }
   }
 
   OnCollisionEnter(other) {
     switch (other.tag) {
       case "Player":
+        this.audio2.volume = 0.7;
+        this.audio2.play();
         for (let i = 0; i < 5; i++) other.takeDmg();
         break;
       case "Cube":
@@ -667,11 +715,33 @@ class Enemy extends Plane {
     this.velocity = this.velocity.map((value) => -value);
   }
 
+  playExplosion() {
+    if (this.currentFrame > 0) {
+      this.currentFrame--;
+      return;
+    }
+
+    this.currentFrame = this.frameDuration;
+    this.picture = this.explosionCycle[this.currentSprite];
+
+    this.updateTexture();
+    this.currentSprite++;
+
+    if (this.currentSprite >= this.explosionCycle.length) {
+      _main.destroyObject(this.id);
+    }
+  }
+
   update() {
-    this.changeTextures();
     this.checkHealth();
     this.calcDistanceToPlayer();
-    this.Move();
+  }
+}
+
+class EnemyX extends Enemy {
+  constructor() {
+    super();
+    this.velocity = [0.005, 0, 0];
   }
 }
 
@@ -742,7 +812,6 @@ class ChaseEnemy extends Enemy {
   update() {
     this.checkHealth();
     this.lookAtPlayer();
-    this.changeTextures();
     this.transform.doRotations(this.rot);
     for (let i = 0; i < 3; i++) {
       this.velocity[i] = this.transform.forward[i] * 0.0035;
@@ -750,7 +819,6 @@ class ChaseEnemy extends Enemy {
     if (this.distToPlayer < 0.4) {
       this.velocity = [0, 0, 0];
     }
-    this.Move();
   }
 }
 
@@ -770,12 +838,12 @@ class ShootingEnemy extends ChaseEnemy {
       MiniLich6,
     ];
     this.timer = 240;
+    this.orb = new Audio("./src/Orb.mp3");
   }
 
   update() {
     this.checkHealth();
     this.lookAtPlayer();
-    this.changeTextures();
     this.tryShoot();
 
     this.transform.doRotations(this.rot);
@@ -798,10 +866,64 @@ class ShootingEnemy extends ChaseEnemy {
     this.transform.doRotations(this.rot);
 
     let lilinfront = this.loc.map(
-      (value, index) => value + this.transform.forward[index] / 3,
+      (value, index) => value + this.transform.forward[index] / 2,
     );
     lilinfront[1] -= 0.1;
-
-    _main.createObject(2, EnemyBullet, lilinfront, this.rot, [0.1]);
+    this.orb.volume = this.getVolume();
+    this.orb.play();
+    _main.createObject(2, EnemyBullet, lilinfront, this.rot, [0.25]);
   }
+}
+
+class Exit extends Cube {
+  constructor() {
+    super();
+    this.tag = "Exit";
+    this.scale = [0.5, 0.5, 0.5];
+
+    this.picture = CreateMono("#005F00");
+    this.MyTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
+    //We only want to do this once.
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      2,
+      2,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(this.picture),
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(this.vertices),
+      gl.STATIC_DRAW,
+    );
+    this.vertCount = this.vertices.length / 5;
+
+    this.speed = 0.0002;
+    this.angVelocity = [0, 0.002, 0];
+  }
+
+  update() {
+    if (Math.abs(this.loc[1]) >= 0.1) this.speed = -this.speed;
+    this.velocity[1] = this.speed / (Math.abs(this.loc[1]) + 1);
+    this.Move();
+  }
+}
+
+class Light extends Plane {
+  constructor() {
+    super();
+    this.tag = "Light";
+    this.picture = fairy;
+    this.scale = [0.4, 0.4, 0.4];
+    this.initialize();
+    this.updateTexture();
+  }
+
+  update() {}
 }

@@ -5,6 +5,7 @@ class Main {
     this.webGL = new I_WebGL();
     this.program = this.webGL.program;
     gl.useProgram(this.program);
+    this.currentLevel = 0;
 
     //Added these for Game Engine
     this.objectCount = 0;
@@ -32,16 +33,52 @@ class Main {
     gl.uniform1f(tempLoc, 0.1);
 
     let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
-    gl.uniform3fv(moonLoc, new Float32Array([0, 0, 20]));
+    gl.uniform3fv(moonLoc, new Float32Array([0, 5, 0]));
 
     this.createObject(1, Camera);
-    this.createObject(0, Ground, [-250, -0.5, -250]);
-    this.createObject(1, BreakableCube, [0, 0, -2]);
-    this.createObject(1, Cube, [0, 0, 5]);
-    this.createObject(1, ChaseEnemy, [0, 0, 3]);
-    this.createObjects();
+    this.createObject(0, Ground, [-250, -1, -250]);
 
     requestAnimationFrame(Main.mainLoop); //Static call
+
+    //prettier-ignore
+    this.level1 = [
+      1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,1,0,0,0,0,0, 0,0,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
+      1,0,8,0,1,0,0,0,0,0, 0,0,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
+      1,0,0,0,1,0,0,0,0,0, 0,0,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
+      1,0,0,0,1,0,5,0,1,1, 1,1,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,0, 0,0,0,0,0,0,0,1,0,0, 0,1,1,1,1,1,0,3,0,1,
+      1,0,0,0,1,0,0,0,1,0, 0,0,4,0,0,0,0,1,0,0, 0,0,0,0,0,1,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,0, 0,0,0,0,0,0,0,1,0,0, 0,0,0,8,0,1,0,0,0,1,
+      1,0,4,0,1,2,2,2,1,0, 0,0,1,1,0,0,0,1,0,0, 0,0,0,0,0,1,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,0,1,1,1, 1,1,1,1,1,1,0,0,0,1,
+      
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,0,0,0,0, 1,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,8,0,0,0, 1,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,1,1,1,1,1, 1,1,1,1,0,0,0,0,0,0, 1,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0, 2,0,0,0,0,0,0,0,0,0, 1,0,8,0,0,0,0,0,0,1,
+      1,0,0,0,0,1,0,5,0,0, 2,0,0,0,1,1,1,1,1,1, 1,0,0,0,1,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,8,0, 2,0,0,0,0,0,0,0,0,0, 1,0,0,0,1,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0, 2,0,0,0,0,0,0,0,0,0, 1,1,1,1,1,0,0,0,0,1,
+      1,0,6,0,0,1,1,1,1,1, 1,1,1,1,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0, 0,0,0,1,0,0,0,1,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,1,0,0,0,0, 0,0,0,1,0,0,0,1,0,0, 0,0,0,0,0,0,0,6,0,1,
+      
+      1,1,1,1,1,1,0,0,8,0, 0,0,0,1,0,0,0,1,0,0, 0,0,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,0,1,0,0, 0,0,0,0,0,0,0,2,0,1,
+      1,0,0,0,4,0,0,0,0,0, 0,8,0,1,0,0,0,1,0,0, 0,0,0,0,0,0,2,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,3,0,1,0,0, 0,0,0,0,0,2,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,0,1,1,1, 1,1,1,1,1,0,0,0,0,1,
+      1,1,1,1,2,0,0,0,0,1, 1,1,1,1,0,0,0,0,0,0, 0,0,0,0,1,0,0,0,0,1,
+      1,0,0,0,2,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,1,0,0,0,0,1,
+      1,0,8,0,2,0,0,0,0,0, 0,0,0,0,0,0,0,8,0,0, 0,0,0,0,1,0,9,8,0,1,
+      1,0,0,0,2,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,1,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,
+    ];
+
+    /**@type {number[number[]]}*/
+    this.levels = [this.level1];
+    this.makeLevel();
   }
 
   /** @param {KeyboardEvent} event */
@@ -56,31 +93,113 @@ class Main {
 
   static mainLoop() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (_main.gameState()) {
+    if (_main.deathState()) {
       _main.renderAll();
       _main.updateAll();
+      requestAnimationFrame(Main.mainLoop);
+    } else {
+      _main.resetLevel();
       requestAnimationFrame(Main.mainLoop);
     }
   }
 
-  gameState() {
+  deathState() {
     if (_main.solid["ID0"].health > 0) {
       return true;
     }
     return false;
   }
 
-  createObjects() {}
+  reset() {
+    for (let id in this.solid) {
+      switch (this.solid[id].tag) {
+        case "Player":
+          this.solid[id].reset();
+          break;
+        case "Enemy":
+        case "BreakableCube":
+          this.destroyObject(id);
+          break;
+      }
+    }
+  }
+
+  makeLevel() {
+    let offsetX = this.currentLevel === 0 ? 30 : 0;
+    for (let row = 0; row < 30; row++) {
+      for (let col = 0; col < 30; col++) {
+        let curLevel = this.levels[this.currentLevel];
+        let type = curLevel[row * 30 + col];
+        let position = [col * 2 - 2 - offsetX, 0, row * 2 - 2];
+        this.assignObject(type, position);
+      }
+    }
+
+    this.assignLights();
+  }
+
+  resetLevel() {
+    this.reset();
+    let offsetX = this.currentLevel === 0 ? 30 : 0;
+    for (let row = 0; row < 30; row++) {
+      for (let col = 0; col < 30; col++) {
+        let curLevel = this.levels[this.currentLevel];
+        let type = curLevel[row * 30 + col];
+        if (type > 1 && type < 8) {
+          let position = [col * 2 - 2 - offsetX, 0, row * 2 - 2];
+          this.assignObject(type, position);
+        }
+      }
+    }
+  }
+
+  /**
+   * @param {number} type
+   * @param {number[]} loc
+   */
+  assignObject(type, loc) {
+    switch (type) {
+      case gameObjects.Nothing:
+        break;
+      case gameObjects.Cube:
+        this.createObject(1, Cube, loc);
+        break;
+      case gameObjects.BreakableCube:
+        this.createObject(1, BreakableCube, loc);
+        break;
+      case gameObjects.EnemyX:
+        this.createObject(1, EnemyX, loc);
+        break;
+      case gameObjects.EnemyZ:
+        this.createObject(1, Enemy, loc);
+        break;
+      case gameObjects.RandomEnemy:
+        this.createObject(1, RandomEnemy, loc);
+        break;
+      case gameObjects.ShootingEnemy:
+        this.createObject(1, ShootingEnemy, loc);
+        break;
+      case gameObjects.ChaseEnemy:
+        this.createObject(1, ChaseEnemy, loc);
+        break;
+      case gameObjects.Light:
+        this.createObject(0, Light, loc);
+        break;
+      case gameObjects.Exit:
+        this.createObject(2, Exit, loc);
+        break;
+      default:
+        break;
+    }
+  }
 
   assignLights() {
     let tags = [];
     for (let i in this.visual) {
-      if (this.visual[i].tag === "") {
+      if (this.visual[i].tag === "Light") {
         tags.push(this.visual[i]);
       }
     }
-    console.log(tags);
-
     const spotLoc = new Array(NUMBER_OF_LIGHTS);
     for (let j in tags) {
       spotLoc[j] = gl.getUniformLocation(this.program, "spotLoc[" + j + "]");
@@ -414,4 +533,9 @@ function CreateCheckered(hexString) {
     }
   }
   return myPic;
+}
+
+function CreateMono(hexString) {
+  const color = hexToRGB(hexString).map((value) => value * 255);
+  return [...color, 255, ...color, 255, ...color, 255, ...color, 255];
 }
