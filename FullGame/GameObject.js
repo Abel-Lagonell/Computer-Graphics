@@ -194,7 +194,6 @@ class GameObject {
       stride,
       offset,
     );
-
     gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
     //setup S
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //gl.MIRRORED_REPEAT//gl.CLAMP_TO_EDGE
@@ -242,11 +241,11 @@ class Camera extends GameObject {
   }
 
   update() {
+    if (!_main.allowMovement) return;
     if (_main.checkKey("ARROWLEFT")) this.rot[1] -= 0.01;
     if (_main.checkKey("ARROWRIGHT")) this.rot[1] += 0.01;
     //if (_main.checkKey("ARROWUP")) this.rot[0] -= 0.01;
     //if (_main.checkKey("ARROWDOWN")) this.rot[0] += 0.01;
-    if (_main.checkKey("R")) this.reset();
 
     if (this.rot[0] <= -1) this.rot[0] = -1;
     if (this.rot[0] >= 1) this.rot[0] = 1;
@@ -318,7 +317,7 @@ class Camera extends GameObject {
   OnTriggerEnter(other) {
     if (other.tag === "Exit" && !this.exit) {
       this.exit = true;
-      console.log("done");
+      _main.gameState();
     }
   }
 }
@@ -329,7 +328,7 @@ class Ground extends GameObject {
     this.tag = "Ground";
     this.buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    this.picture = floor;
+    this.picture = _main.currentLevel === 2 ? floor : ground;
     //prettier-ignore
     this.vertices = [
       0, 0, 0, 0, 0,
@@ -409,6 +408,8 @@ class Plane extends GameObject {
       gl.STATIC_DRAW,
     );
   }
+
+  update() {}
 }
 
 class Cube extends GameObject {
@@ -526,7 +527,7 @@ class Bullet extends Plane {
     super();
     this.collisionType = collision.Sphere;
     this.circleCollider = 1;
-    this.picture = brick;
+    this.picture = _main.brickType ? brick : lazer;
     this.speed = 0.00025;
     this.tag = "Bullet";
     this.initialize();
@@ -926,4 +927,61 @@ class Light extends Plane {
   }
 
   update() {}
+}
+
+class Menu extends Plane {
+  constructor() {
+    super();
+    this.tag = "Menu";
+    this.picture = menu;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+
+class PlayButton extends Plane {
+  constructor() {
+    super();
+    this.tag = "PlayButton";
+    this.picture = playButton;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+
+class BrickButton extends Plane {
+  constructor() {
+    super();
+    this.tag = "BrickButton";
+    this.picture = brickButton;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+class BackButton extends Plane {
+  constructor() {
+    super();
+    this.tag = "BackButton";
+    this.picture = backButton;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+class LazerButton extends Plane {
+  constructor() {
+    super();
+    this.tag = "LazerButton";
+    this.picture = lazerButton;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+class SelectButton extends Plane {
+  constructor() {
+    super();
+    this.tag = "SelectButton";
+    this.picture = selectButton;
+    this.initialize();
+    this.updateTexture();
+  }
 }

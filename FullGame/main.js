@@ -6,6 +6,9 @@ class Main {
     this.program = this.webGL.program;
     gl.useProgram(this.program);
     this.currentLevel = 0;
+    this.brickType = true;
+    this.screen = 0;
+    this.buttonplacement = 0.99;
 
     //Added these for Game Engine
     this.objectCount = 0;
@@ -17,6 +20,10 @@ class Main {
     this.trigger = [];
     this.keys = [];
 
+    //#Mouse
+    myCanvas.addEventListener("click", this.canvasHandle.bind(this));
+
+    this.allowMovement = false;
     //Added for Camera move!
     let camLoc = gl.getUniformLocation(this.program, "cameraLoc");
     gl.uniform3fv(camLoc, new Float32Array([0, 0, 0]));
@@ -35,8 +42,7 @@ class Main {
     let moonLoc = gl.getUniformLocation(this.program, "moonLoc");
     gl.uniform3fv(moonLoc, new Float32Array([0, 5, 0]));
 
-    this.createObject(1, Camera);
-    this.createObject(0, Ground, [-250, -1, -250]);
+    this.playerCharacter = this.createObject(1, Camera);
 
     requestAnimationFrame(Main.mainLoop); //Static call
 
@@ -48,7 +54,7 @@ class Main {
       1,0,0,0,1,0,0,0,0,0, 0,0,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
       1,0,0,0,1,0,5,0,1,1, 1,1,1,0,0,0,0,1,0,0, 0,0,0,2,0,0,0,0,0,1,
       1,0,0,0,1,0,0,0,1,0, 0,0,0,0,0,0,0,1,0,0, 0,1,1,1,1,1,0,3,0,1,
-      1,0,0,0,1,0,0,0,1,0, 0,0,4,0,0,0,0,1,0,0, 0,0,0,0,0,1,0,0,0,1,
+      1,0,0,0,1,0,0,0,1,0, 0,0,4,0,0,9,0,1,0,0, 0,0,0,0,0,1,0,0,0,1,
       1,0,0,0,1,0,0,0,1,0, 0,0,0,0,0,0,0,1,0,0, 0,0,0,8,0,1,0,0,0,1,
       1,0,4,0,1,2,2,2,1,0, 0,0,1,1,0,0,0,1,0,0, 0,0,0,0,0,1,0,0,0,1,
       1,0,0,0,0,0,0,0,0,0, 0,0,0,1,0,0,0,1,1,1, 1,1,1,1,1,1,0,0,0,1,
@@ -76,9 +82,78 @@ class Main {
       1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,
     ];
 
-    /**@type {number[number[]]}*/
-    this.levels = [this.level1];
-    this.makeLevel();
+    //prettier-ignore
+    this.level2 = [
+      1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,9,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,
+    ]
+
+    //prettier-ignore
+    this.level3 = [
+      1,1,1,1,1, 1, 1,1,1,1,1, 
+      1,8,0,0,8, 0, 8,0,0,8,1, 
+      1,0,0,0,0, 0, 0,0,0,0,1, 
+      1,0,0,0,0, 0, 0,0,0,0,1, 
+      1,0,0,0,0, 0, 0,0,0,0,1,
+
+      1,8,0,0,0, 0, 0,0,0,8,1, 
+      
+      1,0,0,0,0, 0, 0,0,0,0,1, 
+      1,0,0,0,0, 0, 0,0,0,0,1, 
+      1,0,0,0,0, 0, 0,0,0,0,1, 
+      1,8,0,0,8, 0, 8,0,0,8,1, 
+      1,1,1,1,1, 1, 1,1,1,1,1,
+    ];
+
+    /**@type {number[][]}*/
+    this.levels = [this.level1, this.level2, this.level3];
+    //this.makeLevel();
+    //this.allowMovement = true;
+    this.menuScreen();
+  }
+
+  /**
+   * Gets where the mouse is with canvas bounds in mind
+   * @param event : MouseEvent
+   * @returns {[number, number]}
+   */
+  getMouse(event) {
+    const rect = myCanvas.getBoundingClientRect();
+    const realX = event.clientX - rect.left;
+    const realY = event.clientY - rect.top;
+    let x = -1 + (2 * realX) / myCanvas.width;
+    let y = -1 + (2 * (myCanvas.height - realY)) / myCanvas.height;
+    return [x, y];
   }
 
   /** @param {KeyboardEvent} event */
@@ -94,12 +169,118 @@ class Main {
   static mainLoop() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     if (_main.deathState()) {
+      _main.renderMenu();
       _main.renderAll();
       _main.updateAll();
       requestAnimationFrame(Main.mainLoop);
     } else {
       _main.resetLevel();
       requestAnimationFrame(Main.mainLoop);
+    }
+  }
+
+  /**
+   * Renders a new point
+   * @param event : MouseEvent
+   */
+  canvasHandle(event) {
+    let coords = this.getMouse(event);
+    if (this.screen === 3) return;
+    if (this.screen === 0) {
+      if (
+        coords[0] > -0.7 &&
+        coords[0] < 0.5 &&
+        coords[1] > -0.7 &&
+        coords[1] < 0.3
+      ) {
+        if (coords[1] > -0.15) {
+          this.screen = 3;
+        } else {
+          this.screen = 1;
+        }
+      }
+    }
+    if (this.screen === 2) {
+      if (
+        coords[0] > -0.6 &&
+        coords[0] < 0.4 &&
+        coords[1] > -0.7 &&
+        coords[1] < 0.5
+      ) {
+        if (coords[1] > 0.095) {
+          this.brickType = true;
+        } else if (coords[1] < -0.3) {
+          this.screen = 0;
+        } else {
+          this.brickType = false;
+        }
+      }
+    }
+  }
+
+  gameState() {
+    if (this.currentLevel + 1 < this.levels.length) {
+      this.currentLevel++;
+      this.hardReset();
+      this.reset();
+      this.makeLevel();
+    }
+  }
+
+  menuScreen() {
+    this.createObject(0, Menu, [0, 0, 1]);
+    this.play = this.createObject(0, PlayButton, [0, 0, 0.99]);
+    this.select = this.createObject(
+      0,
+      SelectButton,
+      [0, -0.6, 0.99],
+      [0, 0, 0],
+      [1.16, 1, 1],
+    );
+    this.brick = this.createObject(
+      0,
+      BrickButton,
+      [0, 0.2, -0.99],
+      [0, 0, 0],
+      [0.8, 0.8, 0.8],
+    );
+    this.lazer = this.createObject(
+      0,
+      LazerButton,
+      [0, -0.22, -0.99],
+      [0, 0, 0],
+      [0.8, 0.8, 0.9],
+    );
+    this.back = this.createObject(
+      0,
+      BackButton,
+      [0, -0.7, -0.99],
+      [0, 0, 0],
+      [0.8, 0.8, 0.8],
+    );
+  }
+
+  renderMenu() {
+    if (this.screen === 3) {
+      this.allowMovement = true;
+      this.hardReset();
+      this.makeLevel();
+      this.screen = 4;
+    }
+    if (this.screen === 0) {
+      this.play.loc[2] = this.buttonplacement;
+      this.select.loc[2] = this.buttonplacement;
+      this.lazer.loc[2] = -this.buttonplacement;
+      this.back.loc[2] = -this.buttonplacement;
+      this.brick.loc[2] = -this.buttonplacement;
+    }
+    if (this.screen === 1) {
+      this.play.loc[2] = -this.buttonplacement;
+      this.select.loc[2] = -this.buttonplacement;
+      this.lazer.loc[2] = this.buttonplacement;
+      this.back.loc[2] = this.buttonplacement;
+      this.brick.loc[2] = this.buttonplacement;
+      this.screen = 2;
     }
   }
 
@@ -124,12 +305,33 @@ class Main {
     }
   }
 
+  hardReset() {
+    for (let id in this.solid) {
+      switch (this.solid[id].tag) {
+        case "Player":
+          this.solid[id].reset();
+          break;
+        default:
+          this.destroyObject(id);
+          break;
+      }
+    }
+    for (let id in this.visual) {
+      this.destroyObject(id);
+    }
+    for (let id in this.trigger) {
+      this.destroyObject(id);
+    }
+  }
+
   makeLevel() {
-    let offsetX = this.currentLevel === 0 ? 30 : 0;
-    for (let row = 0; row < 30; row++) {
-      for (let col = 0; col < 30; col++) {
-        let curLevel = this.levels[this.currentLevel];
-        let type = curLevel[row * 30 + col];
+    this.createObject(0, Ground, [-250, -1, -250]);
+    let curLevel = this.levels[this.currentLevel];
+    let side = Math.sqrt(curLevel.length);
+    let offsetX = this.currentLevel !== 1 ? side - 2 : 0;
+    for (let row = 0; row < side; row++) {
+      for (let col = 0; col < side; col++) {
+        let type = curLevel[row * side + col];
         let position = [col * 2 - 2 - offsetX, 0, row * 2 - 2];
         this.assignObject(type, position);
       }
@@ -523,8 +725,8 @@ function hexToRGB(hexString) {
 
 function CreateCheckered(hexString) {
   let myPic = [];
-  for (let i = 0; i < 16; i++) {
-    for (let j = 0; j < 16; j++) {
+  for (let i = 0; i < 32; i++) {
+    for (let j = 0; j < 32; j++) {
       if (i % 2 === j % 2) {
         myPic.push(...hexToRGB(hexString).map((value) => value * 255), 255);
       } else {

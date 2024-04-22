@@ -16,7 +16,7 @@ class I_WebGL {
     //setup our viewport
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     //set clear colors
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.clearColor(0.0, 0.0, 0.05, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     //We will need this for now!

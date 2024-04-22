@@ -148,10 +148,13 @@
           } else {
             fakeNormal = vec3(0.0,1.0,0.0);
           }
+          if (FaceCam) {
+            fakeNormal = vec3(0.0,0.0,1.0);
+          }
           vec4 worldSpace = vec4(0.0,0.0,0.0,1.0);
 
           if(FaceCam) {
-            vec3 F = normalize(vec3(cameraLoc.x,cameraLoc.y,1.0*cameraLoc.z)- u_transform);
+            vec3 F = normalize(vec3(cameraLoc.x,cameraLoc.y,cameraLoc.z)- u_transform);
             vec3 U = vec3(0.0,1.0,0.0);
             worldSpace = PositionObject(LookAt(F,U,ScaleObject(a_position)));
           } else {
@@ -188,7 +191,7 @@
 
       void main(){
         float ambient = 0.5;
-        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) * 0.25 ;
+        float d_light = dot(normalize(fakeNormal), normalize(moonLoc)) * 0.05 ;
         if (d_light < 0.0) d_light = 0.0;
 
         float p_light = dot(normalize(fakeNormal), normalize(v_surfaceToLight[0]))*1.0/(length(v_surfaceToLight[0]));
