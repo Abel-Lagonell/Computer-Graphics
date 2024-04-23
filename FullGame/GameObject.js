@@ -609,12 +609,33 @@ class EnemyBullet extends Bullet {
     this.orb = new Audio("./src/Orb.mp3");
   }
 
+  getVolume() {
+    let distance = this.distToPlayer < 8 ? this.distToPlayer : 0;
+    let percentage = 1 - distance / 10;
+
+    let volume = distance === 0 ? 0 : percentage;
+    this.audio.volume = volume;
+    return volume;
+  }
+
   update() {
     super.update();
+    this.calcDistanceToPlayer();
     if (!this.once) {
       this.once = true;
+      this.orb.volume = this.getVolume();
       this.orb.play();
     }
+  }
+
+  calcDistanceToPlayer() {
+    const player = _main.solid["ID0"];
+
+    this.distToPlayer = Math.sqrt(
+      (player.loc[0] - this.loc[0]) * (player.loc[0] - this.loc[0]) +
+        (player.loc[1] - this.loc[1]) * (player.loc[1] - this.loc[1]) +
+        (player.loc[2] - this.loc[2]) * (player.loc[2] - this.loc[2]),
+    );
   }
 
   OnCollisionEnter(other) {
@@ -796,7 +817,8 @@ class ChaseEnemy extends Enemy {
     super();
     this.health = 2;
     this.distToPlayer = 0;
-    this.picture = MiniZombieMan1;
+    this.picture = MiniZombieManUp2;
+    this.wake = true;
     this.initialize();
     this.updateTexture();
     this.walkCycle = [
@@ -807,6 +829,19 @@ class ChaseEnemy extends Enemy {
       MiniZombieMan5,
       MiniZombieMan6,
     ];
+    this.wakeCycle = [
+      MiniZombieManUp2,
+      MiniZombieManUp3,
+      MiniZombieManUp4,
+      MiniZombieManUp5,
+      MiniZombieManUp6,
+      MiniZombieManUp7,
+      MiniZombieManUp8,
+      MiniZombieManUp9,
+      MiniZombieManUp10,
+    ];
+    this.timer = 20;
+    this.initalTimer = 20;
   }
 
   lookAtPlayer() {
@@ -828,18 +863,37 @@ class ChaseEnemy extends Enemy {
     this.rot[1] = Math.atan2(normalDirVector[0], normalDirVector[2]);
   }
 
-  changeVelocity() {}
-
   update() {
     this.checkHealth();
     this.lookAtPlayer();
     this.transform.doRotations(this.rot);
     for (let i = 0; i < 3; i++) {
-      this.velocity[i] = this.transform.forward[i] * 0.0035;
+      let velocity = this.transform.forward[i] * 0.0035;
+      this.velocity[i] = _main.currentLevel === 1 ? velocity * 3 : velocity;
     }
-    if (this.distToPlayer < 0.4) {
+    if (this.wake) {
       this.velocity = [0, 0, 0];
     }
+  }
+
+  changeTextures() {
+    if (this.currentFrame > 0) {
+      this.currentFrame--;
+      return;
+    }
+    this.currentFrame = this.frameDuration;
+
+    if (this.wake) {
+      if (this.currentSprite > this.wakeCycle.length) {
+        this.currentSprite = 0;
+        this.wake = false;
+      } else this.picture = this.wakeCycle[this.currentSprite];
+    } else {
+      if (this.currentSprite > this.walkCycle.length) this.currentSprite = 0;
+      this.picture = this.walkCycle[this.currentSprite];
+    }
+    this.updateTexture();
+    this.currentSprite++;
   }
 }
 
@@ -858,8 +912,9 @@ class ShootingEnemy extends ChaseEnemy {
       MiniLich5,
       MiniLich6,
     ];
+    this.wake = false;
     this.timer = 240;
-    this.orb = new Audio("./src/Orb.mp3");
+    this.initalShootTime = 240;
   }
 
   update() {
@@ -883,7 +938,7 @@ class ShootingEnemy extends ChaseEnemy {
       return;
     }
 
-    this.timer = 240;
+    this.timer = this.initalShootTime;
     this.transform.doRotations(this.rot);
 
     let lilinfront = this.loc.map(
@@ -898,11 +953,37 @@ class BossEnemy extends ShootingEnemy {
   constructor() {
     super();
     this.tag = "Boss";
-    this.health = 10;
+    this.health = 7;
     this.initialize();
     this.updateTexture();
     this.active = false;
+    this.movin = false;
     this.velocity = [0, 0, 0];
+    this.timer = 500;
+    this.initalShootTime = 750;
+    this.spawnTimer = 180;
+    this.initialTime = 1500;
+    this.picture = MiniNecromancer5;
+    this.tempVelocity = [0, 0, 0];
+    this.wakeCycle = [
+      MiniNecromancer11,
+      MiniNecromancer12,
+      MiniNecromancer13,
+      MiniNecromancer14,
+      MiniNecromancer15,
+      MiniNecromancer16,
+      MiniNecromancer17,
+      MiniNecromancer18,
+    ];
+    this.walkCycle = [
+      MiniNecromancer5,
+      MiniNecromancer6,
+      MiniNecromancer7,
+      MiniNecromancer8,
+      MiniNecromancer9,
+      MiniNecromancer10,
+    ];
+    this.wake = true;
   }
 
   changeVelocity() {
@@ -913,9 +994,24 @@ class BossEnemy extends ShootingEnemy {
   }
 
   update() {
+    if (this.spawnTimer === 0) {
+      this.wake = true;
+      this.spawnTimer = this.initialTime;
+      let coordX = randNum([-9, 7], 1, 1)[0];
+      let coordZ = randNum([0, 16], 1, 1)[0];
+      _main.createObject(1, ChaseEnemy, [coordX, 0, coordZ]);
+      this.movin = true;
+    } else this.spawnTimer--;
     this.checkHealth();
     this.lookAtPlayer();
     this.tryShoot();
+    if (this.wake) {
+      if (this.velocity[0] !== 0) this.tempVelocity = this.velocity;
+      this.velocity = [0, 0, 0];
+    } else if (this.tempVelocity[0] !== 0) {
+      this.velocity = this.tempVelocity;
+      this.wake = false;
+    }
     this.Move();
   }
 
@@ -924,38 +1020,34 @@ class BossEnemy extends ShootingEnemy {
     this.active = true;
     this.changeVelocity();
   }
+
+  checkHealth() {
+    if (this.health <= 0) {
+      if (!this.destroy) {
+        this.currentSprite = 0;
+        this.destroy = true;
+        _main.spawnExit();
+      }
+      this.getVolume();
+      this.audio.play();
+      this.playExplosion();
+    } else {
+      this.changeTextures();
+      this.Move();
+    }
+  }
 }
 
 //#Other Objects
-class Exit extends Cube {
+class Exit extends Plane {
   constructor() {
     super();
     this.tag = "Exit";
     this.scale = [0.5, 0.5, 0.5];
 
-    this.picture = CreateMono("#005F00");
-    this.MyTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.MyTexture);
-    //We only want to do this once.
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      2,
-      2,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      new Uint8Array(this.picture),
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(this.vertices),
-      gl.STATIC_DRAW,
-    );
-    this.vertCount = this.vertices.length / 5;
-
+    this.picture = exit;
+    this.initialize();
+    this.updateTexture();
     this.speed = 0.0002;
     this.angVelocity = [0, 0.002, 0];
   }
@@ -986,6 +1078,15 @@ class Menu extends Plane {
     super();
     this.tag = "Menu";
     this.picture = menu;
+    this.initialize();
+    this.updateTexture();
+  }
+}
+class GameDone extends Plane {
+  constructor() {
+    super();
+    this.tag = "Done";
+    this.picture = YouWin;
     this.initialize();
     this.updateTexture();
   }

@@ -10,4 +10,4 @@ Title Menu: => DONE
   - Play Game 
   - Player Options
 
-  Boss doesnt reset to the middle
+  Boss doesnt reset to the middle DONE
