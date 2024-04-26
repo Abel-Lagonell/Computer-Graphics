@@ -1,4 +1,4 @@
-const NUMBER_OF_LIGHTS = 10; //? If changed, change in two other places
+const NUMBER_OF_LIGHTS = 10;
 
 class Main {
   constructor() {

@@ -728,16 +728,6 @@ class Enemy extends Plane {
     }
   }
 
-  calcDistanceToPlayer() {
-    const player = _main.solid["ID0"];
-
-    this.distToPlayer = Math.sqrt(
-      (player.loc[0] - this.loc[0]) * (player.loc[0] - this.loc[0]) +
-        (player.loc[1] - this.loc[1]) * (player.loc[1] - this.loc[1]) +
-        (player.loc[2] - this.loc[2]) * (player.loc[2] - this.loc[2]),
-    );
-  }
-
   changeTextures() {
     if (this.currentFrame > 0) {
       this.currentFrame--;
@@ -776,7 +766,6 @@ class Enemy extends Plane {
 
   update() {
     this.checkHealth();
-    this.calcDistanceToPlayer();
   }
 }
 
@@ -915,6 +904,16 @@ class ShootingEnemy extends ChaseEnemy {
     this.wake = false;
     this.timer = 240;
     this.initalShootTime = 240;
+  }
+
+  calcDistanceToPlayer() {
+    const player = _main.solid["ID0"];
+
+    this.distToPlayer = Math.sqrt(
+      (player.loc[0] - this.loc[0]) * (player.loc[0] - this.loc[0]) +
+        (player.loc[1] - this.loc[1]) * (player.loc[1] - this.loc[1]) +
+        (player.loc[2] - this.loc[2]) * (player.loc[2] - this.loc[2]),
+    );
   }
 
   update() {
