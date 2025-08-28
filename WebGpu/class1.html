@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Class 1</title>
+
+    <script src="./WebGPU.js"></script>
+    <script src="BasicPolygon.js"></script>
+    <script src="Initials/FreeFormShape.js"></script>
+    <script>
+        class SimpleTriangle {
+            constructor() {
+
+                this.vertices = new Float32Array([
+                    -0.5, -0.5, 0.0, 1, 0, 0,
+                    0.5, -0.5, 0.0, 0, 1, 0,
+                    0.0, 0.5, 0.0, 0, 0, 1,
+                ]);
+
+                this.vertexBuffer = web.device.createBuffer({
+                    label: "Basic shape Verts",
+                    size: this.vertices.byteLength,
+                    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+                });
+
+                web.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+            }
+
+            Render(pass) {
+                pass.setVertexBuffer(0, this.vertexBuffer);
+                pass.draw(3);
+            }
+        }
+    </script>
+</head>
+<body>
+<canvas height="512" width="512"></canvas>
+<script>
+    web = new WebGPU();
+    triangle = new BasicPolygon(
+        [-0.5, -0.5, 0.0,
+        0.5, -0.5, 0.0,
+        0.0, 0.5, 0.0], [1,0,0], "Simple triangle")
+
+    web.AddShape(triangle)
+</script>
+</body>
+</html>
