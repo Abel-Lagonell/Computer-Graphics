@@ -13,14 +13,14 @@
             this.SlowStart()
         })
         /**
-         * 
+         *
          * @type {BasicPolygon[]}
          */
         this.shapes = [];
     }
 
     /**
-     * 
+     *
      * @param shape : BasicPolygon
      */
     AddShape(shape) {
@@ -28,9 +28,9 @@
     }
 
     async SlowStart() {
-        for (let i = 0; i < this.shapes.length; i++ ) {
+        for (let i = 0; i < this.shapes.length; i++) {
             this.shapes[i].WriteToGPU();
-        } 
+        }
         this.RenderAll();
     }
 
@@ -76,7 +76,7 @@
                     fn vertexMain(@location(0) pos:vec3f, @location(1) col: vec3f) -> ColorVarying
                     {
                         var returnMe: ColorVarying;
-                        returnMe.position = vec4(pos,1);
+                        returnMe.position = vec4f(pos.xy + myCords.offset, pos.z , 1);
                         returnMe.color = col;
                         return returnMe;
                     }
@@ -132,6 +132,8 @@
             },
         );
         console.log("Created Pipeline")
+
+        
     }
 
     RenderAll() {
@@ -150,7 +152,7 @@
         for (let i = 0; i < this.shapes.length; i++) {
             this.shapes[i].Render(this.commandPass);
         }
-        
+
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
