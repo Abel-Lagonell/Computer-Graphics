@@ -1,12 +1,20 @@
 class FreeFormShape {
     /**
      *
-     * @param positions : number[]
-     * @param color : number[]
+     * @param positions : number[][]
+     * @param color : number[][]
      */
     constructor(positions, color) {
         this.positions = positions
         this.color = color
+        
+        if (this.positions[0].length === 2){
+            this.is2D = true;
+        } 
+
+        if (positions.length !== this.color.length && this.color.length !== 1) {
+            throw new Error("Color needs to per vertex or solid")
+        }
     }
 
     /**
@@ -18,16 +26,16 @@ class FreeFormShape {
         let combinedArray = [];
 
         // Iterate through the coordinate points array
-        for (let i = 0; i < this.positions.length; i += 3) {
+        for (let i = 0; i < this.positions.length; i++) {
             // Push coordinate point
-            combinedArray.push(this.positions[i]);
-            combinedArray.push(this.positions[i + 1]);
-            combinedArray.push(this.positions[i + 2]);
+            combinedArray = combinedArray.concat(this.positions[i]);
+            if (this.is2D) combinedArray.push(0);
+            
+            if (this.color.length === 1)
+                combinedArray = combinedArray.concat(this.color[0]);
+            else
+                combinedArray = combinedArray.concat(this.color[i]);
 
-            // Push RGB values (repeated for each coordinate point)
-            for (let j = 0; j < 3; j++) {
-                combinedArray.push(this.color[j]);
-            }
         }
 
         return new Float32Array(combinedArray);

@@ -5,7 +5,7 @@
     static Instance;
 
     constructor() {
-        if (WebGPU.Instance != null) {
+        if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
         }
         this.isReady = false;
@@ -28,6 +28,9 @@
     }
 
     async SlowStart() {
+        for (let i = 0; i < this.shapes.length; i++ ) {
+            this.shapes[i].WriteToGPU();
+        } 
         this.RenderAll();
     }
 
@@ -138,15 +141,16 @@
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),
                 loadOp: "clear",
-                clearValue: {r: 1, g: 1, b: 0.4, a: 1},
+                clearValue: {r: 1, g: 1, b: 1, a: 1},
                 storeOp: "store",
             }]
         });
         this.commandPass.setPipeline(this.pipeline);
 
-        for (let shape in this.shapes){
-            shape.Render(this.commandPass);
+        for (let i = 0; i < this.shapes.length; i++) {
+            this.shapes[i].Render(this.commandPass);
         }
+        
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);

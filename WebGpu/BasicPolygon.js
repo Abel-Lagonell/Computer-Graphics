@@ -1,8 +1,8 @@
 ﻿class BasicPolygon {
     /**
      * 
-     * @param vertices : number[]
-     * @param color : number[]
+     * @param vertices : number[][]
+     * @param color : number[][]
      * @param bufferName : string
      */
     constructor(vertices, color, bufferName) {
@@ -19,7 +19,6 @@
         });
 
         WebGPU.Instance.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
-        
     }
     
     Render(pass){
