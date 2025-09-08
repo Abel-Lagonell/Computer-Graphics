@@ -1,4 +1,4 @@
-class FreeFormShape {
+export class FreeFormShape {
     /**
      *
      * @param positions : number[][]

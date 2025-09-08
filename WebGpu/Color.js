@@ -1,4 +1,4 @@
-﻿class Color {
+﻿export class Color {
     static Red = [1,0,0];
     static Green = [0,1,0];
     static Blue = [0,0,1];

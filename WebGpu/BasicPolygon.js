@@ -1,4 +1,6 @@
-﻿class BasicPolygon {
+﻿import {FreeFormShape} from "./FreeFormShape.js";
+
+export class BasicPolygon {
     /**
      *
      * @param vertices : number[][]
@@ -19,6 +21,16 @@
         this.pos = position;
         this.rot = rotation;
         this.scale = scale;
+
+        /**
+         * @type {BasicPolygon}
+         */
+        this.parent = null;
+        /**
+         * 
+         * @type {BasicPolygon[]}
+         */
+        this.children = [];
     }
 
     WriteToGPU() {
@@ -51,6 +63,23 @@
     }
 
     Update(){
+    }
+
+    /**
+     * 
+     * @param Polygon : BasicPolygon
+     */
+    AddChild(Polygon){
+        this.children.push(Polygon);
+        Polygon.SetParent(this);
+    }
+    
+    SetParent(Polygon){
+        this.parent = Polygon;
+    }
+    
+    CalculateTransform(){
+        
     }
     
     /**
