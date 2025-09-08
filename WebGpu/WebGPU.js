@@ -1,4 +1,11 @@
-﻿class WebGPU {
+﻿function FrameUpdate() {
+    WebGPU.Instance.UpdateAll();
+    WebGPU.Instance.RenderAll();
+    requestAnimationFrame(FrameUpdate);
+
+}
+
+class WebGPU {
     /**
      * @type WebGPU
      */
@@ -9,14 +16,23 @@
             WebGPU.Instance = this;
         }
         this.isReady = false;
-        this.SetUpGPU().then(() => {
-            this.SlowStart()
-        })
+        this.loadWGSLShader("../SimpleShader.wgsl").then(r => {
+                this.shaderCode = r
+                this.SetUpGPU().then(() =>
+                    this.SlowStart())
+            }
+        )
+
         /**
          *
          * @type {BasicPolygon[]}
          */
         this.shapes = [];
+    }
+
+    async loadWGSLShader(url) {
+        const response = await fetch(url);
+        return await response.text();
     }
 
     /**
@@ -32,6 +48,14 @@
             this.shapes[i].WriteToGPU();
         }
         this.RenderAll();
+        requestAnimationFrame(FrameUpdate);
+    }
+
+    UpdateAll() {
+        for (let i = 0; i < this.shapes.length; i++) {
+            this.shapes[i].Update()
+        }
+
     }
 
     async SetUpGPU() {
@@ -59,34 +83,7 @@
 
         this.cellShaderModule = this.device.createShaderModule({
             label: "Simple Shader",
-            code: `
-                    struct UniformCoordinates{
-                        offset: vec2f
-                    }
-                    
-                    @group(0) @binding(0) var<uniform> myCords: UniformCoordinates;
-                    
-                    struct ColorVarying 
-                    {
-                        @builtin(position) position: vec4f,
-                        @location(0) color: vec3f,
-                    };
-                    
-                    @vertex
-                    fn vertexMain(@location(0) pos:vec3f, @location(1) col: vec3f) -> ColorVarying
-                    {
-                        var returnMe: ColorVarying;
-                        returnMe.position = vec4f(pos.xy + myCords.offset, pos.z , 1);
-                        returnMe.color = col;
-                        return returnMe;
-                    }
-
-                    @fragment
-                    fn fragmentMain(fsInput:ColorVarying) -> @location(0) vec4f
-                    {
-                        return vec4f(fsInput.color, 1);
-                    }
-                `
+            code: this.shaderCode
         })
 
         console.log("Created Simple Shader!")
@@ -133,7 +130,7 @@
         );
         console.log("Created Pipeline")
 
-        
+
     }
 
     RenderAll() {
