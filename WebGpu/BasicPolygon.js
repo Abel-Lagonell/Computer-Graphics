@@ -11,8 +11,7 @@ export class BasicPolygon {
      * @param scale : number[]
      */
     constructor(vertices, color, bufferName, position, rotation, scale) {
-        const temporary = new FreeFormShape(vertices, color);
-        this.vertices = temporary.GetArray();
+        this.vertices =FreeFormShape.GetArray(vertices, color);
         this.bufferName = bufferName;
         this.GPU = WebGPU.Instance;
         if (position.length > 3 || position.length < 2) {
@@ -21,16 +20,6 @@ export class BasicPolygon {
         this.pos = position;
         this.rot = rotation;
         this.scale = scale;
-
-        /**
-         * @type {BasicPolygon}
-         */
-        this.parent = null;
-        /**
-         * 
-         * @type {BasicPolygon[]}
-         */
-        this.children = [];
     }
 
     WriteToGPU() {
@@ -66,24 +55,6 @@ export class BasicPolygon {
     }
 
     /**
-     * 
-     * @param Polygon : BasicPolygon
-     */
-    AddChild(Polygon){
-        this.children.push(Polygon);
-        Polygon.SetParent(this);
-    }
-    
-    SetParent(Polygon){
-        this.parent = Polygon;
-    }
-    
-    CalculateTransform(){
-        
-    }
-    
-    /**
-     *
      * @param pass : GPURenderPassEncoder
      */
     Render(pass) {

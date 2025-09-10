@@ -16,7 +16,7 @@ class WebGPU {
             WebGPU.Instance = this;
         }
         this.isReady = false;
-        this.loadWGSLShader("../SimpleShader.wgsl").then(r => {
+        this.loadWGSLShader("../MatrixShader.wgsl").then(r => {
                 this.shaderCode = r
                 this.SetUpGPU().then(() =>
                     this.SlowStart())
@@ -24,8 +24,7 @@ class WebGPU {
         )
 
         /**
-         *
-         * @type {BasicPolygon[]}
+         * @type {BasicPolygon [] | TransformObject[]}
          */
         this.shapes = [];
     }
@@ -37,7 +36,7 @@ class WebGPU {
 
     /**
      *
-     * @param shape : BasicPolygon
+     * @param shape : TransformObject/BasicPolygon
      */
     AddShape(shape) {
         this.shapes.push(shape);
@@ -61,12 +60,11 @@ class WebGPU {
     async SetUpGPU() {
         this.adapter = await navigator.gpu.requestAdapter();
         if (!this.adapter) {
-            throw new Error("No Appropiate GPUAdapter found");
+            throw new Error("No Appropriate GPUAdapter found");
         }
         this.device = await this.adapter.requestDevice();
         if (!this.device) {
             throw new Error("need a browser that supports WebGPU");
-            return;
         }
         console.log("WebGPU device found");
 

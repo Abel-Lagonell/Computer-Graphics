@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@types/mathjs": "^9.4.1",
     "@webgpu/types": "^0.1.64"
   }
 }
