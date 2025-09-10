@@ -10,13 +10,14 @@ class WebGPU {
      * @type WebGPU
      */
     static Instance;
+    keys =[];
 
     constructor() {
         if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
         }
         this.isReady = false;
-        this.loadWGSLShader("../MatrixShader.wgsl").then(r => {
+        this.loadWGSLShader("../Scene Inheritance/MatrixShader.wgsl").then(r => {
                 this.shaderCode = r
                 this.SetUpGPU().then(() =>
                     this.SlowStart())
@@ -152,4 +153,28 @@ class WebGPU {
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
     }
+
+    KeyDown(event){
+        this.keys[String.fromCharCode(event.keyCode)] = true;
+    }
+
+    KeyUp(event){
+        this.keys[String.fromCharCode(event.keyCode)] = false;
+    }
+
+    static KeyDownHelper(event){
+        WebGPU.Instance.KeyDown(event)
+    }
+
+    static KeyUpHelper(event){
+        WebGPU.Instance.KeyUp(event)
+    }
+
+    CheckKey(key){
+        let keyExists = (key in this.keys);
+        let keyIsPressed = (this.keys[key]);
+
+        return (keyExists && keyIsPressed);
+    }
+    
 }

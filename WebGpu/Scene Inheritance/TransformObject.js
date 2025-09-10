@@ -1,33 +1,81 @@
 ﻿import {FreeFormShape} from "../FreeFormShape.js";
-import {Vector3} from "../Vector3.js";
+import {Vector3} from "./Vector3.js";
 
 /** @type {import('mathjs')}*/
 
 export class TransformObject {
 
-    /**
-     * @type {TransformObject|null}
-     */
+    /** @type {TransformObject|null} */
     parent = null;
-    /**
-     * @type {TransformObject[]}
-     */
+    /** @type {TransformObject[]} */
     children = [];
-
+    /** @type {Vector3} */
+    rotation;
+    /** @type {Vector3} */
+    position;
+    /** @type {Vector3} */
+    scale;
+    
+    /**
+     *
+     * @param name : string
+     * @param vertices : number[][]
+     * @param color : number[][]
+     * @param position : number[]/Vector3
+     * @param rotation : number[]/Vector3
+     * @param scale : number[]/Vector3
+     */
     constructor(name, vertices, color, position, rotation, scale) {
         this.name = name;
         this.vertices = FreeFormShape.GetArray(vertices, color);
         this.gpu = WebGPU.Instance;
-        if (position.length !== 3)
-            throw new Error("Position length must be 3");
-        this.position = Vector3.fromArray(position);
-        this.rotation = Vector3.fromArray(rotation);
-        this.scale = Vector3.fromArray(scale);
-        this.oldScale = Vector3.fromArray(scale);
-        this.oldPosition = Vector3.fromArray(position);
-        this.oldRotation = Vector3.fromArray(rotation);
+        if (position instanceof Vector3) {
+            this.position = position;
+        } else if (Array.isArray(position) && position.length === 3) {
+            this.position = Vector3.fromArray(position);
+        } else {
+            throw new Error('Position must be a Vector3 or array[3]');
+        }
+        if (rotation instanceof Vector3) {
+            this.rotation = rotation;
+        } else if (Array.isArray(rotation) && rotation.length === 3) {
+            this.rotation = Vector3.fromArray(rotation);
+        } else {
+            throw new Error('Position must be a Vector3 or array[3]');
+        }
+        if (scale instanceof Vector3) {
+            this.scale = scale;
+        } else if (Array.isArray(scale) && scale.length === 3) {
+            this.scale = Vector3.fromArray(scale);
+        } else {
+            throw new Error('Position must be a Vector3 or array[3]');
+        }
+        this.oldScale = Vector3.Zero.scale(-100);
+        this.oldPosition = Vector3.Zero.scale(-100);
+        this.oldRotation = Vector3.One.scale(-100);
 
         this.Ready();
+    }
+
+    get Forward() {
+        this.CalculateRotationMatrix();
+        return math.cross(this.rotationZMatrix,
+            math.cross(this.rotationYMatrix,
+                math.cross(this.rotationXMatrix, [0, 0, 1, 0])))
+    }
+
+    get Right() {
+        this.CalculateRotationMatrix();
+        return math.cross(this.rotationZMatrix,
+            math.cross(this.rotationYMatrix,
+                math.cross(this.rotationXMatrix, [1, 0, 0, 0])))
+    }
+
+    get Up() {
+        this.CalculateRotationMatrix();
+        return math.cross(this.rotationZMatrix, math
+            .cross(this.rotationYMatrix, 
+                math.cross(this.rotationXMatrix, [0, 1, 0, 0])))
     }
 
     Ready() {
@@ -44,7 +92,6 @@ export class TransformObject {
         this.children.push(child);
         child.parent = this;
     }
-
 
     //--------------
     //Util Functions
@@ -80,6 +127,9 @@ export class TransformObject {
 
         if (changed === true)
             this.transformMatrix = math.multiply(math.multiply(this.scaleMatrix, this.rotationMatrix), this.translateMatrix);
+        this.oldScale = this.scale;
+        this.oldRotation = this.rotation;
+        this.oldPosition = this.position;
         return this.transformMatrix;
     }
 

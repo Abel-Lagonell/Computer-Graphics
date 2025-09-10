@@ -1,5 +1,5 @@
 ﻿import {BasicPolygon} from "../BasicPolygon.js";
-import {Color} from "../Color.js";
+import {Color} from "../Scene Inheritance/Color.js";
 
 class Main {
     constructor() {
