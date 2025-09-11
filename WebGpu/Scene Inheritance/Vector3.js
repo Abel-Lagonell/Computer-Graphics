@@ -15,6 +15,10 @@
     static fromArray (array) {
         return new Vector3(array[0], array[1], array[2]);
     }
+    
+    static Empty(){
+        return new Vector3(Infinity, Infinity, Infinity)
+    }
 
     /**
      * @param x : number
@@ -151,5 +155,17 @@
 
     toString() {
         return `[${this.array.join(",")}]`;
+    }
+    
+    copy(){
+        return Vector3.fromArray(this.array);
+    }
+
+    /**
+     * @param other : Vector3
+     * @returns {boolean}
+     */
+    equals(other){
+        return (this.x === other.x) && (this.y === other.y) && (this.z === other.z);     
     }
 }

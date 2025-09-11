@@ -4,8 +4,8 @@
 }
 
 canvas {
-    width: 640px;
-    height: 640px;
+    width: 1280px;
+    height: 720px;
     border: 2px outset black;
     border-radius: 4px;
 }

@@ -16,6 +16,10 @@ export class TransformObject {
     /** @type {Vector3} */
     scale;
     
+    writtenAlready = true;
+    frame = 0;
+    
+
     /**
      *
      * @param name : string
@@ -50,9 +54,9 @@ export class TransformObject {
         } else {
             throw new Error('Position must be a Vector3 or array[3]');
         }
-        this.oldScale = Vector3.Zero.scale(-100);
-        this.oldPosition = Vector3.Zero.scale(-100);
-        this.oldRotation = Vector3.One.scale(-100);
+        this.oldScale = Vector3.Empty();
+        this.oldPosition = Vector3.Empty();
+        this.oldRotation = Vector3.Empty();
 
         this.Ready();
     }
@@ -74,7 +78,7 @@ export class TransformObject {
     get Up() {
         this.CalculateRotationMatrix();
         return math.cross(this.rotationZMatrix, math
-            .cross(this.rotationYMatrix, 
+            .cross(this.rotationYMatrix,
                 math.cross(this.rotationXMatrix, [0, 1, 0, 0])))
     }
 
@@ -82,6 +86,9 @@ export class TransformObject {
     }
 
     Update() {
+        for (let child of this.children) {
+            child.Update();
+        } 
         throw new Error("Update Cannot be Empty");
     }
 
@@ -97,10 +104,10 @@ export class TransformObject {
     //Util Functions
     //---------------
 
-    async CalculateMatrix() {
+    CalculateMatrix() {
         let changed = false;
 
-        if (this.oldScale.array !== this.scale.array) {
+        if (!this.oldScale.equals(this.scale)) {
             this.scaleMatrix = math.matrix([
                 [this.scale.x, 0, 0, 0],
                 [0, this.scale.y, 0, 0],
@@ -108,29 +115,29 @@ export class TransformObject {
                 [0, 0, 0, 1],
             ]);
             changed = true;
+            this.oldScale = this.scale.copy();
         }
 
-        if (this.oldPosition.array !== this.position.array) {
+        if (!this.oldPosition.equals(this.position)) {
             this.translateMatrix = math.matrix([
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
                 [0, 0, 1, 0],
                 [this.position.x, this.position.y, this.position.z, 1],
             ])
-
+            this.oldPosition = this.position.copy();
             changed = true;
         }
-        if (this.oldRotation.array !== this.rotation.array) {
+        if (!this.oldRotation.equals(this.rotation)) {
             this.rotationMatrix = this.CalculateRotationMatrix();
             changed = true;
+            this.oldRotation = this.rotation.copy();
         }
 
-        if (changed === true)
-            this.transformMatrix = math.multiply(math.multiply(this.scaleMatrix, this.rotationMatrix), this.translateMatrix);
-        this.oldScale = this.scale;
-        this.oldRotation = this.rotation;
-        this.oldPosition = this.position;
-        return this.transformMatrix;
+        if (changed) {
+            this.localTransformMatrix = math.multiply(math.multiply(this.scaleMatrix, this.rotationMatrix), this.translateMatrix);
+        }
+        return this.localTransformMatrix;
     }
 
     CalculateRotationMatrix() {
@@ -162,27 +169,16 @@ export class TransformObject {
 
     }
 
-    async CalculateParentMatrix() {
-        await this.CalculateMatrix();
-        let familyMember = this;
-        let matrix = this.transformMatrix;
-        while (familyMember.parent !== null) {
-            await familyMember.parent.CalculateMatrix();
-            familyMember = familyMember.parent;
-            matrix = math.multiply(matrix, familyMember.transformMatrix);
+    WriteToBuffer() {
+        this.CalculateMatrix();
+        let matrix
+        if (this.parent !== null) {
+            this.globalTransformMatrix =math.multiply(this.localTransformMatrix, this.parent.globalTransformMatrix);
+        }else{
+            this.globalTransformMatrix = this.localTransformMatrix;
         }
-        return matrix;
-    }
 
-    async WriteToBuffer() {
-        let matrix;
-        if (this.parent === null) {
-            await this.CalculateMatrix();
-            matrix = [...math.flatten(this.transformMatrix).toArray()];
-        } else {
-            let temp = await this.CalculateParentMatrix();
-            matrix = [...math.flatten(temp).toArray()];
-        }
+        matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
     }
 
@@ -210,6 +206,12 @@ export class TransformObject {
         });
 
         this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+
+        if (this.children && this.children.length > 0) {
+            for (let child of this.children) {
+                child.WriteToGPU();
+            } 
+        }
     }
 
     /**
@@ -217,9 +219,26 @@ export class TransformObject {
      */
     Render(pass) {
         pass.setBindGroup(0, this.bindGroup)
-        this.WriteToBuffer();
+        this.WriteToBuffer()
         pass.setVertexBuffer(0, this.vertexBuffer);
         pass.draw(this.vertices.length / 6);
+        if (this.children && this.children.length > 0) {
+            for (let child of this.children) {
+                child.Render(pass);
+            }
+        }
+    }
+    
+    LogOnce(string){
+        if (this.writtenAlready){
+            this.writtenAlready = false;
+            console.log(string);
+        } 
+    }
+    
+    DebugWriteContinuous(string){
+        let debugString = document.getElementById("Debug")
+        debugString.innerHTML = string;
     }
 
 
