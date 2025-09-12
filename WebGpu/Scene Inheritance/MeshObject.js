@@ -3,15 +3,21 @@ import {FreeFormShape} from "../FreeFormShape.js";
 import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
 //@ts-check
+/** @type {import('mathjs')}*/
+
+/**
+ * @typedef {Object} MeshObjectOptions
+ * @property {string} [name="MeshObject"]
+ * @property {Vector3} [position=Vector3.Zero]
+ * @property {Vector3} [rotation=Vector3.Zero]
+ * @property {Vector3} [scale=Vector3.One]
+ * @property {number[][]} [vertices=[Vector3.Zero.array]]
+ * @property {number[][]} [color=[Color.Black]]
+ */
+
 export class MeshObject extends Transform {
     /**
      * @param {MeshObjectOptions} [options={}] - Optional Mesh Object parameters
-     * @param {string} [options.name="MeshObject"]
-     * @param {Vector3} [options.position=Vector3.Zero]
-     * @param {Vector3} [options.rotation=Vector3.Zero]
-     * @param {Vector3} [options.scale=Vector3.One]
-     * @param {number[][]} [options.vertices=[Vector3.Zero.array]]
-     * @param {number[][]} [options.color=[Color.Black]]
      */
     constructor(options = {}) {
         const {

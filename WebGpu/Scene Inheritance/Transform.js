@@ -2,6 +2,13 @@
 //@ts-check
 /** @type {import('mathjs')}*/
 
+/**
+ * @typedef {Object} TransformOptions
+ * @property {Vector3} [position=Vector3.Zero]
+ * @property {Vector3} [rotation=Vector3.Zero]
+ * @property {Vector3} [scale=Vector3.One]
+ */
+
 export class Transform {
 
     /** @type {Transform|null} */
@@ -13,10 +20,6 @@ export class Transform {
      *
      * @param name : string
      * @param {TransformOptions} [options={}] - Optional transform parameters
-     * @param {Vector3} [options.position=Vector3.Zero]
-     * @param {Vector3} [options.rotation=Vector3.Zero]
-     * @param {Vector3} [options.scale=Vector3.One]
-     *
      */
     constructor(name, options = {}) {
         this.name = name;
