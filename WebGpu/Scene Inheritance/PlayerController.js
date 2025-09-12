@@ -1,7 +1,7 @@
-﻿import {TransformObject} from "./TransformObject.js";
-import {Vector3} from "./Vector3.js";
+﻿import {Vector3} from "./Vector3.js";
+import {MeshObject} from "./MeshObject.js";
 
-export class PlayerController extends TransformObject {
+export class PlayerController extends MeshObject {
     constructor(name, vertices, color, position, rotation, scale) {
         super(name, vertices, color, position, rotation, scale);
     }

@@ -25,7 +25,7 @@ class WebGPU {
         )
 
         /**
-         * @type {BasicPolygon [] | TransformObject[]}
+         * @type {Transform[]}
          */
         this.shapes = [];
     }
@@ -36,8 +36,7 @@ class WebGPU {
     }
 
     /**
-     *
-     * @param shape : TransformObject/BasicPolygon
+     * @param shape : Transform
      */
     AddShape(shape) {
         this.shapes.push(shape);

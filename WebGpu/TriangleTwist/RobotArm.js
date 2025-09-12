@@ -1,6 +1,6 @@
 ﻿import {Color} from "../Scene Inheritance/Color.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
-import {TransformObject} from "../Scene Inheritance/TransformObject.js";
+import {MeshObject} from "../Scene Inheritance/MeshObject.js";
 
 class RobotArm {
     constructor() {
@@ -10,13 +10,13 @@ class RobotArm {
 
 
         const web = WebGPU.Instance;
-        const base = new TransformObject(
+        const base = new MeshObject(
             "Base",
+            Vector3.fromArray([0, 0, 0.5]),
+            Vector3.fromArray([0, 0, 0]),
+            new Vector3(0.25, 0.5, 0.5),
             [B, A, C],
             [Color.Red, Color.Red, Color.Blue],
-            [0, 0, 0.5],
-            [0, 0, 0],
-            new Vector3(0.25, 0.5, 0.5),
         );
         base.Update = () => {
             for (let to of base.children) {
@@ -25,13 +25,13 @@ class RobotArm {
             base.rotation.z += 0.1 * (Math.PI / 180);
         };
 
-        const child = new TransformObject(
+        const child = new MeshObject(
             "Child",
+            Vector3.fromArray([0, 1, 0]),
+            Vector3.fromArray([0, 0, 0]),
+            new Vector3(0.5, 0.5, 1),
             [B, A, C],
             [Color.Blue, Color.Blue, Color.Green],
-            [0, 1, 0],
-            [0, 0, 0],
-            new Vector3(0.5, 0.5, 1),
         );
         child.Update = () => {
             for (let to of child.children) {
@@ -40,13 +40,13 @@ class RobotArm {
             child.rotation.x += 0.1 * (Math.PI / 180);
         };
 
-        const grandchild = new TransformObject(
+        const grandchild = new MeshObject(
             "Grandchild",
+            Vector3.fromArray([0, 1, 0]),
+            Vector3.fromArray([0, 0, 0]),
+            new Vector3(0.5, 0.5, 1),
             [B, A, C],
             [Color.Green, Color.Green, Color.Red],
-            [0, 1, 0],
-            [0, 0, 0],
-            new Vector3(1, 0.5, 1),
         );
         grandchild.Update = () => {
             for (let to of grandchild.children) {
