@@ -5,7 +5,7 @@ import {Color} from "./Color.js";
 //@ts-check
 export class MeshObject extends Transform {
     /**
-     * @param {MeshObjectOptions} [options={}] - Optional transform parameters
+     * @param {MeshObjectOptions} [options={}] - Optional Mesh Object parameters
      * @param {string} [options.name="MeshObject"]
      * @param {Vector3} [options.position=Vector3.Zero]
      * @param {Vector3} [options.rotation=Vector3.Zero]
