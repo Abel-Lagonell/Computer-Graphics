@@ -33,15 +33,4 @@ export class MeshObject extends Transform {
 
         this.vertices = FreeFormShape.GetArray(vertices, color);
     }
-    
-    /**
-     * @param pass : GPURenderPassEncoder
-     */
-    Render(pass) {
-        pass.setBindGroup(0, this.bindGroup)
-        this.WriteToBuffer()
-        pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.draw(this.vertices.length / 6);
-        this.CallInChildren("Render", [pass])
-    }
 }

@@ -133,7 +133,7 @@ class WebGPU {
 
     RenderAll() {
         this.encoder = this.device.createCommandEncoder();
-
+        
         this.commandPass = this.encoder.beginRenderPass({
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),

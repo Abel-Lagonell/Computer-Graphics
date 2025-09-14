@@ -1,6 +1,9 @@
 ﻿import {Vector3} from "./Vector3.js";
+import {Color} from "./Color.js";
+import {Logger} from "../Logger.js";
 //@ts-check
 /** @type {import('mathjs')}*/
+
 
 /**
  * @typedef {Object} TransformOptions
@@ -15,6 +18,8 @@ export class Transform {
     parent = null;
     /** @type {Transform[]} */
     children = [];
+    /** @type {Camera/null}*/
+    static cameraReference = null;
 
     /**
      *
@@ -26,9 +31,9 @@ export class Transform {
         this.gpu = WebGPU.Instance;
 
         const {
-            position = Vector3.Zero,
-            rotation = Vector3.Zero,
-            scale = Vector3.One
+            position = Vector3.Zero.copy(),
+            rotation = Vector3.Zero.copy(),
+            scale = Vector3.One.copy()
         } = options;
 
         this.position = position;
@@ -41,25 +46,32 @@ export class Transform {
 
         this.Ready();
         this.globalTransformMatrix = this.CalculateMatrix();
-        this.vertices = new Float32Array([...this.position.array, 0, 0, 0]);
+        this.vertices = new Float32Array([...this.position.array, ...Color.Black]);
     }
 
+    /**
+     * @param cam : Camera
+     */
+    static setCameraReference(cam){
+        Transform.cameraReference = cam;
+    }
+    
     get Forward() {
-        this.CalculateRotationMatrix();
+        this.CheckRotationChanged();
         return math.cross(this.rotationZMatrix,
             math.cross(this.rotationYMatrix,
                 math.cross(this.rotationXMatrix, [0, 0, 1, 0])))
     }
 
     get Right() {
-        this.CalculateRotationMatrix();
+        this.CheckRotationChanged();
         return math.cross(this.rotationZMatrix,
             math.cross(this.rotationYMatrix,
                 math.cross(this.rotationXMatrix, [1, 0, 0, 0])))
     }
 
     get Up() {
-        this.CalculateRotationMatrix();
+        this.CheckRotationChanged();
         return math.cross(this.rotationZMatrix, math
             .cross(this.rotationYMatrix,
                 math.cross(this.rotationXMatrix, [0, 1, 0, 0])))
@@ -104,11 +116,16 @@ export class Transform {
         child.parent = this;
     }
 
+    /**
+     * @param pass : GPURenderPassEncoder
+     */
     Render(pass) {
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
-        pass.setVertexBuffer(0, this.vertexBuffer);
-        pass.draw(1);
+        if (this.vertexBuffer && this.vertices.length > 6) {
+            pass.setVertexBuffer(0, this.vertexBuffer);
+            pass.draw(this.vertices.length/6);
+        }
         this.CallInChildren("Render", pass)
     }
 
@@ -116,9 +133,22 @@ export class Transform {
         this.CalculateMatrix();
         let matrix
         if (this.parent !== null) {
-            this.globalTransformMatrix = math.multiply(this.localTransformMatrix, this.parent.globalTransformMatrix);
+            this.globalTransformMatrix = math.multiply(
+                this.parent.globalTransformMatrix,
+                this.localTransformMatrix
+            );
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
+        }
+        if (Transform.cameraReference !== null){
+            this.globalTransformMatrix = math.multiply(
+                Transform.cameraReference.perspectiveMatrix, 
+                math.multiply(
+                    Transform.cameraReference.localTransformMatrix, 
+                    this.globalTransformMatrix
+                )
+            )
+            
         }
 
         matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
@@ -128,6 +158,8 @@ export class Transform {
     WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
 
+
+        /** @type {GPUBuffer}*/
         this.uniformBuffer = this.gpu.device.createBuffer({
             size: this.uniformBufferSize,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -142,13 +174,15 @@ export class Transform {
 
         this.WriteToBuffer();
 
-        this.vertexBuffer = this.gpu.device.createBuffer({
-            label: this.name,
-            size: this.vertices.byteLength,
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-        });
+        if (this.vertices.length > 6) {
+            this.vertexBuffer = this.gpu.device.createBuffer({
+                label: this.name,
+                size: this.vertices.byteLength,
+                usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+            });
 
-        this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+            this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+        }
 
         this.CallInChildren("WriteToGPU")
     }
@@ -177,21 +211,21 @@ export class Transform {
 
         this.rotationXMatrix = math.matrix([
             [1, 0, 0, 0],
-            [0, cos.x, sin.x, 0],
-            [0, -sin.x, cos.x, 0],
+            [0, cos.x, -sin.x, 0],
+            [0, sin.x, cos.x, 0],
             [0, 0, 0, 1]
         ])
 
         this.rotationYMatrix = math.matrix([
-            [cos.y, 0, -sin.y, 0],
+            [cos.y, 0, sin.y, 0],
             [0, 1, 0, 0],
-            [sin.y, 0, cos.y, 0],
+            [-sin.y, 0, cos.y, 0],
             [0, 0, 0, 1]
         ])
 
         this.rotationZMatrix = math.matrix([
-            [cos.z, sin.z, 0, 0],
-            [-sin.z, cos.z, 0, 0],
+            [cos.z, -sin.z, 0, 0],
+            [sin.z, cos.z, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ])
