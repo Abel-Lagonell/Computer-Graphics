@@ -55,7 +55,7 @@ export class Transform {
     static setCameraReference(cam){
         Transform.cameraReference = cam;
     }
-    
+
     get Forward() {
         this.CheckRotationChanged();
         return math.cross(this.rotationZMatrix,
@@ -142,13 +142,16 @@ export class Transform {
         }
         if (Transform.cameraReference !== null){
             this.globalTransformMatrix = math.multiply(
-                Transform.cameraReference.perspectiveMatrix, 
                 math.multiply(
-                    Transform.cameraReference.localTransformMatrix, 
-                    this.globalTransformMatrix
-                )
+                    math.multiply(
+                        this.globalTransformMatrix,
+                        Transform.cameraReference.localTransformMatrix,
+                    ),
+                    Transform.cameraReference.rotationMatrix
+                ),
+                Transform.cameraReference.perspectiveMatrix
             )
-            
+
         }
 
         matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
