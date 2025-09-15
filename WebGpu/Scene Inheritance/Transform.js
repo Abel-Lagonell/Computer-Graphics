@@ -1,6 +1,5 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
-import {Logger} from "../Logger.js";
 //@ts-check
 /** @type {import('mathjs')}*/
 
@@ -52,7 +51,7 @@ export class Transform {
     /**
      * @param cam : Camera
      */
-    static setCameraReference(cam){
+    static setCameraReference(cam) {
         Transform.cameraReference = cam;
     }
 
@@ -124,7 +123,7 @@ export class Transform {
         this.WriteToBuffer()
         if (this.vertexBuffer && this.vertices.length > 6) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length/6);
+            pass.draw(this.vertices.length / 6);
         }
         this.CallInChildren("Render", pass)
     }
@@ -133,21 +132,18 @@ export class Transform {
         this.CalculateMatrix();
         let matrix
         if (this.parent !== null) {
-            this.globalTransformMatrix = math.multiply(
-                this.parent.globalTransformMatrix,
-                this.localTransformMatrix
-            );
+            this.CalculateGlobalMatrix();
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
-        if (Transform.cameraReference !== null){
+        if (Transform.cameraReference !== null) {
             this.globalTransformMatrix = math.multiply(
                 math.multiply(
                     math.multiply(
                         this.globalTransformMatrix,
-                        Transform.cameraReference.localTransformMatrix,
+                        Transform.cameraReference.globalPositionMatrix
                     ),
-                    Transform.cameraReference.rotationMatrix
+                    Transform.cameraReference.globalRotationMatrix
                 ),
                 Transform.cameraReference.perspectiveMatrix
             )
@@ -188,6 +184,13 @@ export class Transform {
         }
 
         this.CallInChildren("WriteToGPU")
+    }
+
+    CalculateGlobalMatrix() {
+        return this.globalTransformMatrix = math.multiply(
+            this.parent.globalTransformMatrix,
+            this.CalculateMatrix()
+        );
     }
 
     CalculateMatrix() {
@@ -281,5 +284,90 @@ export class Transform {
         }
         return false;
     }
+
+    get globalPosition() {
+        this.CalculateGlobalMatrix();
+
+        return new Vector3(
+            math.subset(this.globalTransformMatrix, math.index(3, 0)),
+            math.subset(this.globalTransformMatrix, math.index(3, 1)),
+            math.subset(this.globalTransformMatrix, math.index(3, 2))
+        );
+    }
+
+    get globalPositionMatrix() {
+        this.CalculateGlobalMatrix();
+
+        let x = math.subset(this.globalTransformMatrix, math.index(3, 0));
+        let y = math.subset(this.globalTransformMatrix, math.index(3, 1));
+        let z = math.subset(this.globalTransformMatrix, math.index(3, 2))
+
+
+        return math.matrix([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [x, y, z, 1],
+        ])
+
+    }
+
+    get globalRotation() {
+        this.CalculateGlobalMatrix();
+
+        // Extract the 3x3 rotation part from the matrix
+        const m11 = math.subset(this.globalTransformMatrix, math.index(0, 1));
+        const m12 = math.subset(this.globalTransformMatrix, math.index(0, 2));
+        const m13 = math.subset(this.globalTransformMatrix, math.index(0, 3));
+        const m21 = math.subset(this.globalTransformMatrix, math.index(1, 0));
+        const m22 = math.subset(this.globalTransformMatrix, math.index(1, 1));
+        const m23 = math.subset(this.globalTransformMatrix, math.index(1, 2));
+        const m31 = math.subset(this.globalTransformMatrix, math.index(2, 0));
+        const m32 = math.subset(this.globalTransformMatrix, math.index(2, 1));
+        const m33 = math.subset(this.globalTransformMatrix, math.index(2, 2));
+
+        let rotX, rotY, rotZ;
+
+        const sy = Math.sqrt(m11 * m11 + m21 * m21);
+        const singular = sy < 1e-6;
+
+        if (!singular) {
+            rotX = Math.atan2(m32, m33);
+            rotY = Math.atan2(-m31, sy);
+            rotZ = Math.atan2(m21, m11);
+        } else {
+            rotX = Math.atan2(-m23, m22);
+            rotY = Math.atan2(-m31, sy);
+            rotZ = 0;
+        }
+
+        return new Vector3(rotX, rotY, rotZ);
+    }
+
+    get globalRotationMatrix() {
+        const m11 = math.subset(this.globalTransformMatrix, math.index(0, 0));
+        const m12 = math.subset(this.globalTransformMatrix, math.index(0, 1));
+        const m13 = math.subset(this.globalTransformMatrix, math.index(0, 2));
+        const m21 = math.subset(this.globalTransformMatrix, math.index(1, 0));
+        const m22 = math.subset(this.globalTransformMatrix, math.index(1, 1));
+        const m23 = math.subset(this.globalTransformMatrix, math.index(1, 2));
+        const m31 = math.subset(this.globalTransformMatrix, math.index(2, 0));
+        const m32 = math.subset(this.globalTransformMatrix, math.index(2, 1));
+        const m33 = math.subset(this.globalTransformMatrix, math.index(2, 2));
+
+        // Calculate scale factors to normalize
+        const scaleX = Math.sqrt(m11 * m11 + m21 * m21 + m31 * m31);
+        const scaleY = Math.sqrt(m12 * m12 + m22 * m22 + m32 * m32);
+        const scaleZ = Math.sqrt(m13 * m13 + m23 * m23 + m33 * m33);
+
+        // Create normalized rotation matrix (4x4 for consistency with your system)
+        return math.matrix([
+            [m11 / scaleX, m12 / scaleY, m13 / scaleZ, 0],
+            [m21 / scaleX, m22 / scaleY, m23 / scaleZ, 0],
+            [m31 / scaleX, m32 / scaleY, m33 / scaleZ, 0],
+            [0, 0, 0, 1]
+        ]);
+    }
+
 
 }

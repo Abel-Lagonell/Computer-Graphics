@@ -51,9 +51,34 @@ export class Camera extends Transform {
 
     WriteToBuffer() {
         this.CalculateMatrix();
+        let matrix;
+        if (this.parent !== null) {
+               this.CalculateGlobalMatrix()
+        } else {
+            this.globalTransformMatrix = this.localTransformMatrix;
+        }
+
+        matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
+        this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
     }
 
     WriteToGPU() {
+        this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
+
+        this.uniformBuffer = this.gpu.device.createBuffer({
+            size: this.uniformBufferSize,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
+        this.bindGroup = this.gpu.device.createBindGroup({
+            layout: this.gpu.pipeline.getBindGroupLayout(0),
+            entries: [
+                {binding: 0, resource: {buffer: this.uniformBuffer}},
+            ]
+        });
+
+        this.WriteToBuffer();
+        
         this.CallInChildren("WriteToGPU")
     }
 
