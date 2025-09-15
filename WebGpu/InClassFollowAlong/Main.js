@@ -14,22 +14,22 @@ class Main {
 
         const empty = new Transform("Empty");
         empty.Update = () => {
-            empty.rotation.y += 0.01 * Math.PI/ 180
+            empty.rotation.y += 0.5 * Math.PI/ 180
             empty.CallInChildren("Update")
         }
         
-        const mesh = new MeshObject(
+        const red = new MeshObject(
             {
-                name: "MeshObject",
+                name: "Red",
                 position: new Vector3(0, 0, .5),
                 vertices: [B, A, C],
                 color: [Color.Red, Color.Red, Color.Red],
             }
         );
 
-        const mesh2 = new MeshObject(
+        const blue = new MeshObject(
             {
-                name: "MeshObject",
+                name: "Blue",
                 position: new Vector3(0, 0, -1),
                 rotation: new Vector3(0, Math.PI, 0),
                 vertices: [B, A, C],
@@ -37,25 +37,39 @@ class Main {
             }
         );
 
+        const green = new MeshObject(
+            {
+                name: "Green",
+                position: new Vector3(0, 1, 0.5),
+                vertices: [B, A, C],
+                color: [Color.Green],
+            }
+        );
+
         const camera = new Camera();
         camera.Update = () => {
-            camera.rotation.y += 0.09 * Math.PI / 180;
+            camera.rotation.z -= 0.6 * Math.PI / 180;
             Logger.continuousLog(
                 Logger.matrixLog(camera.globalRotationMatrix, {prefix: "Camera Global Rotation"})+
                 Logger.matrixLog(empty.rotationMatrix, {prefix: "Empty Rotation:"}) +
-                Logger.matrixLog(mesh.globalTransformMatrix, {prefix: "Global Transform:"})
+                Logger.matrixLog(red.globalTransformMatrix, {prefix: "Global Transform:"})
             )
         }
 
         Transform.setCameraReference(camera);
 
         web.AddShape(empty);
-        // empty.AddChild(mesh);
-        web.AddShape(mesh2)
-        web.AddShape(mesh)
+        empty.AddChild(red);
+        web.AddShape(blue)
+        // web.AddShape(mesh)
         // web.AddShape(camera);
         
         empty.AddChild(camera)
+        camera.AddChild(green)
+
+        console.log(`empty is ${empty.isCameraParent? "a parent":""}`)
+        console.log(`Green is ${green.isCameraChild? "a child":""}${green.isCameraSibling? "a sibling":""}`)
+        console.log(`Red is ${red.isCameraChild? "a child":""}${red.isCameraSibling? "a sibling":""}`)
     }
 }
 

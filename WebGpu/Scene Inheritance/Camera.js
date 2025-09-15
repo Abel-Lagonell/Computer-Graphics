@@ -2,6 +2,8 @@
 import {Vector3} from "./Vector3.js";
 
 export class Camera extends Transform {
+    isCameraChild = true;
+    
     constructor(options = {}) {
         const {
             name = "Camera",

@@ -20,6 +20,14 @@ export class Transform {
     /** @type {Camera/null}*/
     static cameraReference = null;
 
+    isCameraChild = false;
+    isCameraSibling = false;
+    isCameraParent = false;
+
+    oldPosition = Vector3.Empty();
+    oldRotation = Vector3.Empty();
+    oldScale = Vector3.Empty();
+
     /**
      *
      * @param name : string
@@ -39,13 +47,9 @@ export class Transform {
         this.rotation = rotation;
         this.scale = scale;
 
-        this.oldPosition = Vector3.Empty();
-        this.oldRotation = Vector3.Empty();
-        this.oldScale = Vector3.Empty();
-
-        this.Ready();
         this.globalTransformMatrix = this.CalculateMatrix();
         this.vertices = new Float32Array([...this.position.array, ...Color.Black]);
+        this.Ready();
     }
 
     /**
@@ -113,6 +117,30 @@ export class Transform {
     AddChild(child) {
         this.children.push(child);
         child.parent = this;
+
+        if (this.isCameraChild) {
+            // If parent is already a camera child, make the new child also a camera child
+            child.SetCameraChild();
+        } else if (child.isCameraChild) {
+            // If the child being added is a camera child, parent becomes camera parent
+            this.isCameraParent = true;
+            // All existing children become camera siblings
+            this.CallInChildren("SetCameraSibling");
+        } else if (this.isCameraParent) {
+            // If parent is already a camera parent, new non-camera child becomes sibling
+            child.SetCameraSibling();
+        }
+    }
+
+    SetCameraChild() {
+        this.isCameraChild = true;
+        this.CallInChildren("SetCameraChild")
+    }
+
+    SetCameraSibling() {
+        if (this.isCameraChild) return;
+        this.isCameraSibling = true;
+        this.CallInChildren("SetCameraSibling")
     }
 
     /**
@@ -131,23 +159,28 @@ export class Transform {
     WriteToBuffer() {
         this.CalculateMatrix();
         let matrix
-        if (this.parent !== null) {
+        if (this.parent !== null && !this.parent.isCameraChild) {
             this.CalculateGlobalMatrix();
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
-        if (Transform.cameraReference !== null) {
+        if (Transform.cameraReference !== null && !this.isCameraChild) {
+            // Use identity matrix to skip transformations for siblings
+            const identityMatrix = math.identity(4);
+
+            const positionMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalPositionMatrix;
+            const rotationMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalRotationMatrix;
+
             this.globalTransformMatrix = math.multiply(
                 math.multiply(
                     math.multiply(
                         this.globalTransformMatrix,
-                        Transform.cameraReference.globalPositionMatrix
+                        positionMatrix
                     ),
-                    Transform.cameraReference.globalRotationMatrix
+                    rotationMatrix
                 ),
                 Transform.cameraReference.perspectiveMatrix
             )
-
         }
 
         matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
