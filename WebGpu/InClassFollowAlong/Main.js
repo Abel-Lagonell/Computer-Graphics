@@ -12,9 +12,9 @@ class Main {
         const C = [0, .25, 0];
         const web = WebGPU.Instance;
 
-        const empty = new Transform("Empty");
+        const empty = new Transform("Empty" ,{rotation: new Vector3(0, 30*Math.PI/180, 0)});
         empty.Update = () => {
-            empty.rotation.y += 0.5 * Math.PI/ 180
+            // empty.rotation.y += 0.2 * Math.PI/ 180
             empty.CallInChildren("Update")
         }
         
@@ -48,12 +48,7 @@ class Main {
 
         const camera = new Camera();
         camera.Update = () => {
-            camera.rotation.z -= 0.6 * Math.PI / 180;
-            Logger.continuousLog(
-                Logger.matrixLog(camera.globalRotationMatrix, {prefix: "Camera Global Rotation"})+
-                Logger.matrixLog(empty.rotationMatrix, {prefix: "Empty Rotation:"}) +
-                Logger.matrixLog(red.globalTransformMatrix, {prefix: "Global Transform:"})
-            )
+            // camera.rotation.y += 0.2 * Math.PI / 180;
         }
 
         Transform.setCameraReference(camera);

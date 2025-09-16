@@ -1,5 +1,6 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
+import {Logger} from "../Logger.js";
 //@ts-check
 /** @type {import('mathjs')}*/
 
@@ -23,6 +24,7 @@ export class Transform {
     isCameraChild = false;
     isCameraSibling = false;
     isCameraParent = false;
+    isCamera = false;
 
     oldPosition = Vector3.Empty();
     oldRotation = Vector3.Empty();
@@ -118,10 +120,7 @@ export class Transform {
         this.children.push(child);
         child.parent = this;
 
-        if (this.isCameraChild) {
-            // If parent is already a camera child, make the new child also a camera child
-            child.SetCameraChild();
-        } else if (child.isCameraChild) {
+        if (child.isCamera) {
             // If the child being added is a camera child, parent becomes camera parent
             this.isCameraParent = true;
             // All existing children become camera siblings
@@ -129,16 +128,16 @@ export class Transform {
         } else if (this.isCameraParent) {
             // If parent is already a camera parent, new non-camera child becomes sibling
             child.SetCameraSibling();
+        } else if (this.isCamera) {
+            child.SetCameraChild();
         }
     }
 
     SetCameraChild() {
         this.isCameraChild = true;
-        this.CallInChildren("SetCameraChild")
     }
 
     SetCameraSibling() {
-        if (this.isCameraChild) return;
         this.isCameraSibling = true;
         this.CallInChildren("SetCameraSibling")
     }
@@ -159,7 +158,8 @@ export class Transform {
     WriteToBuffer() {
         this.CalculateMatrix();
         let matrix
-        if (this.parent !== null && !this.parent.isCameraChild) {
+
+        if (this.parent !== null && !this.parent.isCamera) {
             this.CalculateGlobalMatrix();
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
@@ -170,6 +170,8 @@ export class Transform {
 
             const positionMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalPositionMatrix;
             const rotationMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalRotationMatrix;
+
+            Logger.matrixLog(this.globalTransformMatrix)
 
             this.globalTransformMatrix = math.multiply(
                 math.multiply(
