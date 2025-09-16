@@ -1,9 +1,9 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
 import {Logger} from "../Logger.js";
+import {Quaternion} from "./Quaternion.js";
 //@ts-check
 /** @type {import('mathjs')}*/
-
 
 /**
  * @typedef {Object} TransformOptions
@@ -25,10 +25,22 @@ export class Transform {
     isCameraSibling = false;
     isCameraParent = false;
     isCamera = false;
+    
+    AngularVelocity = Vector3.Zero.copy();
+    LinearVelocity = Vector3.Zero.copy();
+    ScalarVelocity = Vector3.Zero.copy();
 
     oldPosition = Vector3.Empty();
     oldRotation = Vector3.Empty();
     oldScale = Vector3.Empty();
+    oldQuaternion = Quaternion.Identity.copy();
+
+    // Cache for global transforms
+    /** @type {Vector3|null}*/
+    _globalPosition = null;
+    /** @type {Quaternion|null}*/
+    _globalQuaternion = null;
+    _globalTransformDirty = true;
 
     /**
      *
@@ -49,6 +61,9 @@ export class Transform {
         this.rotation = rotation;
         this.scale = scale;
 
+        // Initialize quaternion from euler rotation
+        this.quaternion = Quaternion.fromEuler(this.rotation);
+
         this.globalTransformMatrix = this.CalculateMatrix();
         this.vertices = new Float32Array([...this.position.array, ...Color.Black]);
         this.Ready();
@@ -63,23 +78,36 @@ export class Transform {
 
     get Forward() {
         this.CheckRotationChanged();
-        return math.cross(this.rotationZMatrix,
-            math.cross(this.rotationYMatrix,
-                math.cross(this.rotationXMatrix, [0, 0, 1, 0])))
+        // Use quaternion to rotate the forward vector (0, 0, 1)
+        return this._rotateVectorByQuaternion(new Vector3(0, 0, 1), this.quaternion);
     }
 
     get Right() {
         this.CheckRotationChanged();
-        return math.cross(this.rotationZMatrix,
-            math.cross(this.rotationYMatrix,
-                math.cross(this.rotationXMatrix, [1, 0, 0, 0])))
+        // Use quaternion to rotate the right vector (1, 0, 0)
+        return this._rotateVectorByQuaternion(new Vector3(1, 0, 0), this.quaternion);
     }
 
     get Up() {
         this.CheckRotationChanged();
-        return math.cross(this.rotationZMatrix, math
-            .cross(this.rotationYMatrix,
-                math.cross(this.rotationXMatrix, [0, 1, 0, 0])))
+        // Use quaternion to rotate the up vector (0, 1, 0)
+        return this._rotateVectorByQuaternion(new Vector3(0, 1, 0), this.quaternion);
+    }
+
+    // Global direction vectors (useful for world-space calculations)
+    get GlobalForward() {
+        this._updateGlobalTransforms();
+        return this._rotateVectorByQuaternion(new Vector3(0, 0, 1), this.globalQuaternion);
+    }
+
+    get GlobalRight() {
+        this._updateGlobalTransforms();
+        return this._rotateVectorByQuaternion(new Vector3(1, 0, 0), this.globalQuaternion);
+    }
+
+    get GlobalUp() {
+        this._updateGlobalTransforms();
+        return this._rotateVectorByQuaternion(new Vector3(0, 1, 0), this.globalQuaternion);
     }
 
     Ready() {
@@ -87,7 +115,30 @@ export class Transform {
     }
 
     Update() {
+    }
+    
+    _Update(){
+        this.PhysicsUpdate();
         this.CallInChildren("Update")
+        this.CallInChildren("_Update")
+    }
+
+    PhysicsUpdate() {
+        if (this.AngularVelocity.magnitude() !== 0 || this.AngularVelocity.magnitude() !== 0 || this.ScalarVelocity !== 0) {
+            this.markDirty()
+        }
+        
+        this.rotation= this.rotation.add(this.AngularVelocity);
+        this.position = this.position.add(this.LinearVelocity);
+        this.scale = this.scale.add(this.ScalarVelocity);
+    } 
+
+    /**
+     * Mark this transform and all children as dirty
+     */
+    markDirty() {
+        this._globalTransformDirty = true;
+        this.CallInChildren("markDirty");
     }
 
     /**
@@ -119,6 +170,7 @@ export class Transform {
     AddChild(child) {
         this.children.push(child);
         child.parent = this;
+        child.markDirty(); // Child's global transform needs recalculation
 
         if (child.isCamera) {
             // If the child being added is a camera child, parent becomes camera parent
@@ -159,19 +211,33 @@ export class Transform {
         this.CalculateMatrix();
         let matrix
 
-        if (this.parent !== null && !this.parent.isCamera) {
+        if (this.parent !== null) {
             this.CalculateGlobalMatrix();
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
-        if (Transform.cameraReference !== null && !this.isCameraChild) {
-            // Use identity matrix to skip transformations for siblings
-            const identityMatrix = math.identity(4);
 
-            const positionMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalPositionMatrix;
-            const rotationMatrix = this.isCameraSibling ? identityMatrix : Transform.cameraReference.globalRotationMatrix;
+        if (Transform.cameraReference !== null) {
+            let positionMatrix = math.identity(4);
+            let rotationMatrix = math.identity(4);
 
-            Logger.matrixLog(this.globalTransformMatrix)
+            if (this.isCameraSibling) {
+                //LEAVE THIS ALONE
+                this.globalTransformMatrix = this.localTransformMatrix
+                
+                if (!this.parent.quaternion.equals(Transform.cameraReference.quaternion)) {
+                    positionMatrix = this.parent.globalRotationMatrix
+                }
+                
+                if (this.parent?.LinearVelocity.magnitude() !== 0) {
+                    positionMatrix = this.parent.globalPositionMatrix;
+                } 
+            } else if (this.isCameraChild) {
+                this.globalTransformMatrix = this.localTransformMatrix;
+            } else {
+                positionMatrix = Transform.cameraReference.globalPositionMatrix;
+                rotationMatrix = Transform.cameraReference.globalRotationMatrix;
+            }
 
             this.globalTransformMatrix = math.multiply(
                 math.multiply(
@@ -183,6 +249,8 @@ export class Transform {
                 ),
                 Transform.cameraReference.perspectiveMatrix
             )
+
+            
         }
 
         matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
@@ -191,7 +259,6 @@ export class Transform {
 
     WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
-
 
         /** @type {GPUBuffer}*/
         this.uniformBuffer = this.gpu.device.createBuffer({
@@ -223,7 +290,7 @@ export class Transform {
 
     CalculateGlobalMatrix() {
         return this.globalTransformMatrix = math.multiply(
-            this.parent.globalTransformMatrix,
+            this.parent ? this.parent.globalTransformMatrix : math.identity(4),
             this.CalculateMatrix()
         );
     }
@@ -241,37 +308,15 @@ export class Transform {
             changed = true;
 
         if (changed) {
-            this.localTransformMatrix = math.multiply(math.multiply(this.scaleMatrix, this.rotationMatrix), this.translateMatrix);
+            // Use quaternion for rotation matrix
+            this.rotationMatrix = this.quaternion.Matrix;
+            this.localTransformMatrix = math.multiply(
+                math.multiply(this.scaleMatrix, this.rotationMatrix),
+                this.translateMatrix
+            );
+            this.markDirty();
         }
         return this.localTransformMatrix;
-    }
-
-    CalculateRotationMatrix() {
-        let sin = new Vector3(Math.sin(this.rotation.x), Math.sin(this.rotation.y), Math.sin(this.rotation.z));
-        let cos = new Vector3(Math.cos(this.rotation.x), Math.cos(this.rotation.y), Math.cos(this.rotation.z));
-
-        this.rotationXMatrix = math.matrix([
-            [1, 0, 0, 0],
-            [0, cos.x, -sin.x, 0],
-            [0, sin.x, cos.x, 0],
-            [0, 0, 0, 1]
-        ])
-
-        this.rotationYMatrix = math.matrix([
-            [cos.y, 0, sin.y, 0],
-            [0, 1, 0, 0],
-            [-sin.y, 0, cos.y, 0],
-            [0, 0, 0, 1]
-        ])
-
-        this.rotationZMatrix = math.matrix([
-            [cos.z, -sin.z, 0, 0],
-            [sin.z, cos.z, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1]
-        ])
-
-        return math.multiply(math.multiply(this.rotationZMatrix, this.rotationYMatrix), this.rotationXMatrix)
     }
 
     CalculateTranslationMatrix() {
@@ -303,15 +348,18 @@ export class Transform {
 
     CheckRotationChanged() {
         if (!this.oldRotation.equals(this.rotation)) {
-            this.rotationMatrix = this.CalculateRotationMatrix();
+            // Update quaternion when euler angles change
+            this.quaternion = Quaternion.fromEuler(this.rotation);
+            this.rotationMatrix = this.quaternion.Matrix;
+            
             this.oldRotation = this.rotation.copy();
+            this.oldQuaternion = this.quaternion.copy();
             return true;
         }
         return false;
     }
 
     CheckScaleChanged() {
-
         if (!this.oldScale.equals(this.scale)) {
             this.scaleMatrix = this.CalculateScaleMatrix();
             this.oldScale = this.scale.copy();
@@ -320,89 +368,84 @@ export class Transform {
         return false;
     }
 
-    get globalPosition() {
-        this.CalculateGlobalMatrix();
+    /**
+     * Calculate global transforms using quaternions (cached for performance)
+     */
+    _updateGlobalTransforms() {
+        if (!this._globalTransformDirty) return;
+
+        if (this.parent) {
+            this.parent._updateGlobalTransforms();
+
+            // Calculate global position
+            const parentGlobalQuat = this.parent.globalQuaternion;
+            const rotatedLocalPos = this._rotateVectorByQuaternion(this.position, parentGlobalQuat);
+            this._globalPosition = this.parent.globalPosition.add(rotatedLocalPos);
+
+            // Calculate global rotation
+            this._globalQuaternion = this.parent.globalQuaternion.multiply(this.quaternion);
+        } else {
+            this._globalPosition = this.position.copy();
+            this._globalQuaternion = this.quaternion.copy();
+        }
+
+        this._globalTransformDirty = false;
+    }
+
+    /**
+     * Rotate a vector by a quaternion
+     * @param {Vector3} vector
+     * @param {Quaternion} quaternion
+     * @returns {Vector3}
+     */
+    _rotateVectorByQuaternion(vector, quaternion) {
+        const qx = quaternion.x, qy = quaternion.y, qz = quaternion.z, qw = quaternion.w;
+        const vx = vector.x, vy = vector.y, vz = vector.z;
+
+        // Calculate quat * vector * quat_conjugate
+        const uvx = qy * vz - qz * vy;
+        const uvy = qz * vx - qx * vz;
+        const uvz = qx * vy - qy * vx;
+
+        const uuvx = qy * uvz - qz * uvy;
+        const uuvy = qz * uvx - qx * uvz;
+        const uuvz = qx * uvy - qy * uvx;
 
         return new Vector3(
-            math.subset(this.globalTransformMatrix, math.index(3, 0)),
-            math.subset(this.globalTransformMatrix, math.index(3, 1)),
-            math.subset(this.globalTransformMatrix, math.index(3, 2))
+            vx + ((uvx * qw) + uuvx) * 2,
+            vy + ((uvy * qw) + uuvy) * 2,
+            vz + ((uvz * qw) + uuvz) * 2
         );
     }
 
+    get globalPosition() {
+        this._updateGlobalTransforms();
+        return this._globalPosition;
+    }
+
+    get globalQuaternion() {
+        this._updateGlobalTransforms();
+        return this._globalQuaternion;
+    }
+
     get globalPositionMatrix() {
-        this.CalculateGlobalMatrix();
-
-        let x = math.subset(this.globalTransformMatrix, math.index(3, 0));
-        let y = math.subset(this.globalTransformMatrix, math.index(3, 1));
-        let z = math.subset(this.globalTransformMatrix, math.index(3, 2))
-
-
+        const pos = this.globalPosition;
         return math.matrix([
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
-            [x, y, z, 1],
+            [pos.x, pos.y, pos.z, 1],
         ])
-
     }
 
     get globalRotation() {
-        this.CalculateGlobalMatrix();
-
-        // Extract the 3x3 rotation part from the matrix
-        const m11 = math.subset(this.globalTransformMatrix, math.index(0, 1));
-        const m12 = math.subset(this.globalTransformMatrix, math.index(0, 2));
-        const m13 = math.subset(this.globalTransformMatrix, math.index(0, 3));
-        const m21 = math.subset(this.globalTransformMatrix, math.index(1, 0));
-        const m22 = math.subset(this.globalTransformMatrix, math.index(1, 1));
-        const m23 = math.subset(this.globalTransformMatrix, math.index(1, 2));
-        const m31 = math.subset(this.globalTransformMatrix, math.index(2, 0));
-        const m32 = math.subset(this.globalTransformMatrix, math.index(2, 1));
-        const m33 = math.subset(this.globalTransformMatrix, math.index(2, 2));
-
-        let rotX, rotY, rotZ;
-
-        const sy = Math.sqrt(m11 * m11 + m21 * m21);
-        const singular = sy < 1e-6;
-
-        if (!singular) {
-            rotX = Math.atan2(m32, m33);
-            rotY = Math.atan2(-m31, sy);
-            rotZ = Math.atan2(m21, m11);
-        } else {
-            rotX = Math.atan2(-m23, m22);
-            rotY = Math.atan2(-m31, sy);
-            rotZ = 0;
-        }
-
-        return new Vector3(rotX, rotY, rotZ);
+        // Convert quaternion back to Euler for compatibility
+        return this.globalQuaternion.Euler;
     }
 
     get globalRotationMatrix() {
-        const m11 = math.subset(this.globalTransformMatrix, math.index(0, 0));
-        const m12 = math.subset(this.globalTransformMatrix, math.index(0, 1));
-        const m13 = math.subset(this.globalTransformMatrix, math.index(0, 2));
-        const m21 = math.subset(this.globalTransformMatrix, math.index(1, 0));
-        const m22 = math.subset(this.globalTransformMatrix, math.index(1, 1));
-        const m23 = math.subset(this.globalTransformMatrix, math.index(1, 2));
-        const m31 = math.subset(this.globalTransformMatrix, math.index(2, 0));
-        const m32 = math.subset(this.globalTransformMatrix, math.index(2, 1));
-        const m33 = math.subset(this.globalTransformMatrix, math.index(2, 2));
-
-        // Calculate scale factors to normalize
-        const scaleX = Math.sqrt(m11 * m11 + m21 * m21 + m31 * m31);
-        const scaleY = Math.sqrt(m12 * m12 + m22 * m22 + m32 * m32);
-        const scaleZ = Math.sqrt(m13 * m13 + m23 * m23 + m33 * m33);
-
-        // Create normalized rotation matrix (4x4 for consistency with your system)
-        return math.matrix([
-            [m11 / scaleX, m12 / scaleY, m13 / scaleZ, 0],
-            [m21 / scaleX, m22 / scaleY, m23 / scaleZ, 0],
-            [m31 / scaleX, m32 / scaleY, m33 / scaleZ, 0],
-            [0, 0, 0, 1]
-        ]);
+        return this.globalQuaternion.Matrix;
     }
 
-
+    
 }

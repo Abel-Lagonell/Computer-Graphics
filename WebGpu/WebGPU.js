@@ -52,7 +52,7 @@ class WebGPU {
 
     UpdateAll() {
         for (let i = 0; i < this.shapes.length; i++) {
-            this.shapes[i].Update()
+            this.shapes[i]._Update()
         }
 
     }

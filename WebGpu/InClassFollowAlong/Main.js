@@ -12,11 +12,8 @@ class Main {
         const C = [0, .25, 0];
         const web = WebGPU.Instance;
 
-        const empty = new Transform("Empty" ,{rotation: new Vector3(0, 30*Math.PI/180, 0)});
-        empty.Update = () => {
-            // empty.rotation.y += 0.2 * Math.PI/ 180
-            empty.CallInChildren("Update")
-        }
+        const empty = new Transform("Empty");
+        empty.AngularVelocity = new Vector3(0, Math.PI/180, 0)
         
         const red = new MeshObject(
             {
@@ -47,21 +44,20 @@ class Main {
         );
 
         const camera = new Camera();
-        camera.Update = () => {
-            // camera.rotation.y += 0.2 * Math.PI / 180;
-        }
+        camera.AngularVelocity = new Vector3(0, -Math.PI/180, 0)
+        
 
         Transform.setCameraReference(camera);
 
+        web.AddShape(blue)
         web.AddShape(empty);
         empty.AddChild(red);
-        web.AddShape(blue)
         // web.AddShape(mesh)
         // web.AddShape(camera);
         
         empty.AddChild(camera)
         camera.AddChild(green)
-
+        
         console.log(`empty is ${empty.isCameraParent? "a parent":""}`)
         console.log(`Green is ${green.isCameraChild? "a child":""}${green.isCameraSibling? "a sibling":""}`)
         console.log(`Red is ${red.isCameraChild? "a child":""}${red.isCameraSibling? "a sibling":""}`)
