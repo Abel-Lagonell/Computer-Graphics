@@ -217,23 +217,21 @@ export class Transform {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
 
-        if (Transform.cameraReference !== null) {
+        if (Transform.cameraReference !== null && !this.isCameraParent) {
             let positionMatrix = math.identity(4);
             let rotationMatrix = math.identity(4);
 
             if (this.isCameraSibling) {
+                // this.globalTransformMatrix = this.localTransformMatrix;
                 positionMatrix = Transform.cameraReference.globalPositionMatrix;
-                
-                
-                // if (Transform.cameraReference.AngularVelocity.magnitude() !== 0) {
-                //     console.log("cam moving")
-                    rotationMatrix = Transform.cameraReference.globalRotationMatrix;
-                // } 
-                // if (this.parent.AngularVelocity.magnitude() !== 0) {
-                //     console.log("parent moving")
-                //     // this.globalTransformMatrix = this.parent.globalTransformMatrix;
-                // }
-
+                rotationMatrix = Transform.cameraReference.globalRotationMatrix;
+                Logger.continuousLog(
+                    Logger.matrixLog(positionMatrix, {prefix: "Position Matrix"}) +
+                    Logger.matrixLog(rotationMatrix, {prefix: "Rotation Matrix"}) +
+                    Logger.matrixLog(this.globalTransformMatrix, {prefix: "Global Matrix"}) +
+                    Logger.matrixLog(this.parent.globalTransformMatrix, {prefix: "Parent Global Matrix"}) +
+                    Logger.matrixLog(math.multiply(this.globalTransformMatrix, positionMatrix, rotationMatrix)),
+                )
             } else if (this.isCameraChild) {
                 this.globalTransformMatrix = this.localTransformMatrix;
             } else {
@@ -242,13 +240,9 @@ export class Transform {
             }
 
             this.globalTransformMatrix = math.multiply(
-                math.multiply(
-                    math.multiply(
-                        this.globalTransformMatrix,
-                        positionMatrix
-                    ),
-                    rotationMatrix
-                ),
+                this.globalTransformMatrix,
+                positionMatrix,
+                rotationMatrix,
                 Transform.cameraReference.perspectiveMatrix
             )
 
@@ -293,7 +287,7 @@ export class Transform {
     CalculateGlobalMatrix() {
         return this.globalTransformMatrix = math.multiply(
             this.CalculateMatrix(),
-            this.parent.globalTransformMatrix
+            this.parent.globalTransformMatrix,
         );
     }
 
@@ -313,7 +307,8 @@ export class Transform {
             // Use quaternion for rotation matrix
             this.rotationMatrix = this.quaternion.Matrix;
             this.localTransformMatrix = math.multiply(
-                math.multiply(this.scaleMatrix, this.rotationMatrix),
+                this.scaleMatrix,
+                this.rotationMatrix,
                 this.translateMatrix
             );
             this.markDirty();

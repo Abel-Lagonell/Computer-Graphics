@@ -13,13 +13,13 @@ class Main {
         const web = WebGPU.Instance;
 
         const empty = new Transform("Empty");
-        empty.AngularVelocity = new Vector3(0, 0.01, 0)
+        empty.AngularVelocity = new Vector3(0, 0.02, 0)
         // empty.LinearVelocity = new Vector3(0.01, 0,0)
         
         const red = new MeshObject(
             {
                 name: "Red",
-                position: new Vector3(0, 0, .5),
+                position: new Vector3(0, 0, 0.5),
                 vertices: [B, A, C],
                 color: [Color.Red, Color.Red, Color.Red],
             }
