@@ -25,7 +25,7 @@ export class Transform {
     isCameraSibling = false;
     isCameraParent = false;
     isCamera = false;
-    
+
     AngularVelocity = Vector3.Zero.copy();
     LinearVelocity = Vector3.Zero.copy();
     ScalarVelocity = Vector3.Zero.copy();
@@ -116,8 +116,8 @@ export class Transform {
 
     Update() {
     }
-    
-    _Update(){
+
+    _Update() {
         this.PhysicsUpdate();
         this.CallInChildren("Update")
         this.CallInChildren("_Update")
@@ -127,11 +127,11 @@ export class Transform {
         if (this.AngularVelocity.magnitude() !== 0 || this.AngularVelocity.magnitude() !== 0 || this.ScalarVelocity !== 0) {
             this.markDirty()
         }
-        
-        this.rotation= this.rotation.add(this.AngularVelocity);
+
+        this.rotation = this.rotation.add(this.AngularVelocity);
         this.position = this.position.add(this.LinearVelocity);
         this.scale = this.scale.add(this.ScalarVelocity);
-    } 
+    }
 
     /**
      * Mark this transform and all children as dirty
@@ -222,16 +222,18 @@ export class Transform {
             let rotationMatrix = math.identity(4);
 
             if (this.isCameraSibling) {
-                //LEAVE THIS ALONE
-                this.globalTransformMatrix = this.localTransformMatrix
+                positionMatrix = Transform.cameraReference.globalPositionMatrix;
                 
-                if (!this.parent.quaternion.equals(Transform.cameraReference.quaternion)) {
-                    positionMatrix = this.parent.globalRotationMatrix
-                }
                 
-                if (this.parent?.LinearVelocity.magnitude() !== 0) {
-                    positionMatrix = this.parent.globalPositionMatrix;
-                } 
+                // if (Transform.cameraReference.AngularVelocity.magnitude() !== 0) {
+                //     console.log("cam moving")
+                    rotationMatrix = Transform.cameraReference.globalRotationMatrix;
+                // } 
+                // if (this.parent.AngularVelocity.magnitude() !== 0) {
+                //     console.log("parent moving")
+                //     // this.globalTransformMatrix = this.parent.globalTransformMatrix;
+                // }
+
             } else if (this.isCameraChild) {
                 this.globalTransformMatrix = this.localTransformMatrix;
             } else {
@@ -250,7 +252,7 @@ export class Transform {
                 Transform.cameraReference.perspectiveMatrix
             )
 
-            
+
         }
 
         matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
@@ -351,7 +353,7 @@ export class Transform {
             // Update quaternion when euler angles change
             this.quaternion = Quaternion.fromEuler(this.rotation);
             this.rotationMatrix = this.quaternion.Matrix;
-            
+
             this.oldRotation = this.rotation.copy();
             this.oldQuaternion = this.quaternion.copy();
             return true;
@@ -447,5 +449,5 @@ export class Transform {
         return this.globalQuaternion.Matrix;
     }
 
-    
+
 }

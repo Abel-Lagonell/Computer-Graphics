@@ -79,6 +79,12 @@ class WebGPU {
         );
         console.log("Created context with device and format");
 
+        this.depthTexture = this.device.createTexture({
+            size: [this.canvas.width, this.canvas.height],
+            format: 'depth24plus',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        
         this.cellShaderModule = this.device.createShaderModule({
             label: "Simple Shader",
             code: this.shaderCode
@@ -123,6 +129,11 @@ class WebGPU {
                 primitive: {
                     topology: "triangle-strip", //"triangle-list",
                     cullMode: "back"
+                },
+                depthStencil: {
+                    depthWriteEnabled: true,
+                    depthCompare: 'less',
+                    format: 'depth24plus',
                 }
             },
         );
@@ -132,6 +143,7 @@ class WebGPU {
     }
 
     RenderAll() {
+        this.handleCanvasResize();
         this.encoder = this.device.createCommandEncoder();
         
         this.commandPass = this.encoder.beginRenderPass({
@@ -140,7 +152,13 @@ class WebGPU {
                 loadOp: "clear",
                 clearValue: {r: 1, g: 1, b: 1, a: 1},
                 storeOp: "store",
-            }]
+            }],
+            depthStencilAttachment: {
+                view: this.depthTexture.createView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            }
         });
         this.commandPass.setPipeline(this.pipeline);
 
@@ -174,6 +192,23 @@ class WebGPU {
         let keyIsPressed = (this.keys[key]);
 
         return (keyExists && keyIsPressed);
+    }
+
+    handleCanvasResize() {
+        if (this.canvas.width !== this.canvas.clientWidth ||
+            this.canvas.height !== this.canvas.clientHeight) {
+
+            this.canvas.width = this.canvas.clientWidth;
+            this.canvas.height = this.canvas.clientHeight;
+
+            // Recreate depth texture with new size
+            this.depthTexture.destroy();
+            this.depthTexture = this.device.createTexture({
+                size: [this.canvas.width, this.canvas.height],
+                format: 'depth24plus',
+                usage: GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+        }
     }
     
 }

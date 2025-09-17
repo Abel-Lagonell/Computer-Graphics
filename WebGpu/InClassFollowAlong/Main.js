@@ -13,7 +13,8 @@ class Main {
         const web = WebGPU.Instance;
 
         const empty = new Transform("Empty");
-        empty.AngularVelocity = new Vector3(0, Math.PI/180, 0)
+        empty.AngularVelocity = new Vector3(0, 0.01, 0)
+        // empty.LinearVelocity = new Vector3(0.01, 0,0)
         
         const red = new MeshObject(
             {
@@ -27,8 +28,8 @@ class Main {
         const blue = new MeshObject(
             {
                 name: "Blue",
-                position: new Vector3(0, 0, -1),
-                rotation: new Vector3(0, Math.PI, 0),
+                position: new Vector3(0, 0, 1),
+                // rotation: new Vector3(0, Math.PI, 0),
                 vertices: [B, A, C],
                 color: [Color.Blue, Color.Blue, Color.Blue],
             }
@@ -44,17 +45,15 @@ class Main {
         );
 
         const camera = new Camera();
-        camera.AngularVelocity = new Vector3(0, -Math.PI/180, 0)
-        
+        camera.AngularVelocity = new Vector3(0, -0.01, 0)
+        // camera.LinearVelocity = new Vector3(-0.01, 0.0,0)
 
         Transform.setCameraReference(camera);
 
-        web.AddShape(blue)
         web.AddShape(empty);
         empty.AddChild(red);
-        // web.AddShape(mesh)
-        // web.AddShape(camera);
-        
+
+        web.AddShape(blue)
         empty.AddChild(camera)
         camera.AddChild(green)
         

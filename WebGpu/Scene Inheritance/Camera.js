@@ -3,11 +3,11 @@ import {Vector3} from "./Vector3.js";
 
 export class Camera extends Transform {
     isCamera = true;
-    
+
     constructor(options = {}) {
         const {
             name = "Camera",
-            position = new Vector3(0,0, 0),
+            position = new Vector3(0, 0, 0),
             rotation = Vector3.Zero.copy(),
             near = 0.001,
             far = 5000,
@@ -35,9 +35,17 @@ export class Camera extends Transform {
             changed = true;
         if (this.CheckPositionChanged())
             changed = true;
+        if (this.CheckScaleChanged())
+            changed = true;
 
-        if (changed)
-            this.localTransformMatrix = math.multiply(this.rotationMatrix, this.translateMatrix)
+        if (changed) {
+            this.rotationMatrix = this.quaternion.Matrix;
+            this.localTransformMatrix = math.multiply(
+                math.multiply(this.scaleMatrix, this.rotationMatrix),
+                this.translateMatrix
+            );
+            this.markDirty()
+        }
 
         return this.localTransformMatrix;
     }
@@ -51,11 +59,21 @@ export class Camera extends Transform {
         ])
     }
 
+    get globalPositionMatrix() {
+        const pos = this.globalPosition;
+        return math.matrix([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [-pos.x, -pos.y, -pos.z, 1], // Negative for camera view matrix
+        ])
+    }
+
     WriteToBuffer() {
         this.CalculateMatrix();
         let matrix;
         if (this.parent !== null) {
-               this.CalculateGlobalMatrix()
+            this.CalculateGlobalMatrix()
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
@@ -80,7 +98,7 @@ export class Camera extends Transform {
         });
 
         this.WriteToBuffer();
-        
+
         this.CallInChildren("WriteToGPU")
     }
 
