@@ -290,8 +290,8 @@ export class Transform {
 
     CalculateGlobalMatrix() {
         return this.globalTransformMatrix = math.multiply(
-            this.parent ? this.parent.globalTransformMatrix : math.identity(4),
-            this.CalculateMatrix()
+            this.CalculateMatrix(),
+            this.parent.globalTransformMatrix
         );
     }
 

@@ -1,6 +1,7 @@
 ﻿import {Color} from "../Scene Inheritance/Color.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {MeshObject} from "../Scene Inheritance/MeshObject.js";
+import {Logger} from "../Logger.js";
 
 class RobotArm {
     constructor() {
@@ -11,53 +12,38 @@ class RobotArm {
 
         const web = WebGPU.Instance;
         const base = new MeshObject(
-            "Base",
-            Vector3.fromArray([0, 0, 0.5]),
-            Vector3.fromArray([0, 0, 0]),
-            new Vector3(0.25, 0.5, 0.5),
-            [B, A, C],
-            [Color.Red, Color.Red, Color.Blue],
-        );
-        base.Update = () => {
-            for (let to of base.children) {
-                to.Update();
+            {
+                name: "Base",
+                position: Vector3.fromArray([0, 0, 0.5]),
+                scale: new Vector3(0.25, 0.5, 0.5),
+                vertices: [B, A, C],
+                color: [Color.Red, Color.Red, Color.Blue]
             }
-            base.rotation.z += 0.1 * (Math.PI / 180);
-        };
+        )
+        base.AngularVelocity = new Vector3(0, 0, 0.1 * Math.PI / 180)
 
         const child = new MeshObject(
-            "Child",
-            Vector3.fromArray([0, 1, 0]),
-            Vector3.fromArray([0, 0, 0]),
-            new Vector3(0.5, 0.5, 1),
-            [B, A, C],
-            [Color.Blue, Color.Blue, Color.Green],
-        );
-        child.Update = () => {
-            for (let to of child.children) {
-                to.Update();
+            {
+                name: "Child",
+                position: Vector3.fromArray([0, 1, 0]),
+                scale: new Vector3(0.5, 0.5, 1),
+                vertices: [B, A, C],
+                color: [Color.Blue, Color.Blue, Color.Green],
             }
-            child.rotation.x += 0.1 * (Math.PI / 180);
-        };
+        );
+        child.AngularVelocity = new Vector3(0.1*Math.PI/180, 0, 0);
 
         const grandchild = new MeshObject(
-            "Grandchild",
-            Vector3.fromArray([0, 1, 0]),
-            Vector3.fromArray([0, 0, 0]),
-            new Vector3(0.5, 0.5, 1),
-            [B, A, C],
-            [Color.Green, Color.Green, Color.Red],
+            {name: "Grandchild",
+            position: Vector3.fromArray([0, 1, 0]),
+            scale: new Vector3(0.5, 0.5, 1),
+            vertices: [B, A, C],
+            color: [Color.Green, Color.Green, Color.Red],}
         );
-        grandchild.Update = () => {
-            for (let to of grandchild.children) {
-                to.Update();
-            }
-            grandchild.rotation.y += 0.1 * (Math.PI / 180);
-        };
+        grandchild.AngularVelocity = new Vector3(0, 0.1 * Math.PI / 180,0)
 
         child.AddChild(grandchild);
         base.AddChild(child);
-
         web.AddShape(base)
     }
 }

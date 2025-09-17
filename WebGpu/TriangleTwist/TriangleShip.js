@@ -7,16 +7,15 @@ class TriangleShip {
         const web = WebGPU.Instance;
         const player = new PlayerController(
             "Simple triangle",
-            Vector3.Zero,
-            Vector3.Zero,
-            Vector3.One.scale(0.1),
             [[-0.5, -0.5, 0.0],
                 [0.5, -0.5, 0.0],
                 [0.0, 0.5, 0.0]],
             [Color.Yellow, Color.Cyan, Color.Purple],
-            
+            Vector3.Zero,
+            Vector3.Zero,
+            Vector3.One.scale(0.1),
         );
-        
+
         web.AddShape(player);
     }
 }
