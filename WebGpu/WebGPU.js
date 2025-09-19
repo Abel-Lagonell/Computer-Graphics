@@ -127,13 +127,13 @@ class WebGPU {
                     }]
                 },
                 primitive: {
-                    topology: "triangle-strip", //"triangle-list",
+                    topology: "triangle-list",
                     cullMode: "back"
                 },
                 depthStencil: {
+                    format: 'depth24plus',
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
                 }
             },
         );
