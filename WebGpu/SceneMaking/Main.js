@@ -36,12 +36,13 @@ class Main {
             position: new Vector3(0,0,0)
         }) 
         
-        let empty = new Transform("empty", {position: new Vector3(0,0,10),
+        let empty = new Transform("empty", {position: new Vector3(0,0,5),
         rotation: new Vector3(0,3.14/2,0),});
+        empty.AngularVelocity = new Vector3(0,0.01,0)
         
         console.log(cube2.GetTriangleList())
         
-        empty.AddChild(cube01);
+        // empty.AddChild(cube01);
         empty.AddChild(cube02);
         this.web.AddShape(empty)
     }

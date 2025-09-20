@@ -59,7 +59,7 @@ export class OBJ {
                 // OBJ faces can be triangles (3 vertices) or quads (4 vertices) or polygons
                 for (let i = 1; i < face.length - 1; i++) {
                     // Create triangle: vertex 0, vertex i, vertex i+1
-                    let triangle = [face[0], face[i], face[i + 1]];
+                    let triangle = [face[i+1], face[i], face[0]];
 
                     for (let vertexIndex of triangle) {
                         let vertex = this.vertices[vertexIndex[0]]; // vertexIndex[0] is the vertex position index
