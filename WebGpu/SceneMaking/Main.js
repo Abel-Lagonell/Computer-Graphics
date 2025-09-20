@@ -19,32 +19,32 @@ class Main {
     }
     
     async BufferObjects(){
-        let [cube1, cube2] = await this.parser.parseObj("./SimpleCube");
-    
-        
-        let cube01 = new MeshObject({
-            name: cube1.name,
-            vertices: cube1.GetTriangleList(),
-            color: cube1.GetColorList(),
-            position: new Vector3(0,0,0)
-        })
-
-        let cube02 = new MeshObject({
-            name: cube2.name,
-            vertices: cube2.GetTriangleList(),
-            color: cube2.GetColorList(),
-            position: new Vector3(0,0,0)
-        }) 
-        
-        let empty = new Transform("empty", {position: new Vector3(0,0,5),
-        rotation: new Vector3(0,3.14/2,0),});
-        empty.AngularVelocity = new Vector3(0,0.01,0)
-        
-        console.log(cube2.GetTriangleList())
-        
-        // empty.AddChild(cube01);
-        empty.AddChild(cube02);
-        this.web.AddShape(empty)
+        // let [cube1, cube2] = await this.parser.parseObj("./SimpleCube");
+        //
+        //
+        // let cube01 = new MeshObject({
+        //     name: cube1.name,
+        //     vertices: cube1.GetTriangleList(),
+        //     color: cube1.GetColorList(),
+        //     position: new Vector3(0,0,0)
+        // })
+        //
+        // let cube02 = new MeshObject({
+        //     name: cube2.name,
+        //     vertices: cube2.GetTriangleList(),
+        //     color: cube2.GetColorList(),
+        //     position: new Vector3(0,0,0)
+        // })
+        //
+        // let empty = new Transform("empty", {position: new Vector3(0,0,5),
+        // rotation: new Vector3(0,3.14/2,0),});
+        // empty.AngularVelocity = new Vector3(0,0.01,0)
+        //
+        // console.log(cube2.GetTriangleList())
+        //
+        // // empty.AddChild(cube01);
+        // empty.AddChild(cube02);
+        // this.web.AddShape(empty)
     }
 }
 

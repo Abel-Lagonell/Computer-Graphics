@@ -13,7 +13,7 @@ export class OBJ {
     /**
      * @type {{string: number[][]}}
      */
-    materialFaceElements = {};
+    materialFaceElements = {"default": []};
 
     /**
      *
@@ -101,9 +101,14 @@ export class OBJParser {
 
     runningTotal = [0, 0, 0]
     currentIndex = -1;
-    currentMaterial = "";
+    currentMaterial = "default";
     textFile = "";
 
+    /**
+     *
+     * @param objectUrl
+     * @returns {Promise<OBJ[]>}
+     */
     async parseObj(objectUrl) {
         this.textFile = await this.loadFile(objectUrl + ".obj");
         return this.parseObjFile(this.textFile);
