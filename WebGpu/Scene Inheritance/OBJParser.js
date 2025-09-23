@@ -1,4 +1,7 @@
-﻿export class Material {
+﻿import {Transform} from "./Transform.js";
+import {MeshObject} from "./MeshObject.js";
+
+export class Material {
     specularExponent = 0; //Ns
     ambient = []; //Ka
     diffuse = []; //Kd
@@ -20,8 +23,6 @@ export class OBJ {
      * @type {{string: Material}}
      */
     materialReference = {}
-
-    trianglesPerFace = []
 
     /**
      * @param name : string
@@ -50,7 +51,7 @@ export class OBJ {
      */
     GetTriangleList() {
         let triangleVertices = [];
-
+        
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
 
@@ -59,10 +60,14 @@ export class OBJ {
                 // OBJ faces can be triangles (3 vertices) or quads (4 vertices) or polygons
                 for (let i = 1; i < face.length - 1; i++) {
                     // Create triangle: vertex 0, vertex i, vertex i+1
-                    let triangle = [face[i+1], face[i], face[0]];
-
+                    let triangle = [face[i + 1], face[i], face[0]];
+                    
                     for (let vertexIndex of triangle) {
                         let vertex = this.vertices[vertexIndex[0]]; // vertexIndex[0] is the vertex position index
+                        if (vertex === undefined){
+                            console.log(this.vertices)
+                            console.log(vertexIndex[0]);
+                        }
                         triangleVertices.push(vertex); // Push x, y, z
                     }
                 }
@@ -77,7 +82,7 @@ export class OBJ {
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
             for (let i in faces) {
-                for (let _ = 0; _ < this.trianglesPerFace[i]; _++){
+                for (let _ = 0; _ < faces[i].length-2; _++) {
                     colorList.push(this.materialReference[materialName].diffuse)
                 }
             }
@@ -93,6 +98,9 @@ export class OBJParser {
      */
     materials = {};
 
+    /**
+     * @type {OBJ[]}
+     */
     OBJs = []
     verticesArray = [];
     textureCoordinates = [];
@@ -105,12 +113,15 @@ export class OBJParser {
     textFile = "";
 
     /**
-     *
-     * @param objectUrl
-     * @returns {Promise<OBJ[]>}
+     * 
+     * @param location
+     * @param name
+     * @return {Promise<Transform>}
      */
-    async parseObj(objectUrl) {
-        this.textFile = await this.loadFile(objectUrl + ".obj");
+    async parseObj(location, name) {
+        this.textName = name;
+        this.location = location;
+        this.textFile = await this.loadFile(location + name + ".obj");
         return this.parseObjFile(this.textFile);
     }
 
@@ -119,6 +130,10 @@ export class OBJParser {
         return await response.text();
     }
 
+    /**
+     * @param textFile
+     * @return {Promise<Transform>}
+     */
     async parseObjFile(textFile) {
         /** @type {string[]} */
         let lines = textFile.split("\n");
@@ -129,7 +144,7 @@ export class OBJParser {
             let [header, ...content] = line.split(" ")
             switch (header) {
                 case "mtllib":
-                    await this.parseMtl("./" + content[0])
+                    await this.parseMtl(this.location + content[0])
                     break;
                 case "v":
                     let vertex = [Number(content[0]), Number(content[1]), Number(content[2])];
@@ -149,7 +164,9 @@ export class OBJParser {
                 case "o":
                     this.OBJs.push(new OBJ(content[0]));
                     this.currentIndex++;
-                    this.runningTotal = [this.verticesArray.length, this.textureCoordinates.length, this.vertexNormals.length];
+                    this.runningTotal = [this.verticesArray.length+this.runningTotal[0], 
+                        this.textureCoordinates.length+this.runningTotal[1], 
+                        this.vertexNormals.length + this.runningTotal[2]];
                     this.vertexNormals = [];
                     this.verticesArray = [];
                     this.textureCoordinates = []
@@ -166,7 +183,6 @@ export class OBJParser {
                         ]);
                     }
                     this.OBJs[this.currentIndex].materialFaceElements[this.currentMaterial].push(faceElement);
-                    this.OBJs[this.currentIndex].trianglesPerFace.push(content.length % 3 + 1);
                     break;
                 case "usemtl":
                     this.OBJs[this.currentIndex].materialFaceElements[content[0]] = [];
@@ -176,7 +192,18 @@ export class OBJParser {
             }
         }
 
-        return this.OBJs;
+        const parent = new Transform(this.textName);
+
+        for (let obj of this.OBJs) {
+            const newObj = new MeshObject({
+                name: obj.name,
+                vertices: obj.GetTriangleList(),
+                color: obj.GetColorList(),
+            });
+            parent.AddChild(newObj);
+        }
+
+        return parent;
     }
 
 

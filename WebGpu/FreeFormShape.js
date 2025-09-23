@@ -43,7 +43,6 @@ export class FreeFormShape {
             else if (this.colorInsertionType === 0) {
                 j = Math.floor(i/3) % this.color.length;
                 combinedArray = combinedArray.concat(this.color[j]);
-                console.log(this.color[j]);
             }
             
         }

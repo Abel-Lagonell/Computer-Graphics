@@ -253,7 +253,7 @@ export class Transform {
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
     }
 
-    WriteToGPU() {
+    async WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
 
         /** @type {GPUBuffer}*/
