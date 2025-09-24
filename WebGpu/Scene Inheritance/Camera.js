@@ -59,16 +59,6 @@ export class Camera extends Transform {
         ])
     }
 
-    get globalPositionMatrix() {
-        const pos = this.globalPosition;
-        return math.matrix([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [-pos.x, -pos.y, -pos.z, 1], // Negative for camera view matrix
-        ])
-    }
-
     WriteToBuffer() {
         this.CalculateMatrix();
         let matrix;

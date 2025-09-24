@@ -1,6 +1,5 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
-import {Logger} from "../Logger.js";
 import {Quaternion} from "./Quaternion.js";
 //@ts-check
 /** @type {import('mathjs')}*/
@@ -35,13 +34,6 @@ export class Transform {
     oldScale = Vector3.Empty();
     oldQuaternion = Quaternion.Identity.copy();
 
-    // Cache for global transforms
-    /** @type {Vector3|null}*/
-    _globalPosition = null;
-    /** @type {Quaternion|null}*/
-    _globalQuaternion = null;
-    _globalTransformDirty = true;
-
     /**
      *
      * @param name : string
@@ -74,40 +66,6 @@ export class Transform {
      */
     static setCameraReference(cam) {
         Transform.cameraReference = cam;
-    }
-
-    get Forward() {
-        this.CheckRotationChanged();
-        // Use quaternion to rotate the forward vector (0, 0, 1)
-        return this._rotateVectorByQuaternion(new Vector3(0, 0, 1), this.quaternion);
-    }
-
-    get Right() {
-        this.CheckRotationChanged();
-        // Use quaternion to rotate the right vector (1, 0, 0)
-        return this._rotateVectorByQuaternion(new Vector3(1, 0, 0), this.quaternion);
-    }
-
-    get Up() {
-        this.CheckRotationChanged();
-        // Use quaternion to rotate the up vector (0, 1, 0)
-        return this._rotateVectorByQuaternion(new Vector3(0, 1, 0), this.quaternion);
-    }
-
-    // Global direction vectors (useful for world-space calculations)
-    get GlobalForward() {
-        this._updateGlobalTransforms();
-        return this._rotateVectorByQuaternion(new Vector3(0, 0, 1), this.globalQuaternion);
-    }
-
-    get GlobalRight() {
-        this._updateGlobalTransforms();
-        return this._rotateVectorByQuaternion(new Vector3(1, 0, 0), this.globalQuaternion);
-    }
-
-    get GlobalUp() {
-        this._updateGlobalTransforms();
-        return this._rotateVectorByQuaternion(new Vector3(0, 1, 0), this.globalQuaternion);
     }
 
     Ready() {
@@ -209,51 +167,98 @@ export class Transform {
 
     WriteToBuffer() {
         this.CalculateMatrix();
-        let matrix
+
 
         if (this.parent !== null) {
             this.CalculateGlobalMatrix();
         } else {
             this.globalTransformMatrix = this.localTransformMatrix;
         }
+        let finalMatrix = this.globalTransformMatrix;
 
         if (Transform.cameraReference !== null && !this.isCameraParent) {
-            let positionMatrix = math.identity(4);
-            let rotationMatrix = math.identity(4);
+            // console.log(Transform.cameraReference);
+            // let positionMatrix = math.identity(4);
+            // let rotationMatrix = math.identity(4);
+            //
+            // if (this.isCameraSibling) {
+            //     // this.globalTransformMatrix = this.localTransformMatrix;
+            //     positionMatrix = Transform.cameraReference.globalPositionMatrix;
+            //     rotationMatrix = Transform.cameraReference.globalRotationMatrix;
+            //     Logger.continuousLog(
+            //         Logger.matrixLog(positionMatrix, {prefix: "Position Matrix"}) +
+            //         Logger.matrixLog(rotationMatrix, {prefix: "Rotation Matrix"}) +
+            //         Logger.matrixLog(this.globalTransformMatrix, {prefix: "Global Matrix"}) +
+            //         Logger.matrixLog(this.parent.globalTransformMatrix, {prefix: "Parent Global Matrix"}) +
+            //         Logger.matrixLog(math.multiply(this.globalTransformMatrix, positionMatrix, rotationMatrix)),
+            //     )
+            // } else if (this.isCameraChild) {
+            //     this.globalTransformMatrix = this.localTransformMatrix;
+            // } else {
+            //     positionMatrix = Transform.cameraReference.globalPositionMatrix;
+            //     rotationMatrix = Transform.cameraReference.globalRotationMatrix;
+            // }
+            //
+            // this.globalTransformMatrix = math.multiply(
+            //     this.globalTransformMatrix,
+            //     positionMatrix,
+            //     rotationMatrix,
+            //     Transform.cameraReference.perspectiveMatrix
+            // )
 
-            if (this.isCameraSibling) {
-                // this.globalTransformMatrix = this.localTransformMatrix;
-                positionMatrix = Transform.cameraReference.globalPositionMatrix;
-                rotationMatrix = Transform.cameraReference.globalRotationMatrix;
-                Logger.continuousLog(
-                    Logger.matrixLog(positionMatrix, {prefix: "Position Matrix"}) +
-                    Logger.matrixLog(rotationMatrix, {prefix: "Rotation Matrix"}) +
-                    Logger.matrixLog(this.globalTransformMatrix, {prefix: "Global Matrix"}) +
-                    Logger.matrixLog(this.parent.globalTransformMatrix, {prefix: "Parent Global Matrix"}) +
-                    Logger.matrixLog(math.multiply(this.globalTransformMatrix, positionMatrix, rotationMatrix)),
-                )
-            } else if (this.isCameraChild) {
-                this.globalTransformMatrix = this.localTransformMatrix;
-            } else {
-                positionMatrix = Transform.cameraReference.globalPositionMatrix;
-                rotationMatrix = Transform.cameraReference.globalRotationMatrix;
-            }
+            // let cameraPositionMatrix = Transform.cameraReference.translateMatrix;
+            // let cameraRotationMatrix = Transform.cameraReference.rotationMatrix;
+            // let perspectiveMatrix = Transform.cameraReference.perspectiveMatrix;
+            //
+            // this.globalTransformMatrix = math.multiply(
+            //     this.globalTransformMatrix,
+            //     cameraPositionMatrix,
+            //     cameraRotationMatrix,
+            //     perspectiveMatrix
+            // )
 
-            this.globalTransformMatrix = math.multiply(
+            const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
+            const cameraMatrix = math.transpose(Transform.cameraReference.localTransformMatrix);
+            const upVector4 = math.multiply(cameraMatrix, [0, 1, 0, 0]);
+            const upVector3 = new Vector3(upVector4.get([0]), upVector4.get([1]), upVector4.get([2]));
+            const forwardVector4 = math.multiply(cameraMatrix, [0, 0, 1, 0]);
+            const forwardVector3 = new Vector3(forwardVector4.get([0]), forwardVector4.get([1]), forwardVector4.get([2]));
+            const posVec3 = new Vector3(cameraMatrix.get([3,0]), cameraMatrix.get([3,1]), cameraMatrix.get([3,2])); //"Global" Position
+
+            const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
+            const temp = math.multiply(projectionMatrix, viewMatrix);
+
+
+            finalMatrix = math.multiply(
                 this.globalTransformMatrix,
-                positionMatrix,
-                rotationMatrix,
-                Transform.cameraReference.perspectiveMatrix
-            )
-
-
+                temp,
+            );
         }
 
-        matrix = [...math.flatten(this.globalTransformMatrix).toArray()];
+        const matrix = [...math.flatten(finalMatrix).toArray()];
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
     }
 
-    async WriteToGPU() {
+    /**
+     *
+     * @param pos : Vector3
+     * @param forV : Vector3
+     * @param upV : Vector3
+     */
+    getLookAtLH(pos, forV, upV) {
+        const zAxis = forV.normalize();
+        const xAxis = upV.cross(forV).normalize();
+        const yAxis = xAxis.cross(zAxis);
+
+        return math.transpose(math.matrix([
+            [xAxis.x, xAxis.y, xAxis.z, -xAxis.dot(pos)],
+            [-yAxis.x, -yAxis.y, -yAxis.z, yAxis.dot(pos)],
+            [zAxis.x, zAxis.y, zAxis.z, -zAxis.dot(pos)],
+            [0, 0, 0, 1]]
+        ));
+    }
+
+    WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
 
         /** @type {GPUBuffer}*/
@@ -364,85 +369,5 @@ export class Transform {
         }
         return false;
     }
-
-    /**
-     * Calculate global transforms using quaternions (cached for performance)
-     */
-    _updateGlobalTransforms() {
-        if (!this._globalTransformDirty) return;
-
-        if (this.parent) {
-            this.parent._updateGlobalTransforms();
-
-            // Calculate global position
-            const parentGlobalQuat = this.parent.globalQuaternion;
-            const rotatedLocalPos = this._rotateVectorByQuaternion(this.position, parentGlobalQuat);
-            this._globalPosition = this.parent.globalPosition.add(rotatedLocalPos);
-
-            // Calculate global rotation
-            this._globalQuaternion = this.parent.globalQuaternion.multiply(this.quaternion);
-        } else {
-            this._globalPosition = this.position.copy();
-            this._globalQuaternion = this.quaternion.copy();
-        }
-
-        this._globalTransformDirty = false;
-    }
-
-    /**
-     * Rotate a vector by a quaternion
-     * @param {Vector3} vector
-     * @param {Quaternion} quaternion
-     * @returns {Vector3}
-     */
-    _rotateVectorByQuaternion(vector, quaternion) {
-        const qx = quaternion.x, qy = quaternion.y, qz = quaternion.z, qw = quaternion.w;
-        const vx = vector.x, vy = vector.y, vz = vector.z;
-
-        // Calculate quat * vector * quat_conjugate
-        const uvx = qy * vz - qz * vy;
-        const uvy = qz * vx - qx * vz;
-        const uvz = qx * vy - qy * vx;
-
-        const uuvx = qy * uvz - qz * uvy;
-        const uuvy = qz * uvx - qx * uvz;
-        const uuvz = qx * uvy - qy * uvx;
-
-        return new Vector3(
-            vx + ((uvx * qw) + uuvx) * 2,
-            vy + ((uvy * qw) + uuvy) * 2,
-            vz + ((uvz * qw) + uuvz) * 2
-        );
-    }
-
-    get globalPosition() {
-        this._updateGlobalTransforms();
-        return this._globalPosition;
-    }
-
-    get globalQuaternion() {
-        this._updateGlobalTransforms();
-        return this._globalQuaternion;
-    }
-
-    get globalPositionMatrix() {
-        const pos = this.globalPosition;
-        return math.matrix([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [pos.x, pos.y, pos.z, 1],
-        ])
-    }
-
-    get globalRotation() {
-        // Convert quaternion back to Euler for compatibility
-        return this.globalQuaternion.Euler;
-    }
-
-    get globalRotationMatrix() {
-        return this.globalQuaternion.Matrix;
-    }
-
 
 }

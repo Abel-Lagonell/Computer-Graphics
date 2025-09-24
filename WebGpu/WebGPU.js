@@ -10,7 +10,7 @@ class WebGPU {
      * @type WebGPU
      */
     static Instance;
-    keys =[];
+    keys = [];
 
     constructor() {
         if (WebGPU.Instance === undefined) {
@@ -36,10 +36,11 @@ class WebGPU {
     }
 
     /**
-     * @param shape : Transform
+     * @param shapes : Transform[]
      */
-    AddShape(shape) {
-        this.shapes.push(shape);
+    AddShape(shapes) {
+        for (let shape of shapes)
+            this.shapes.push(shape);
     }
 
     async SlowStart() {
@@ -84,7 +85,7 @@ class WebGPU {
             format: 'depth24plus',
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         });
-        
+
         this.cellShaderModule = this.device.createShaderModule({
             label: "Simple Shader",
             code: this.shaderCode
@@ -145,7 +146,7 @@ class WebGPU {
     RenderAll() {
         this.handleCanvasResize();
         this.encoder = this.device.createCommandEncoder();
-        
+
         this.commandPass = this.encoder.beginRenderPass({
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),
@@ -171,23 +172,23 @@ class WebGPU {
         this.device.queue.submit([this.commandBuffer]);
     }
 
-    KeyDown(event){
+    KeyDown(event) {
         this.keys[String.fromCharCode(event.keyCode)] = true;
     }
 
-    KeyUp(event){
+    KeyUp(event) {
         this.keys[String.fromCharCode(event.keyCode)] = false;
     }
 
-    static KeyDownHelper(event){
+    static KeyDownHelper(event) {
         WebGPU.Instance.KeyDown(event)
     }
 
-    static KeyUpHelper(event){
+    static KeyUpHelper(event) {
         WebGPU.Instance.KeyUp(event)
     }
 
-    CheckKey(key){
+    CheckKey(key) {
         let keyExists = (key in this.keys);
         let keyIsPressed = (this.keys[key]);
 
@@ -210,5 +211,5 @@ class WebGPU {
             });
         }
     }
-    
+
 }

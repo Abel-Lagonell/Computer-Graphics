@@ -51,7 +51,7 @@ export class OBJ {
      */
     GetTriangleList() {
         let triangleVertices = [];
-        
+
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
 
@@ -61,10 +61,10 @@ export class OBJ {
                 for (let i = 1; i < face.length - 1; i++) {
                     // Create triangle: vertex 0, vertex i, vertex i+1
                     let triangle = [face[i + 1], face[i], face[0]];
-                    
+
                     for (let vertexIndex of triangle) {
                         let vertex = this.vertices[vertexIndex[0]]; // vertexIndex[0] is the vertex position index
-                        if (vertex === undefined){
+                        if (vertex === undefined) {
                             console.log(this.vertices)
                             console.log(vertexIndex[0]);
                         }
@@ -82,7 +82,7 @@ export class OBJ {
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
             for (let i in faces) {
-                for (let _ = 0; _ < faces[i].length-2; _++) {
+                for (let _ = 0; _ < faces[i].length - 2; _++) {
                     colorList.push(this.materialReference[materialName].diffuse)
                 }
             }
@@ -113,12 +113,21 @@ export class OBJParser {
     textFile = "";
 
     /**
-     * 
+     *
      * @param location
      * @param name
      * @return {Promise<Transform>}
      */
     async parseObj(location, name) {
+        this.OBJs = []
+        this.verticesArray = [];
+        this.textureCoordinates = [];
+        this.vertexNormals = [];
+        this.smoothShading = 0;
+
+        this.runningTotal = [0, 0, 0]
+        this.currentIndex = -1;
+        this.currentMaterial = "default";
         this.textName = name;
         this.location = location;
         this.textFile = await this.loadFile(location + name + ".obj");
@@ -164,8 +173,9 @@ export class OBJParser {
                 case "o":
                     this.OBJs.push(new OBJ(content[0]));
                     this.currentIndex++;
-                    this.runningTotal = [this.verticesArray.length+this.runningTotal[0], 
-                        this.textureCoordinates.length+this.runningTotal[1], 
+                    this.runningTotal = [
+                        this.verticesArray.length + this.runningTotal[0],
+                        this.textureCoordinates.length + this.runningTotal[1],
                         this.vertexNormals.length + this.runningTotal[2]];
                     this.vertexNormals = [];
                     this.verticesArray = [];

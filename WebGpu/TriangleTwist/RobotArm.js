@@ -44,7 +44,7 @@ class RobotArm {
 
         child.AddChild(grandchild);
         base.AddChild(child);
-        web.AddShape(base)
+        web.AddShape([base])
     }
 }
 

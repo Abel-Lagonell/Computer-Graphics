@@ -11,25 +11,31 @@ class Main {
         this.parser = new OBJParser();
         this.BufferObjects()
         
-        let camera = new Camera();
+        let camera = new Camera({
+            position: new Vector3(0, 0, 0),
+            rotation: new Vector3(15*Math.PI/180, 0, 0),
+        });
         Transform.setCameraReference(camera)
 
-
+        this.web.AddShape([camera]);
         
     }
     
     async BufferObjects(){
         /** @type {Transform} */
         let floor = await this.parser.parseObj("../Models/", "HexFloor");
-        floor.position = new Vector3(-10,-10, 10)
-        let cam = new Camera({
-            rotation: new Vector3(45*Math.PI/180,0,0)
-        });
-        
-        Transform.setCameraReference(cam)
-        
-        this.web.AddShape(cam)
-        this.web.AddShape(floor);
+        floor.position = new Vector3(-10,-12.5, 35)
+
+        let tree = await this.parser.parseObj("../Models/", "ConeTree");
+        tree.position = new Vector3(0,0, 0)
+        floor.AddChild(tree)
+
+        let house = await this.parser.parseObj("../Models/", "House");
+        house.position = new Vector3(0,0, 0)
+        floor.AddChild(house);
+
+
+        this.web.AddShape([ floor]);
     }
 }
 
