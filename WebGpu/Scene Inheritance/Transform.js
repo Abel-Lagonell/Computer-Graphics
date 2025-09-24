@@ -125,8 +125,12 @@ export class Transform {
     /**
      * @param child : Transform
      */
-    AddChild(child) {
+    async AddChild(child) {
         this.children.push(child);
+        // while (!WebGPU.Instance.isReady){
+        //     await setTimeout(()=>{}, 100)
+        // }
+        child.WriteToGPU()
         child.parent = this;
         child.markDirty(); // Child's global transform needs recalculation
 
@@ -177,53 +181,13 @@ export class Transform {
         let finalMatrix = this.globalTransformMatrix;
 
         if (Transform.cameraReference !== null && !this.isCameraParent) {
-            // console.log(Transform.cameraReference);
-            // let positionMatrix = math.identity(4);
-            // let rotationMatrix = math.identity(4);
-            //
-            // if (this.isCameraSibling) {
-            //     // this.globalTransformMatrix = this.localTransformMatrix;
-            //     positionMatrix = Transform.cameraReference.globalPositionMatrix;
-            //     rotationMatrix = Transform.cameraReference.globalRotationMatrix;
-            //     Logger.continuousLog(
-            //         Logger.matrixLog(positionMatrix, {prefix: "Position Matrix"}) +
-            //         Logger.matrixLog(rotationMatrix, {prefix: "Rotation Matrix"}) +
-            //         Logger.matrixLog(this.globalTransformMatrix, {prefix: "Global Matrix"}) +
-            //         Logger.matrixLog(this.parent.globalTransformMatrix, {prefix: "Parent Global Matrix"}) +
-            //         Logger.matrixLog(math.multiply(this.globalTransformMatrix, positionMatrix, rotationMatrix)),
-            //     )
-            // } else if (this.isCameraChild) {
-            //     this.globalTransformMatrix = this.localTransformMatrix;
-            // } else {
-            //     positionMatrix = Transform.cameraReference.globalPositionMatrix;
-            //     rotationMatrix = Transform.cameraReference.globalRotationMatrix;
-            // }
-            //
-            // this.globalTransformMatrix = math.multiply(
-            //     this.globalTransformMatrix,
-            //     positionMatrix,
-            //     rotationMatrix,
-            //     Transform.cameraReference.perspectiveMatrix
-            // )
-
-            // let cameraPositionMatrix = Transform.cameraReference.translateMatrix;
-            // let cameraRotationMatrix = Transform.cameraReference.rotationMatrix;
-            // let perspectiveMatrix = Transform.cameraReference.perspectiveMatrix;
-            //
-            // this.globalTransformMatrix = math.multiply(
-            //     this.globalTransformMatrix,
-            //     cameraPositionMatrix,
-            //     cameraRotationMatrix,
-            //     perspectiveMatrix
-            // )
-
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
             const cameraMatrix = math.transpose(Transform.cameraReference.localTransformMatrix);
             const upVector4 = math.multiply(cameraMatrix, [0, 1, 0, 0]);
             const upVector3 = new Vector3(upVector4.get([0]), upVector4.get([1]), upVector4.get([2]));
             const forwardVector4 = math.multiply(cameraMatrix, [0, 0, 1, 0]);
             const forwardVector3 = new Vector3(forwardVector4.get([0]), forwardVector4.get([1]), forwardVector4.get([2]));
-            const posVec3 = new Vector3(cameraMatrix.get([3,0]), cameraMatrix.get([3,1]), cameraMatrix.get([3,2])); //"Global" Position
+            const posVec3 = new Vector3(cameraMatrix.get([0,0]), cameraMatrix.get([0,1]), cameraMatrix.get([0,2])); //"Global" Position
 
             const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
             const temp = math.multiply(projectionMatrix, viewMatrix);
@@ -258,7 +222,7 @@ export class Transform {
         ));
     }
 
-    WriteToGPU() {
+    async WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
 
         /** @type {GPUBuffer}*/
@@ -286,7 +250,9 @@ export class Transform {
             this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
         }
 
-        this.CallInChildren("WriteToGPU")
+        for (let child of this.children){
+            await child.WriteToGPU()
+        }
     }
 
     CalculateGlobalMatrix() {

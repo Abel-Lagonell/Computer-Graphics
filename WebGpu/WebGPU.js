@@ -12,6 +12,11 @@ class WebGPU {
     static Instance;
     keys = [];
 
+    /**
+     * @type {Transform[]}
+     */
+    shapes = [];
+
     constructor() {
         if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
@@ -38,9 +43,14 @@ class WebGPU {
     /**
      * @param shapes : Transform[]
      */
-    AddShape(shapes) {
-        for (let shape of shapes)
+    async AddShape(shapes) {
+        while (!this.isReady){
+            await setTimeout(()=>{}, 100)
+        }
+        for (let shape of shapes){
             this.shapes.push(shape);
+            shape.WriteToGPU();
+        }
     }
 
     async SlowStart() {
@@ -140,6 +150,7 @@ class WebGPU {
         );
         console.log("Created Pipeline")
 
+        this.isReady = true;
 
     }
 

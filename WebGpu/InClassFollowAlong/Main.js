@@ -10,7 +10,7 @@ class Main {
         const A = [0.25, -.25, 0];
         const B = [-0.25, -.25, 0];
         const C = [0, .25, 0];
-        const web = WebGPU.Instance;
+        let web = new WebGPU();
 
         const empty = new Transform("Empty");
         empty.AngularVelocity = new Vector3(0, 0.02, 0)
@@ -50,10 +50,9 @@ class Main {
 
         Transform.setCameraReference(camera);
 
-        web.AddShape(empty);
+        web.AddShape([empty,blue]);
         empty.AddChild(red);
 
-        web.AddShape(blue)
         empty.AddChild(camera)
         camera.AddChild(green)
         
@@ -65,6 +64,6 @@ class Main {
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Running Main")
-    let web = new WebGPU();
+    
     let m = new Main();
 });

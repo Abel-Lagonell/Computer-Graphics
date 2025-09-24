@@ -72,7 +72,7 @@ export class Camera extends Transform {
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
     }
 
-    WriteToGPU() {
+    async WriteToGPU() {
         this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
 
         this.uniformBuffer = this.gpu.device.createBuffer({
@@ -89,7 +89,9 @@ export class Camera extends Transform {
 
         this.WriteToBuffer();
 
-        this.CallInChildren("WriteToGPU")
+        for (let child of this.children){
+            await child.WriteToGPU()
+        }
     }
 
     Render(pass) {
