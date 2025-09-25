@@ -1,6 +1,7 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
 import {Quaternion} from "./Quaternion.js";
+import {Logger} from "../Logger.js";
 //@ts-check
 /** @type {import('mathjs')}*/
 
@@ -20,11 +21,6 @@ export class Transform {
     /** @type {Camera/null}*/
     static cameraReference = null;
 
-    isCameraChild = false;
-    isCameraSibling = false;
-    isCameraParent = false;
-    isCamera = false;
-
     AngularVelocity = Vector3.Zero.copy();
     LinearVelocity = Vector3.Zero.copy();
     ScalarVelocity = Vector3.Zero.copy();
@@ -33,6 +29,8 @@ export class Transform {
     oldRotation = Vector3.Empty();
     oldScale = Vector3.Empty();
     oldQuaternion = Quaternion.Identity.copy();
+
+    _gpuInitialized = false;
 
     /**
      *
@@ -58,6 +56,13 @@ export class Transform {
 
         this.globalTransformMatrix = this.CalculateMatrix();
         this.vertices = new Float32Array([...this.position.array, ...Color.Black]);
+
+        this._readyPromise = this._initializedWhenReady();
+    }
+
+    async _initializedWhenReady() {
+        if (this.gpu)
+            await this.gpu.WaitForReady();
         this.Ready();
     }
 
@@ -127,39 +132,22 @@ export class Transform {
      */
     async AddChild(child) {
         this.children.push(child);
-        // while (!WebGPU.Instance.isReady){
-        //     await setTimeout(()=>{}, 100)
-        // }
-        child.WriteToGPU()
+
+        if (this.gpu) {
+            await this.gpu.WaitForReady();
+        }
+
+        await child.WriteToGPU()
         child.parent = this;
         child.markDirty(); // Child's global transform needs recalculation
-
-        if (child.isCamera) {
-            // If the child being added is a camera child, parent becomes camera parent
-            this.isCameraParent = true;
-            // All existing children become camera siblings
-            this.CallInChildren("SetCameraSibling");
-        } else if (this.isCameraParent) {
-            // If parent is already a camera parent, new non-camera child becomes sibling
-            child.SetCameraSibling();
-        } else if (this.isCamera) {
-            child.SetCameraChild();
-        }
-    }
-
-    SetCameraChild() {
-        this.isCameraChild = true;
-    }
-
-    SetCameraSibling() {
-        this.isCameraSibling = true;
-        this.CallInChildren("SetCameraSibling")
     }
 
     /**
      * @param pass : GPURenderPassEncoder
      */
     Render(pass) {
+        if (!this._gpuInitialized) return;
+
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
         if (this.vertexBuffer && this.vertices.length > 6) {
@@ -170,8 +158,9 @@ export class Transform {
     }
 
     WriteToBuffer() {
-        this.CalculateMatrix();
+        if (!this._gpuInitialized || !this.uniformBuffer) return;
 
+        this.CalculateMatrix();
 
         if (this.parent !== null) {
             this.CalculateGlobalMatrix();
@@ -180,14 +169,21 @@ export class Transform {
         }
         let finalMatrix = this.globalTransformMatrix;
 
-        if (Transform.cameraReference !== null && !this.isCameraParent) {
+        if (Transform.cameraReference !== null) {
+            if (this.name === "Green"){
+                Logger.continuousLog(
+                    Logger.matrixLog(this.globalTransformMatrix)
+                    + Logger.matrixLog(Transform.cameraReference.globalTransformMatrix)
+                )
+            }
+
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
-            const cameraMatrix = math.transpose(Transform.cameraReference.localTransformMatrix);
+            const cameraMatrix = math.transpose(Transform.cameraReference.globalTransformMatrix);
             const upVector4 = math.multiply(cameraMatrix, [0, 1, 0, 0]);
             const upVector3 = new Vector3(upVector4.get([0]), upVector4.get([1]), upVector4.get([2]));
             const forwardVector4 = math.multiply(cameraMatrix, [0, 0, 1, 0]);
             const forwardVector3 = new Vector3(forwardVector4.get([0]), forwardVector4.get([1]), forwardVector4.get([2]));
-            const posVec3 = new Vector3(cameraMatrix.get([0,0]), cameraMatrix.get([0,1]), cameraMatrix.get([0,2])); //"Global" Position
+            const posVec3 = new Vector3(cameraMatrix.get([0, 3]), cameraMatrix.get([1, 3]), cameraMatrix.get([2, 3])); //"Global" Position
 
             const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
             const temp = math.multiply(projectionMatrix, viewMatrix);
@@ -223,35 +219,51 @@ export class Transform {
     }
 
     async WriteToGPU() {
-        this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
-
-        /** @type {GPUBuffer}*/
-        this.uniformBuffer = this.gpu.device.createBuffer({
-            size: this.uniformBufferSize,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-
-        this.bindGroup = this.gpu.device.createBindGroup({
-            layout: this.gpu.pipeline.getBindGroupLayout(0),
-            entries: [
-                {binding: 0, resource: {buffer: this.uniformBuffer}},
-            ]
-        });
-
-        this.WriteToBuffer();
-
-        if (this.vertices.length > 6) {
-            this.vertexBuffer = this.gpu.device.createBuffer({
-                label: this.name,
-                size: this.vertices.byteLength,
-                usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-            });
-
-            this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+        // Ensure WebGPU is ready before proceeding
+        if (this.gpu) {
+            await this.gpu.WaitForReady();
         }
 
-        for (let child of this.children){
-            await child.WriteToGPU()
+        if (!this.gpu || !this.gpu.device) {
+            console.error("GPU device not available for WriteToGPU");
+            return;
+        }
+
+        try {
+            this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
+
+            /** @type {GPUBuffer}*/
+            this.uniformBuffer = this.gpu.device.createBuffer({
+                size: this.uniformBufferSize,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+            });
+
+            this.bindGroup = this.gpu.device.createBindGroup({
+                layout: this.gpu.pipeline.getBindGroupLayout(0),
+                entries: [
+                    {binding: 0, resource: {buffer: this.uniformBuffer}},
+                ]
+            });
+
+            if (this.vertices.length > 6) {
+                this.vertexBuffer = this.gpu.device.createBuffer({
+                    label: this.name,
+                    size: this.vertices.byteLength,
+                    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
+                });
+
+                this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+            }
+
+            this._gpuInitialized = true;
+            this.WriteToBuffer();
+
+            // Initialize children
+            for (let child of this.children) {
+                await child.WriteToGPU();
+            }
+        } catch (error) {
+            console.error(`Error in WriteToGPU for ${this.name}:`, error);
         }
     }
 

@@ -1,7 +1,5 @@
-﻿import {OBJ, OBJParser} from "../Scene Inheritance/OBJParser.js";
+﻿import {OBJParser} from "../Scene Inheritance/OBJParser.js";
 import {Transform} from "../Scene Inheritance/Transform.js";
-import {MeshObject} from "../Scene Inheritance/MeshObject.js";
-import {Color} from "../Scene Inheritance/Color.js";
 import {Camera} from "../Scene Inheritance/Camera.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 
@@ -13,8 +11,9 @@ class Main {
     }
     
     async BufferObjects(){
+        await this.web.WaitForReady();
+        
         let camera = new Camera({
-            position: new Vector3(0, 15, 0),
             rotation: new Vector3(15*Math.PI/180, 0, 0),
         });
         Transform.setCameraReference(camera)
@@ -23,17 +22,18 @@ class Main {
         /** @type {Transform} */
         let floor = await this.parser.parseObj("../Models/", "HexFloor");
         floor.position = new Vector3(-10,-12.5, 35)
-
+        
         let tree = await this.parser.parseObj("../Models/", "ConeTree");
         tree.position = new Vector3(0,0, 0)
-        floor.AddChild(tree)
+        await floor.AddChild(tree)
 
         let house = await this.parser.parseObj("../Models/", "House");
-        house.position = new Vector3(0,0, 0)
-        floor.AddChild(house);
+        house.position = new Vector3(15,1, -12)
+        house.scale = Vector3.One.scale(0.75)
+        await floor.AddChild(house);
 
 
-        this.web.AddShape([camera, floor]);
+        await this.web.AddShape([camera, floor]);
     }
 }
 

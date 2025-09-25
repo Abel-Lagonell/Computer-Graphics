@@ -45,7 +45,7 @@ class Main {
         );
 
         const camera = new Camera();
-        camera.AngularVelocity = new Vector3(0, -0.01, 0)
+        // camera.AngularVelocity = new Vector3(0, -0.01, 0)
         // camera.LinearVelocity = new Vector3(-0.01, 0.0,0)
 
         Transform.setCameraReference(camera);
@@ -55,10 +55,6 @@ class Main {
 
         empty.AddChild(camera)
         camera.AddChild(green)
-        
-        console.log(`empty is ${empty.isCameraParent? "a parent":""}`)
-        console.log(`Green is ${green.isCameraChild? "a child":""}${green.isCameraSibling? "a sibling":""}`)
-        console.log(`Red is ${red.isCameraChild? "a child":""}${red.isCameraSibling? "a sibling":""}`)
     }
 }
 

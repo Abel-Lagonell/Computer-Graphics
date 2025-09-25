@@ -2,8 +2,8 @@
     static continuousLog(message) {
         document.getElementById('log').innerHTML = message;
     }
-    
-    static matrixLog(matrix, options={}) {
+
+    static matrixLog(matrix, options = {}) {
         let {prefix = "", suffix = ""} = options;
         let string = prefix;
         for (let i = 0, l = matrix.size()[0]; i < l; i++) {
@@ -14,6 +14,18 @@
             }
             string += "]";
         }
+        string += "<br/>";
+        string += suffix;
+        return string;
+    }
+
+    static VectorLog(vector, options = {}) {
+        let {prefix = "", suffix = ""} = options;
+        let string = prefix + "<br/>" + "[";
+        for (let i = 0, l = vector.size()[0]; i < l; i++) {
+            string += vector.get([i]).toFixed(3) + ",";
+        }
+        string += "]";
         string += "<br/>";
         string += suffix;
         return string;

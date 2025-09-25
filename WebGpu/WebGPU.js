@@ -22,12 +22,7 @@ class WebGPU {
             WebGPU.Instance = this;
         }
         this.isReady = false;
-        this.loadWGSLShader("../Scene Inheritance/MatrixShader.wgsl").then(r => {
-                this.shaderCode = r
-                this.SetUpGPU().then(() =>
-                    this.SlowStart())
-            }
-        )
+        this.initializationPromise = this.initialize();
 
         /**
          * @type {Transform[]}
@@ -35,6 +30,27 @@ class WebGPU {
         this.shapes = [];
     }
 
+    async initialize() {
+        try {
+            this.shaderCode = await this.loadWGSLShader("../Scene Inheritance/MatrixShader.wgsl");
+            await this.SetUpGPU();
+            this.isReady = true;
+            console.log("WebGPU fully initialized");
+
+            // Now initialize any queued shapes
+            await this.SlowStart();
+        } catch (error) {
+            console.error("Failed to initialize WebGPU:", error);
+            throw error;
+        }
+    }
+
+    async WaitForReady(){
+        if (!this.isReady) 
+            await this.initializationPromise;
+        return this.isReady;
+    }
+    
     async loadWGSLShader(url) {
         const response = await fetch(url);
         return await response.text();
@@ -44,28 +60,32 @@ class WebGPU {
      * @param shapes : Transform[]
      */
     async AddShape(shapes) {
-        while (!this.isReady){
-            await setTimeout(()=>{}, 100)
-        }
+        await this.WaitForReady();
         for (let shape of shapes){
             this.shapes.push(shape);
-            shape.WriteToGPU();
+            await shape.WriteToGPU();
         }
     }
 
     async SlowStart() {
+        // Only start if we have shapes and are ready
+        if (this.shapes.length === 0) {
+            requestAnimationFrame(FrameUpdate);
+            return;
+        }
+
         for (let i = 0; i < this.shapes.length; i++) {
-            this.shapes[i].WriteToGPU();
+            await this.shapes[i].WriteToGPU();
         }
         this.RenderAll();
         requestAnimationFrame(FrameUpdate);
     }
 
     UpdateAll() {
-        for (let i = 0; i < this.shapes.length; i++) {
-            this.shapes[i]._Update()
-        }
-
+        if (!this.isReady) return;
+        for (let shape of this.shapes){
+            shape._Update();
+        } 
     }
 
     async SetUpGPU() {
@@ -155,6 +175,8 @@ class WebGPU {
     }
 
     RenderAll() {
+        if (!this.isReady || !this.device) return;
+
         this.handleCanvasResize();
         this.encoder = this.device.createCommandEncoder();
 
