@@ -3,9 +3,13 @@ import {MeshObject} from "./MeshObject.js";
 
 export class Material {
     specularExponent = 0; //Ns
+    /** @type {number[]}*/
     ambient = []; //Ka
+    /** @type {number[]}*/
     diffuse = []; //Kd
+    /** @type {number[]}*/
     specularColor = []; //Ks
+    /** @type {number[]}*/
     emission = [] //Ke
     refraction = 0; //Ni
     transparency = 0; //d
@@ -93,7 +97,9 @@ export class OBJ {
             let faces = this.materialFaceElements[materialName];
             for (let i in faces) {
                 for (let _ = 0; _ < faces[i].length - 2; _++) {
-                    colorList.push(this.materialReference[materialName].diffuse)
+                    let material = this.materialReference[materialName];
+                    let colorArray = material.diffuse.concat(material.transparency);
+                    colorList.push(colorArray)
                 }
             }
         }

@@ -10,7 +10,6 @@ class WebGPU {
      * @type WebGPU
      */
     static Instance;
-    keys = [];
 
     /**
      * @type {Transform[]}
@@ -45,12 +44,12 @@ class WebGPU {
         }
     }
 
-    async WaitForReady(){
-        if (!this.isReady) 
+    async WaitForReady() {
+        if (!this.isReady)
             await this.initializationPromise;
         return this.isReady;
     }
-    
+
     async loadWGSLShader(url) {
         const response = await fetch(url);
         return await response.text();
@@ -61,7 +60,7 @@ class WebGPU {
      */
     async AddShape(shapes) {
         await this.WaitForReady();
-        for (let shape of shapes){
+        for (let shape of shapes) {
             this.shapes.push(shape);
             await shape.WriteToGPU();
         }
@@ -83,9 +82,9 @@ class WebGPU {
 
     UpdateAll() {
         if (!this.isReady) return;
-        for (let shape of this.shapes){
+        for (let shape of this.shapes) {
             shape._Update();
-        } 
+        }
     }
 
     async SetUpGPU() {
@@ -124,7 +123,7 @@ class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 9,
+            arrayStride: 4 * 10, // 3-Position, 4-Color, 3-Normal
             attributes: [
                 {
                     format: "float32x3",
@@ -132,13 +131,13 @@ class WebGPU {
                     shaderLocation: 0,
                 },
                 {
-                    format: "float32x3",
+                    format: "float32x4",
                     offset: 3 * 4,
                     shaderLocation: 1,
                 },
                 {
                     format: "float32x3",
-                    offset: 6 * 4,
+                    offset: 7 * 4,
                     shaderLocation: 2,
                 }
             ]
@@ -159,7 +158,19 @@ class WebGPU {
                     entryPoint: "fragmentMain",
                     buffers: [this.vertexBufferLayout],
                     targets: [{
-                        format: this.presentationFormat
+                        format: this.presentationFormat,
+                        blend: {
+                            color: {
+                                srcFactor: 'src-alpha',
+                                dstFactor: 'one-minus-src-alpha',
+                                operation: 'add'
+                            },
+                            alpha: {
+                                srcFactor: 'one',
+                                dstFactor: 'one-minus-src-alpha',
+                                operation: 'add'
+                            }
+                        }
                     }]
                 },
                 primitive: {
@@ -208,29 +219,6 @@ class WebGPU {
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
-    }
-
-    KeyDown(event) {
-        this.keys[String.fromCharCode(event.keyCode)] = true;
-    }
-
-    KeyUp(event) {
-        this.keys[String.fromCharCode(event.keyCode)] = false;
-    }
-
-    static KeyDownHelper(event) {
-        WebGPU.Instance.KeyDown(event)
-    }
-
-    static KeyUpHelper(event) {
-        WebGPU.Instance.KeyUp(event)
-    }
-
-    CheckKey(key) {
-        let keyExists = (key in this.keys);
-        let keyIsPressed = (this.keys[key]);
-
-        return (keyExists && keyIsPressed);
     }
 
     handleCanvasResize() {

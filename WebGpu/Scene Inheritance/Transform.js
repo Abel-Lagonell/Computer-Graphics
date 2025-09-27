@@ -151,9 +151,9 @@ export class Transform {
 
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
-        if (this.vertexBuffer && this.vertices.length > 9) {
+        if (this.vertexBuffer && this.vertices.length > 10) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length / 9);
+            pass.draw(this.vertices.length / 10);
         }
         this.CallInChildren("Render", pass)
     }
@@ -172,12 +172,10 @@ export class Transform {
         if (Transform.cameraReference !== null) {
 
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
-            const cameraMatrix = math.transpose(Transform.cameraReference.globalTransformMatrix);
-            const upVector4 = math.multiply(cameraMatrix, [0, 1, 0, 0]);
-            const upVector3 = new Vector3(upVector4.get([0]), upVector4.get([1]), upVector4.get([2]));
-            const forwardVector4 = math.multiply(cameraMatrix, [0, 0, 1, 0]);
-            const forwardVector3 = new Vector3(forwardVector4.get([0]), forwardVector4.get([1]), forwardVector4.get([2]));
-            const posVec3 = new Vector3(cameraMatrix.get([0, 3]), cameraMatrix.get([1, 3]), cameraMatrix.get([2, 3])); //"Global" Position
+            const globalMatrix = Transform.cameraReference.globalTransformMatrix;
+            const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
+            const forwardVector3 = new Vector3(globalMatrix.get([2, 0]), globalMatrix.get([2, 1]), globalMatrix.get([2, 2]));
+            const posVec3 = new Vector3(globalMatrix.get([3, 0]), globalMatrix.get([3, 1]), globalMatrix.get([3, 2]));
 
             const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
 
@@ -239,7 +237,7 @@ export class Transform {
                 ]
             });
 
-            if (this.vertices.length > 9) {
+            if (this.vertices.length > 10) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,

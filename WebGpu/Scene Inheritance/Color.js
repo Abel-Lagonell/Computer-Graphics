@@ -1,12 +1,12 @@
 ﻿export class Color {
-    static Red = [1,0,0];
-    static Green = [0,1,0];
-    static Blue = [0,0,1];
-    static Yellow = [1,1,0];
-    static Cyan = [0,1,1];
-    static Purple = [1,0,1];
-    static White = [1,1,1];
-    static Black = [0,0,0];
+    static Red = [1,0,0,1];
+    static Green = [0,1,0,1];
+    static Blue = [0,0,1,1];
+    static Yellow = [1,1,0,1];
+    static Cyan = [0,1,1,1];
+    static Purple = [1,0,1,1];
+    static White = [1,1,1,1];
+    static Black = [0,0,0,1];
 
     /**
      * 

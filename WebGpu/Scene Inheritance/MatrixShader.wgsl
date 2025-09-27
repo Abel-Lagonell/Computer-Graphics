@@ -1,6 +1,6 @@
 ﻿struct VertexData{
     @builtin(position) position: vec4f,
-    @location(0) color: vec3f,
+    @location(0) color: vec4f,
     @location(1) normal: vec3f,
 };
 
@@ -10,7 +10,7 @@ struct UniformMatrix{
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 
 @vertex
-fn vertexMain(@location(0) position:vec3f, @location(1) color:vec3f, @location(2) normal:vec3f) -> VertexData {
+fn vertexMain(@location(0) position:vec3f, @location(1) color:vec4f, @location(2) normal:vec3f) -> VertexData {
     var vertex: VertexData;
     vertex.position = myMatrix.transform*vec4f(position, 1.0f);
     vertex.color = color;
@@ -20,5 +20,5 @@ fn vertexMain(@location(0) position:vec3f, @location(1) color:vec3f, @location(2
 
 @fragment
 fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
-    return vec4f(fsInput.color, 1.0f);
+    return vec4f(fsInput.color);
 }

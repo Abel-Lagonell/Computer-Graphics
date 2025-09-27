@@ -21,7 +21,7 @@ class Main {
                 name: "Red",
                 position: new Vector3(0, 0, 0.5),
                 vertices: [B, A, C],
-                color: [Color.Red, Color.Red, Color.Red],
+                color: [Color.Red],
             }
         );
 
@@ -30,7 +30,7 @@ class Main {
                 name: "Blue",
                 position: new Vector3(0, 0, .75),
                 vertices: [B, A, C],
-                color: [Color.Blue, Color.Blue, Color.Blue],
+                color: [Color.Blue],
             }
         );
 
