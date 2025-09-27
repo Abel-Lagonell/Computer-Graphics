@@ -15,6 +15,7 @@ class WebGPU {
      * @type {Transform[]}
      */
     shapes = [];
+    currentPointLight = 0;
 
     constructor() {
         if (WebGPU.Instance === undefined) {
@@ -143,11 +144,31 @@ class WebGPU {
             ]
         }
 
+        this.lightBuffer = this.device.createBuffer({
+            size: 336,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
+        this.DUMMYUniformBuffer = this.device.createBuffer({
+            size: 48,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        })
+
+        this.bindGroup0Layout = this.device.createBindGroupLayout({
+            entries: [
+                {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
+                {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
+            ]
+        })
+
+        this.pipelineLayout = this.device.createPipelineLayout({
+            bindGroupLayouts: [this.bindGroup0Layout]
+        })
 
         this.pipeline = this.device.createRenderPipeline(
             {
                 label: "Simple Pipeline",
-                layout: "auto",
+                layout: this.pipelineLayout,
                 vertex: {
                     module: this.cellShaderModule,
                     entryPoint: "vertexMain",

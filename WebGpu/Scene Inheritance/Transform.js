@@ -234,6 +234,7 @@ export class Transform {
                 layout: this.gpu.pipeline.getBindGroupLayout(0),
                 entries: [
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
+                    {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
                 ]
             });
 

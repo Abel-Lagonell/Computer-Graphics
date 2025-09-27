@@ -14,14 +14,15 @@ class Main {
         await this.web.WaitForReady();
         
         let camera = new Camera({
-            rotation: new Vector3(15*Math.PI/180, 0, 0),
+            position: new Vector3(11,15, -15),
+            rotation: new Vector3(-45*Math.PI/180, 0, 0),
         });
         Transform.setCameraReference(camera)
 
 
         /** @type {Transform} */
         let floor = await this.parser.parseObj("../Models/", "HexFloor");
-        floor.position = new Vector3(-10,-12.5, 35)
+        floor.position = new Vector3(0,0, 0)
         
         let tree = await this.parser.parseObj("../Models/", "ConeTree");
         tree.position = new Vector3(0,0, 0)
