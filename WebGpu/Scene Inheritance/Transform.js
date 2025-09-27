@@ -151,9 +151,9 @@ export class Transform {
 
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
-        if (this.vertexBuffer && this.vertices.length > 6) {
+        if (this.vertexBuffer && this.vertices.length > 9) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length / 6);
+            pass.draw(this.vertices.length / 9);
         }
         this.CallInChildren("Render", pass)
     }
@@ -246,7 +246,6 @@ export class Transform {
             });
 
             if (this.vertices.length > 9) {
-                console.log(this.vertices.slice(0,9))
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,

@@ -5,6 +5,7 @@ export class FreeFormShape {
      *
      * @param positions : number[][]
      * @param color : number[][]
+     * @param normals : number[][]
      * @returns {Float32Array}
      */
     static GetArray(positions, color, normals = []) {
@@ -17,12 +18,9 @@ export class FreeFormShape {
         
         
         if (normals.length !== positions.length) {
-            console.log(normals.length, positions.length);
             normals = positions;
         }
         
-        console.log(normals)
-
         if (this.positions.length === this.color.length) {
             this.colorInsertionType = 1
         } else if (this.color.length === 1) {

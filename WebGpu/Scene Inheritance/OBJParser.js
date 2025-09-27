@@ -71,6 +71,7 @@ export class OBJ {
                             throw Error(`Vertex ISSUE for ${this.name}`);
                         }
                         triangleVertices.push(vertex); // Push x, y, z
+
                         let normal = this.vertexNormals[vertexIndex[2]];
                         if (normal === undefined) {
                             console.log(this.vertexNormals)
@@ -221,7 +222,7 @@ export class OBJParser {
                 color: obj.GetColorList(),
                 normals: normals,
             });
-            parent.AddChild(newObj);
+            await parent.AddChild(newObj);
         }
 
         return parent;
