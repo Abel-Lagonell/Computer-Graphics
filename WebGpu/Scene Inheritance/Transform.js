@@ -180,12 +180,12 @@ export class Transform {
             const posVec3 = new Vector3(cameraMatrix.get([0, 3]), cameraMatrix.get([1, 3]), cameraMatrix.get([2, 3])); //"Global" Position
 
             const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
-            const temp = math.multiply(projectionMatrix, viewMatrix);
 
 
             finalMatrix = math.multiply(
                 this.globalTransformMatrix,
-                temp,
+                viewMatrix,
+                projectionMatrix,
             );
         }
 
@@ -194,27 +194,21 @@ export class Transform {
     }
 
     /**
-     * Create a left-handed look-at matrix
-     * @param eye : Vector3 - Camera position
-     * @param target : Vector3 - Target to look at
-     * @param up : Vector3 - Up vector
+     *
+     * @param pos : Vector3
+     * @param forward : Vector3
+     * @param up : Vector3
      */
-    getLookAtLH(eye, target, up) {
-        // Calculate forward vector (from eye to target)
-        const forward = target.subtract(eye).normalize();
+    getLookAtLH(pos, forward, up) {
+        var zAxis = forward.normalize();
+        var xAxis = up.cross(forward).normalize();
+        var yAxis = xAxis.cross(zAxis);
 
-        // Calculate right vector
-        const right = up.cross(forward).normalize();
-
-        // Recalculate up vector to ensure orthogonality
-        const newUp = forward.cross(right).normalize();
-
-        // Create view matrix (column-major)
         return math.matrix([
-            [right.x, newUp.x, forward.x, 0],
-            [right.y, newUp.y, forward.y, 0],
-            [right.z, newUp.z, forward.z, 0],
-            [-right.dot(eye), -newUp.dot(eye), -forward.dot(eye), 1]
+            [xAxis.x, -yAxis.x, zAxis.x, 0],
+            [xAxis.y, -yAxis.y, zAxis.y, 0],
+            [xAxis.z, -yAxis.z, zAxis.z, 0],
+            [-xAxis.dot(pos), yAxis.dot(pos), -zAxis.dot(pos), 1]
         ]);
     }
 

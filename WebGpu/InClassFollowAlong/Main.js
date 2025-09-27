@@ -13,8 +13,8 @@ class Main {
         let web = new WebGPU();
 
         const empty = new Transform("Empty");
-        // empty.AngularVelocity = new Vector3(0, 0.02, 0)
-        // empty.LinearVelocity = new Vector3(0.01, 0,0)
+        empty.AngularVelocity = new Vector3(0, 0.01, 0)
+        // empty.LinearVelocity = new Vector3(0.001, 0,0)
         
         const red = new MeshObject(
             {
@@ -44,7 +44,7 @@ class Main {
         );
 
         const camera = new Camera();
-        // camera.AngularVelocity = new Vector3(0, -0.01, 0)
+        camera.AngularVelocity = new Vector3(0, -0.01, 0)
         // camera.LinearVelocity = new Vector3(-0.01, 0.0,0)
 
         Transform.setCameraReference(camera);
