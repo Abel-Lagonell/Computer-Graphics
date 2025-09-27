@@ -31,6 +31,7 @@ export class Transform {
     oldQuaternion = Quaternion.Identity.copy();
 
     _gpuInitialized = false;
+    _globalTransformDirty = true;
 
     /**
      *
@@ -87,7 +88,7 @@ export class Transform {
     }
 
     PhysicsUpdate() {
-        if (this.AngularVelocity.magnitude() !== 0 || this.AngularVelocity.magnitude() !== 0 || this.ScalarVelocity !== 0) {
+        if (this.AngularVelocity.magnitude() !== 0 || this.LinearVelocity.magnitude() !== 0 || this.ScalarVelocity.magnitude() !== 0) {
             this.markDirty()
         }
 
@@ -160,22 +161,15 @@ export class Transform {
     WriteToBuffer() {
         if (!this._gpuInitialized || !this.uniformBuffer) return;
 
+        // Calculate local matrix first
         this.CalculateMatrix();
 
-        if (this.parent !== null) {
-            this.CalculateGlobalMatrix();
-        } else {
-            this.globalTransformMatrix = this.localTransformMatrix;
-        }
+        // Calculate global transform matrix properly
+        this.CalculateGlobalMatrix();
+
         let finalMatrix = this.globalTransformMatrix;
 
         if (Transform.cameraReference !== null) {
-            if (this.name === "Green"){
-                Logger.continuousLog(
-                    Logger.matrixLog(this.globalTransformMatrix)
-                    + Logger.matrixLog(Transform.cameraReference.globalTransformMatrix)
-                )
-            }
 
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
             const cameraMatrix = math.transpose(Transform.cameraReference.globalTransformMatrix);
@@ -200,22 +194,28 @@ export class Transform {
     }
 
     /**
-     *
-     * @param pos : Vector3
-     * @param forV : Vector3
-     * @param upV : Vector3
+     * Create a left-handed look-at matrix
+     * @param eye : Vector3 - Camera position
+     * @param target : Vector3 - Target to look at
+     * @param up : Vector3 - Up vector
      */
-    getLookAtLH(pos, forV, upV) {
-        const zAxis = forV.normalize();
-        const xAxis = upV.cross(forV).normalize();
-        const yAxis = xAxis.cross(zAxis);
+    getLookAtLH(eye, target, up) {
+        // Calculate forward vector (from eye to target)
+        const forward = target.subtract(eye).normalize();
 
-        return math.transpose(math.matrix([
-            [xAxis.x, xAxis.y, xAxis.z, -xAxis.dot(pos)],
-            [-yAxis.x, -yAxis.y, -yAxis.z, yAxis.dot(pos)],
-            [zAxis.x, zAxis.y, zAxis.z, -zAxis.dot(pos)],
-            [0, 0, 0, 1]]
-        ));
+        // Calculate right vector
+        const right = up.cross(forward).normalize();
+
+        // Recalculate up vector to ensure orthogonality
+        const newUp = forward.cross(right).normalize();
+
+        // Create view matrix (column-major)
+        return math.matrix([
+            [right.x, newUp.x, forward.x, 0],
+            [right.y, newUp.y, forward.y, 0],
+            [right.z, newUp.z, forward.z, 0],
+            [-right.dot(eye), -newUp.dot(eye), -forward.dot(eye), 1]
+        ]);
     }
 
     async WriteToGPU() {
@@ -245,7 +245,8 @@ export class Transform {
                 ]
             });
 
-            if (this.vertices.length > 6) {
+            if (this.vertices.length > 9) {
+                console.log(this.vertices.slice(0,9))
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,
@@ -268,10 +269,19 @@ export class Transform {
     }
 
     CalculateGlobalMatrix() {
-        return this.globalTransformMatrix = math.multiply(
-            this.CalculateMatrix(),
-            this.parent.globalTransformMatrix,
-        );
+        if (this.parent !== null) {
+            // Child's global = Parent's global * Child's local
+            this.globalTransformMatrix = math.multiply(
+                this.localTransformMatrix,
+                this.parent.globalTransformMatrix,
+            );
+        } else {
+            // Root object - global matrix equals local matrix
+            this.globalTransformMatrix = this.localTransformMatrix;
+        }
+
+        this._globalTransformDirty = false;
+        return this.globalTransformMatrix;
     }
 
     CalculateMatrix() {
@@ -286,13 +296,11 @@ export class Transform {
         if (this.CheckRotationChanged())
             changed = true;
 
-        if (changed) {
-            // Use quaternion for rotation matrix
-            this.rotationMatrix = this.quaternion.Matrix;
+        if (changed || !this.localTransformMatrix) {
             this.localTransformMatrix = math.multiply(
                 this.scaleMatrix,
                 this.rotationMatrix,
-                this.translateMatrix
+                this.translateMatrix,
             );
             this.markDirty();
         }
@@ -347,5 +355,4 @@ export class Transform {
         }
         return false;
     }
-
 }

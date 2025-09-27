@@ -135,6 +135,11 @@ class WebGPU {
                     format: "float32x3",
                     offset: 3 * 4,
                     shaderLocation: 1,
+                },
+                {
+                    format: "float32x3",
+                    offset: 3 * 4,
+                    shaderLocation: 2,
                 }
             ]
         }

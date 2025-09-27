@@ -7,13 +7,21 @@ export class FreeFormShape {
      * @param color : number[][]
      * @returns {Float32Array}
      */
-    static GetArray(positions, color) {
+    static GetArray(positions, color, normals = []) {
         this.positions = positions
         this.color = color
 
         if (this.positions[0].length === 2) {
             this.is2D = true;
         }
+        
+        
+        if (normals.length !== positions.length) {
+            console.log(normals.length, positions.length);
+            normals = positions;
+        }
+        
+        console.log(normals)
 
         if (this.positions.length === this.color.length) {
             this.colorInsertionType = 1
@@ -36,6 +44,7 @@ export class FreeFormShape {
             combinedArray = combinedArray.concat(this.positions[i]);
             if (this.is2D) combinedArray.push(0);
 
+            //Push Color
             if (this.colorInsertionType === 2)
                 combinedArray = combinedArray.concat(this.color[0]);
             else if (this.colorInsertionType === 1)
@@ -45,6 +54,8 @@ export class FreeFormShape {
                 combinedArray = combinedArray.concat(this.color[j]);
             }
             
+            //Push Normal
+            combinedArray = combinedArray.concat(normals[i]);
         }
 
         return new Float32Array(combinedArray);

@@ -47,14 +47,15 @@ export class OBJ {
     /**
      * Returns a flat array of triangle vertices suitable for WebGPU
      * Each triangle is 3 consecutive vertices (9 numbers total: x1,y1,z1,x2,y2,z2,x3,y3,z3)
-     * @returns {number[]} Flat array of vertex coordinates
+     * @returns {number[][]} Flat array of vertex coordinates
      */
     GetTriangleList() {
         let triangleVertices = [];
+        let triangleNormals = [];
 
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
-
+            
             for (let face of faces) {
                 // Convert face to triangles (triangulate if needed)
                 // OBJ faces can be triangles (3 vertices) or quads (4 vertices) or polygons
@@ -67,14 +68,22 @@ export class OBJ {
                         if (vertex === undefined) {
                             console.log(this.vertices)
                             console.log(vertexIndex[0]);
+                            throw Error(`Vertex ISSUE for ${this.name}`);
                         }
                         triangleVertices.push(vertex); // Push x, y, z
+                        let normal = this.vertexNormals[vertexIndex[2]];
+                        if (normal === undefined) {
+                            console.log(this.vertexNormals)
+                            console.log(vertexIndex[2]);
+                            throw Error(`NORMAL ISSUE for ${this.name}`)
+                        }
+                        triangleNormals.push(normal)
                     }
                 }
             }
         }
 
-        return triangleVertices;
+        return [triangleVertices, triangleNormals];
     }
 
     GetColorList() {
@@ -205,10 +214,12 @@ export class OBJParser {
         const parent = new Transform(this.textName);
 
         for (let obj of this.OBJs) {
+            let [vertices, normals] = obj.GetTriangleList();
             const newObj = new MeshObject({
                 name: obj.name,
-                vertices: obj.GetTriangleList(),
+                vertices: vertices,
                 color: obj.GetColorList(),
+                normals: normals,
             });
             parent.AddChild(newObj);
         }

@@ -13,7 +13,7 @@ class Main {
         let web = new WebGPU();
 
         const empty = new Transform("Empty");
-        empty.AngularVelocity = new Vector3(0, 0.02, 0)
+        // empty.AngularVelocity = new Vector3(0, 0.02, 0)
         // empty.LinearVelocity = new Vector3(0.01, 0,0)
         
         const red = new MeshObject(
@@ -28,8 +28,7 @@ class Main {
         const blue = new MeshObject(
             {
                 name: "Blue",
-                position: new Vector3(0, 0, 1),
-                // rotation: new Vector3(0, Math.PI, 0),
+                position: new Vector3(0, 0, .75),
                 vertices: [B, A, C],
                 color: [Color.Blue, Color.Blue, Color.Blue],
             }
@@ -38,7 +37,7 @@ class Main {
         const green = new MeshObject(
             {
                 name: "Green",
-                position: new Vector3(0, 1, 0.5),
+                position: new Vector3(0, 1, 0.25),
                 vertices: [B, A, C],
                 color: [Color.Green],
             }

@@ -19,12 +19,19 @@
         return string;
     }
 
+    /**
+     *
+     * @param vector : Matrix
+     * @param options
+     * @constructor
+     */
     static VectorLog(vector, options = {}) {
         let {prefix = "", suffix = ""} = options;
         let string = prefix + "<br/>" + "[";
-        for (let i = 0, l = vector.size()[0]; i < l; i++) {
+
+        for (let i = 0, l = vector.size()[0]; i < l; i++) 
             string += vector.get([i]).toFixed(3) + ",";
-        }
+
         string += "]";
         string += "<br/>";
         string += suffix;
