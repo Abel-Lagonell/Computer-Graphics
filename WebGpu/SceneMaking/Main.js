@@ -2,6 +2,7 @@
 import {Transform} from "../Scene Inheritance/Transform.js";
 import {Camera} from "../Scene Inheritance/Camera.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
+import {PointLight} from "../Scene Inheritance/PointLight.js";
 
 class Main {
     constructor() {
@@ -33,6 +34,10 @@ class Main {
         house.scale = Vector3.One.scale(0.75)
         await floor.AddChild(house);
 
+        let pointLight = new PointLight({
+            position: new Vector3(10,0, -10),
+        });
+        await floor.AddChild(pointLight);
 
         await this.web.AddShape([camera, floor]);
     }

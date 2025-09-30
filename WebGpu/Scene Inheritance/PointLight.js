@@ -1,12 +1,13 @@
 ﻿import {Transform} from "./Transform.js";
-import {Vector3} from "./Vector3";
+import {Vector3} from "./Vector3.js";
+import {Color} from "./Color.js";
 
-class PointLight extends Transform {
+export class PointLight extends Transform {
     constructor(options = {}) {
         const {
             name = "PointLight",
             position = Vector3.Zero.copy(),
-            color = [1, 0.5, 0.5, 1]
+            color = Color.White
         } = options;
 
         super(name, {position: position});
@@ -23,7 +24,7 @@ class PointLight extends Transform {
         });
 
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0, new Uint8Array(336));
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0 ,new Uint32Array([this.lightIndex]))
+        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0 ,new Uint32Array([this.lightIndex+1]))
     }
 
     _Update() {

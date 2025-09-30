@@ -164,13 +164,13 @@ export class Transform {
         // Calculate local matrix first
         this.CalculateMatrix();
 
-        // Calculate global transform matrix properly
+        // Calculate global transform matrix (world space)
         this.CalculateGlobalMatrix();
 
-        let finalMatrix = this.globalTransformMatrix;
+        let clipSpaceMatrix = this.globalTransformMatrix;
+        let worldSpaceMatrix = this.globalTransformMatrix;
 
         if (Transform.cameraReference !== null) {
-
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
             const globalMatrix = Transform.cameraReference.globalTransformMatrix;
             const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
@@ -179,16 +179,22 @@ export class Transform {
 
             const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
 
-
-            finalMatrix = math.multiply(
+            clipSpaceMatrix = math.multiply(
                 this.globalTransformMatrix,
                 viewMatrix,
                 projectionMatrix,
             );
+
+            // World space stays as the global transform
+            worldSpaceMatrix = this.globalTransformMatrix;
         }
 
-        const matrix = [...math.flatten(finalMatrix).toArray()];
-        this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, new Float32Array(matrix))
+        const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
+        const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
+
+        const combinedData = new Float32Array([...clipMatrix, ...worldMatrix]);
+
+        this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
     }
 
     /**
@@ -222,7 +228,7 @@ export class Transform {
         }
 
         try {
-            this.uniformBufferSize = 4 * 4 * 4; // 4 columns * 4 rows * 4 bytes
+            this.uniformBufferSize = 4 * 4 * 4 * 2; // 4 columns * 4 rows * 4 bytes
 
             /** @type {GPUBuffer}*/
             this.uniformBuffer = this.gpu.device.createBuffer({
@@ -245,7 +251,8 @@ export class Transform {
                     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
                 });
 
-                this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertices);
+                const packedData = this.packVertexDataSigned(this.vertices);
+                this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, packedData);
             }
 
             this._gpuInitialized = true;
@@ -347,4 +354,43 @@ export class Transform {
         }
         return false;
     }
+
+    /**
+     * Helper function to pack vertex data with unorm/snorm formats
+     * @param {Array} vertices - Array of vertex data [x, y, z, r, g, b, a, nx, ny, nz]
+     * @returns {ArrayBuffer} Packed vertex buffer
+     */
+    packVertexDataSigned(vertices) {
+        const vertexCount = vertices.length / 10;
+        const buffer = new ArrayBuffer(vertexCount * 20);
+        const floatView = new Float32Array(buffer);
+        const byteView = new Uint8Array(buffer);
+        const signedView = new Int8Array(buffer);
+
+        for (let i = 0; i < vertexCount; i++) {
+            const srcOffset = i * 10;
+            const dstByteOffset = i * 20;
+
+            // Position (3 floats)
+            floatView[i * 5 + 0] = vertices[srcOffset + 0];
+            floatView[i * 5 + 1] = vertices[srcOffset + 1];
+            floatView[i * 5 + 2] = vertices[srcOffset + 2];
+
+            // Color (4 unorm bytes)
+            const colorOffset = dstByteOffset + 12;
+            byteView[colorOffset + 0] = Math.round(vertices[srcOffset + 3] * 255);
+            byteView[colorOffset + 1] = Math.round(vertices[srcOffset + 4] * 255);
+            byteView[colorOffset + 2] = Math.round(vertices[srcOffset + 5] * 255);
+            byteView[colorOffset + 3] = Math.round(vertices[srcOffset + 6] * 255);
+
+            // Normal (4 snorm bytes) - range [-1, 1] mapped to [-127, 127]
+            const normalOffset = dstByteOffset + 16;
+            signedView[normalOffset + 0] = Math.round(vertices[srcOffset + 7] * 127);
+            signedView[normalOffset + 1] = Math.round(vertices[srcOffset + 8] * 127);
+            signedView[normalOffset + 2] = Math.round(vertices[srcOffset + 9] * 127);
+            signedView[normalOffset + 3] = 0;
+        }
+
+        return buffer;
+    } 
 }
