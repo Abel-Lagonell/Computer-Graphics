@@ -169,6 +169,7 @@ export class Transform {
 
         let clipSpaceMatrix = this.globalTransformMatrix;
         let worldSpaceMatrix = this.globalTransformMatrix;
+        let normalMatrix = this.globalTransformMatrix;
 
         if (Transform.cameraReference !== null) {
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
@@ -184,15 +185,13 @@ export class Transform {
                 viewMatrix,
                 projectionMatrix,
             );
-
-            // World space stays as the global transform
-            worldSpaceMatrix = this.globalTransformMatrix;
         }
 
         const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
         const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
-
-        const combinedData = new Float32Array([...clipMatrix, ...worldMatrix]);
+        const normMatrix = [...math.flatten(normalMatrix).toArray()];
+        
+        const combinedData = new Float32Array([...clipMatrix, ...worldMatrix, ...normMatrix]);
 
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
     }
@@ -228,7 +227,7 @@ export class Transform {
         }
 
         try {
-            this.uniformBufferSize = 4 * 4 * 4 * 2; // 4 columns * 4 rows * 4 bytes
+            this.uniformBufferSize = 4 * 4 * 4 * 3; // 4 columns * 4 rows * 4 bytes
 
             /** @type {GPUBuffer}*/
             this.uniformBuffer = this.gpu.device.createBuffer({
@@ -274,9 +273,15 @@ export class Transform {
                 this.localTransformMatrix,
                 this.parent.globalTransformMatrix,
             );
+            
+            this.globalNormalMatrix = math.multiply(
+                this.localNormalMatrix,
+                this.parent.globalNormalMatrix,
+            )
         } else {
             // Root object - global matrix equals local matrix
             this.globalTransformMatrix = this.localTransformMatrix;
+            this.globalNormalMatrix = this.localNormalMatrix;
         }
 
         this._globalTransformDirty = false;
@@ -301,6 +306,15 @@ export class Transform {
                 this.rotationMatrix,
                 this.translateMatrix,
             );
+            const invScale = math.matrix([
+                [1/this.scale.x, 0, 0, 0],
+                [0, 1/this.scale.y, 0, 0],
+                [0, 0, 1/this.scale.z, 0],
+                [0, 0, 0, 1],
+            ]); 
+            
+            this.localNormalMatrix = math.multiply(invScale, this.rotationMatrix);
+            
             this.markDirty();
         }
         return this.localTransformMatrix;

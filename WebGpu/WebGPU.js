@@ -124,7 +124,7 @@ class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 3 +4 +4 , // 3-Position, 1-Color, 1-Normal
+            arrayStride: 4 * 3 + 4 + 4, // 3-Position, 1-Color, 1-Normal
             attributes: [
                 {
                     format: "float32x3",
@@ -150,25 +150,15 @@ class WebGPU {
         });
 
         this.DUMMYUniformBuffer = this.device.createBuffer({
-            size: 48,
+            size: 4 * 4 * 4 * 3,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 
-        this.bindGroup0Layout = this.device.createBindGroupLayout({
-            entries: [
-                {binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {type: "uniform"}},
-                {binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {type: "uniform"}},
-            ]
-        })
-
-        this.pipelineLayout = this.device.createPipelineLayout({
-            bindGroupLayouts: [this.bindGroup0Layout]
-        })
 
         this.pipeline = this.device.createRenderPipeline(
             {
                 label: "Simple Pipeline",
-                layout: this.pipelineLayout,
+                layout: "auto",
                 vertex: {
                     module: this.cellShaderModule,
                     entryPoint: "vertexMain",

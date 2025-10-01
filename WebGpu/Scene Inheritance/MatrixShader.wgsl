@@ -3,11 +3,13 @@
     @location(0) color: vec4f,
     @location(1) normal: vec4f,
     @location(2) worldSpace: vec4f,
+    //@location(3) vectorToCam: vec3f,
 };
 
 struct UniformMatrix{
     clipSpaceMatrix: mat4x4<f32>,
-    worldSpaceMatrix: mat4x4<f32>
+    worldSpaceMatrix: mat4x4<f32>,
+    normalMatrix: mat4x4<f32>,
 }
 
 struct PointLight{
@@ -16,7 +18,9 @@ struct PointLight{
 }
 
 struct pointLightSystem {
-    numPoint: u32,
+    numPoint: u32, // 4 bytes
+    ambient: f32, // 4 bytes
+    shiny: f32, // Should be in the uniform of object
     pointLights: array<PointLight, 10>
 }
 
@@ -29,7 +33,8 @@ fn vertexMain(@location(0) position:vec3f, @location(1) color:vec4f, @location(2
     vertex.worldSpace = myMatrix.worldSpaceMatrix*vec4f(position, 1.0f);
     vertex.position = myMatrix.clipSpaceMatrix*vec4f(position, 1.0f);
     vertex.color = color;
-    vertex.normal = myMatrix.worldSpaceMatrix*vec4f(normal,0.0f);
+    vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
+    //vertex.vectorToCam = myCam.translation - vertex.worldSpace.xyz
     return vertex;
 }
 
@@ -46,13 +51,20 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     
     for (var i =0u; i < end; i++){
         light = simpleLight.pointLights[i];
-        l = (light.position-fsInput.worldSpace).xyz;
-        lRaw = normalize(l);
-        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, all(lRaw != vec3<f32>(0.0)));
-        //Light intensity goes here multiplied
-        IL = max(dot(normalize(fsInput.normal.xyz),L),0.0)/length(l);
+//        if (i == 0){
+//            lRaw = normalize(light.position).xyz;
+//            L = select(vec3<f32>(0.0f,0.0f, 1.0f), lRaw, all(lRaw != vec3<f32>(0.0)));
+//            IL = max(dot(normalize(fsInput.normal.xyz),L),0.0);
+//            lightPower += light.color.xyz * IL;
+//        } else {
+    
+            l = (light.position-fsInput.worldSpace).xyz;
+            lRaw = normalize(l);
+            L = select(vec3<f32>(0.0,0.0,1.0), lRaw, all(lRaw != vec3<f32>(0.0)));
+            //Light intensity goes here multiplied
+            IL = max(dot(normalize(fsInput.normal.xyz),L),0.0)/length(l);
+//        }
         lightPower += light.color.xyz*IL;
     }
-    //0.1f is ambient Light
-    return vec4f(fsInput.color.xyz*.1f+lightPower, 1);
+    return vec4f(fsInput.color.xyz*simpleLight.ambient+lightPower, 1);
 }

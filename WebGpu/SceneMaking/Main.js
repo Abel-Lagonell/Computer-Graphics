@@ -3,6 +3,7 @@ import {Transform} from "../Scene Inheritance/Transform.js";
 import {Camera} from "../Scene Inheritance/Camera.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {PointLight} from "../Scene Inheritance/PointLight.js";
+import {Color} from "../Scene Inheritance/Color.js";
 
 class Main {
     constructor() {
@@ -35,7 +36,8 @@ class Main {
         await floor.AddChild(house);
 
         let pointLight = new PointLight({
-            position: new Vector3(10,0, -10),
+            position: new Vector3(10,2, -10),
+            color: Color.Yellow
         });
         await floor.AddChild(pointLight);
 
