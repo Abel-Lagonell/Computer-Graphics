@@ -3,6 +3,7 @@
     @location(0) color: vec4f,
     @location(1) normal: vec4f,
     @location(2) worldSpace: vec4f,
+    @location(3) specExp: f32,
     //@location(3) vectorToCam: vec3f,
 };
 
@@ -20,7 +21,7 @@ struct PointLight{
 struct pointLightSystem {
     numPoint: u32, // 4 bytes
     ambient: f32, // 4 bytes
-    shiny: f32, // Should be in the uniform of object
+    //Padding 4 bytes
     pointLights: array<PointLight, 10>
 }
 
@@ -28,12 +29,18 @@ struct pointLightSystem {
 @group(0) @binding(1) var<uniform> simpleLight: pointLightSystem;
 
 @vertex
-fn vertexMain(@location(0) position:vec3f, @location(1) color:vec4f, @location(2) normal:vec3f) -> VertexData {
+fn vertexMain(
+    @location(0) position:vec3f, 
+    @location(1) color:vec4f, 
+    @location(2) normal:vec3f, 
+    @location(3) specExp:f32
+) -> VertexData {
     var vertex: VertexData;
     vertex.worldSpace = myMatrix.worldSpaceMatrix*vec4f(position, 1.0f);
     vertex.position = myMatrix.clipSpaceMatrix*vec4f(position, 1.0f);
     vertex.color = color;
     vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
+    vertex.specExp = specExp;
     //vertex.vectorToCam = myCam.translation - vertex.worldSpace.xyz
     return vertex;
 }

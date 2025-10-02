@@ -124,7 +124,7 @@ class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 3 + 4 + 4, // 3-Position, 1-Color, 1-Normal
+            arrayStride: 4 * 3 + 4 + 4 + 4, // 3-Position, 1-Color, 1-Normal, 1-SpecularExp
             attributes: [
                 {
                     format: "float32x3",
@@ -140,6 +140,11 @@ class WebGPU {
                     format: "snorm8x4",
                     offset: 3 * 4 + 4,
                     shaderLocation: 2,
+                },
+                {
+                    format: "float32",
+                    offset: 3 * 4 + 4 + 4,
+                    shaderLocation: 3,
                 }
             ]
         }

@@ -243,7 +243,7 @@ export class Transform {
                 ]
             });
 
-            if (this.vertices.length > 10) {
+            if (this.vertices.length > 11) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,
@@ -371,40 +371,43 @@ export class Transform {
 
     /**
      * Helper function to pack vertex data with unorm/snorm formats
-     * @param {Array} vertices - Array of vertex data [x, y, z, r, g, b, a, nx, ny, nz]
+     * @param {Array} vertices - Array of vertex data [x, y, z, r, g, b, a, nx, ny, nz, specExp]
      * @returns {ArrayBuffer} Packed vertex buffer
      */
     packVertexDataSigned(vertices) {
-        const vertexCount = vertices.length / 10;
-        const buffer = new ArrayBuffer(vertexCount * 20);
+        const vertexCount = vertices.length / 11; 
+        const buffer = new ArrayBuffer(vertexCount * 24); 
         const floatView = new Float32Array(buffer);
         const byteView = new Uint8Array(buffer);
         const signedView = new Int8Array(buffer);
 
         for (let i = 0; i < vertexCount; i++) {
-            const srcOffset = i * 10;
-            const dstByteOffset = i * 20;
+            const srcOffset = i * 11; 
+            const dstByteOffset = i * 24; 
 
-            // Position (3 floats)
-            floatView[i * 5 + 0] = vertices[srcOffset + 0];
-            floatView[i * 5 + 1] = vertices[srcOffset + 1];
-            floatView[i * 5 + 2] = vertices[srcOffset + 2];
+            // Position (3 floats) - 12 bytes
+            floatView[i * 6 + 0] = vertices[srcOffset + 0]; // x
+            floatView[i * 6 + 1] = vertices[srcOffset + 1]; // y
+            floatView[i * 6 + 2] = vertices[srcOffset + 2]; // z
 
-            // Color (4 unorm bytes)
+            // Color (4 unorm bytes) - 4 bytes at offset 12
             const colorOffset = dstByteOffset + 12;
-            byteView[colorOffset + 0] = Math.round(vertices[srcOffset + 3] * 255);
-            byteView[colorOffset + 1] = Math.round(vertices[srcOffset + 4] * 255);
-            byteView[colorOffset + 2] = Math.round(vertices[srcOffset + 5] * 255);
-            byteView[colorOffset + 3] = Math.round(vertices[srcOffset + 6] * 255);
+            byteView[colorOffset + 0] = Math.round(vertices[srcOffset + 3] * 255); // r
+            byteView[colorOffset + 1] = Math.round(vertices[srcOffset + 4] * 255); // g
+            byteView[colorOffset + 2] = Math.round(vertices[srcOffset + 5] * 255); // b
+            byteView[colorOffset + 3] = Math.round(vertices[srcOffset + 6] * 255); // a
 
-            // Normal (4 snorm bytes) - range [-1, 1] mapped to [-127, 127]
+            // Normal (4 snorm bytes) - 4 bytes at offset 16
             const normalOffset = dstByteOffset + 16;
-            signedView[normalOffset + 0] = Math.round(vertices[srcOffset + 7] * 127);
-            signedView[normalOffset + 1] = Math.round(vertices[srcOffset + 8] * 127);
-            signedView[normalOffset + 2] = Math.round(vertices[srcOffset + 9] * 127);
-            signedView[normalOffset + 3] = 0;
+            signedView[normalOffset + 0] = Math.round(vertices[srcOffset + 7] * 127);  // nx
+            signedView[normalOffset + 1] = Math.round(vertices[srcOffset + 8] * 127);  // ny
+            signedView[normalOffset + 2] = Math.round(vertices[srcOffset + 9] * 127);  // nz
+            signedView[normalOffset + 3] = 0; // padding
+
+            // Specular Exponent (1 float) - 4 bytes at offset 20
+            floatView[i * 6 + 5] = vertices[srcOffset + 10]; // specExp
         }
 
         return buffer;
-    } 
+    }
 }

@@ -59,7 +59,7 @@ export class OBJ {
 
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
-            
+
             for (let face of faces) {
                 // Convert face to triangles (triangulate if needed)
                 // OBJ faces can be triangles (3 vertices) or quads (4 vertices) or polygons
@@ -93,17 +93,20 @@ export class OBJ {
 
     GetColorList() {
         let colorList = [];
+        let specExpList = [];
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
             for (let i in faces) {
                 for (let _ = 0; _ < faces[i].length - 2; _++) {
+                    /** @type {Material} */
                     let material = this.materialReference[materialName];
                     let colorArray = material.diffuse.concat(material.transparency);
                     colorList.push(colorArray)
+                    specExpList.push(material.specularExponent);
                 }
             }
         }
-        return colorList;
+        return [colorList, specExpList];
     }
 }
 
@@ -222,11 +225,13 @@ export class OBJParser {
 
         for (let obj of this.OBJs) {
             let [vertices, normals] = obj.GetTriangleList();
+            let [colors, specs] = obj.GetColorList();
             const newObj = new MeshObject({
                 name: obj.name,
                 vertices: vertices,
-                color: obj.GetColorList(),
+                color: colors,
                 normals: normals,
+                specExp: specs
             });
             await parent.AddChild(newObj);
         }

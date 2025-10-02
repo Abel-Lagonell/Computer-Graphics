@@ -6,9 +6,10 @@ export class FreeFormShape {
      * @param positions : number[][]
      * @param color : number[][]
      * @param normals : number[][]
+     * @param spec : number[]
      * @returns {Float32Array}
      */
-    static GetArray(positions, color, normals = []) {
+    static GetArray(positions, color, normals = [], spec=[1]) {
         this.positions = positions
         this.color = color
 
@@ -20,6 +21,11 @@ export class FreeFormShape {
         if (normals.length !== positions.length) {
             normals = positions;
         }
+        if (spec.length !== positions.length) {
+            spec = new Array(positions.length);
+            spec = spec.fill(1);
+        } 
+        
         
         if (this.positions.length === this.color.length) {
             this.colorInsertionType = 1
@@ -54,8 +60,9 @@ export class FreeFormShape {
             
             //Push Normal
             combinedArray = combinedArray.concat(normals[i]);
+            combinedArray = combinedArray.concat(spec[i]);
         }
-
+        
         return new Float32Array(combinedArray);
     }
 }

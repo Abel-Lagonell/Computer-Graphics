@@ -13,6 +13,8 @@ import {Color} from "./Color.js";
  * @property {Vector3} [scale=Vector3.One]
  * @property {number[][]} [vertices=[Vector3.Zero.array]]
  * @property {number[][]} [color=[Color.Black]]
+ * @property {number[][]} [normals=[Vector3.Up.array]]
+ * @property {number[]} [specExps=[1]]
  */
 
 export class MeshObject extends Transform {
@@ -27,11 +29,12 @@ export class MeshObject extends Transform {
             scale = Vector3.One,
             vertices = [Vector3.Zero.array],
             color = [Color.Black],
-            normals = [Vector3.Up.array]
+            normals = [Vector3.Up.array],
+            specExps = [1]
         } = options;
 
         super(name, {position: position, rotation: rotation, scale: scale});
 
-        this.vertices = FreeFormShape.GetArray(vertices, color, normals);
+        this.vertices = FreeFormShape.GetArray(vertices, color, normals, specExps);
     }
 }
