@@ -6,10 +6,11 @@ export class FreeFormShape {
      * @param positions : number[][]
      * @param color : number[][]
      * @param normals : number[][]
-     * @param spec : number[]
+     * @param specExp : number[]
+     * @param spec : number[][]
      * @returns {Float32Array}
      */
-    static GetArray(positions, color, normals = [], spec=[1]) {
+    static GetArray(positions, color, normals = [], specExp=[], spec=[]) {
         this.positions = positions
         this.color = color
 
@@ -21,10 +22,14 @@ export class FreeFormShape {
         if (normals.length !== positions.length) {
             normals = positions;
         }
-        if (spec.length !== positions.length) {
-            spec = new Array(positions.length);
-            spec = spec.fill(1);
-        } 
+        if (specExp.length !== positions.length) {
+            specExp = new Array(positions.length);
+            specExp = specExp.fill(1);
+        }
+
+        if (Math.floor(spec.length / positions.length) === 3) {
+            specExp = color;
+        }
         
         
         if (this.positions.length === this.color.length) {
@@ -57,12 +62,13 @@ export class FreeFormShape {
                 j = Math.floor(i/3) % this.color.length;
                 combinedArray = combinedArray.concat(this.color[j]);
             }
-            
+
             //Push Normal
             combinedArray = combinedArray.concat(normals[i]);
-            combinedArray = combinedArray.concat(spec[i]);
+            combinedArray = combinedArray.concat(specExp[i]);
+            j = Math.floor(i/3) % spec.length;
+            combinedArray = combinedArray.concat(spec[j]);
         }
-        
         return new Float32Array(combinedArray);
     }
 }

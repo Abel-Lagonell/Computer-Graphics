@@ -1,11 +1,13 @@
-﻿function FrameUpdate() {
+﻿import {Uniform} from "./Scene Inheritance/Constants.js";
+
+function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
     WebGPU.Instance.RenderAll();
     requestAnimationFrame(FrameUpdate);
 
 }
 
-class WebGPU {
+export class WebGPU {
     /**
      * @type WebGPU
      */
@@ -124,7 +126,7 @@ class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 3 + 4 + 4 + 4, // 3-Position, 1-Color, 1-Normal, 1-SpecularExp
+            arrayStride: 4 * 13 +4 , // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
             attributes: [
                 {
                     format: "float32x3",
@@ -132,30 +134,35 @@ class WebGPU {
                     shaderLocation: 0,
                 },
                 {
-                    format: "unorm8x4",
+                    format: "float32x4",
                     offset: 3 * 4,
                     shaderLocation: 1,
                 },
                 {
-                    format: "snorm8x4",
-                    offset: 3 * 4 + 4,
+                    format: "float32x3",
+                    offset: 7 * 4,
                     shaderLocation: 2,
                 },
                 {
                     format: "float32",
-                    offset: 3 * 4 + 4 + 4,
+                    offset: 10 * 4 ,
                     shaderLocation: 3,
-                }
+                },
+                {
+                    format: "float32x3",
+                    offset: 10 * 4 +4,
+                    shaderLocation: 4,
+                },
             ]
         }
 
         this.lightBuffer = this.device.createBuffer({
-            size: 336,
+            size: Uniform.LightBuffer,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
         this.DUMMYUniformBuffer = this.device.createBuffer({
-            size: 4 * 4 * 4 * 3,
+            size: 4 * 4 * 4 * 3 + 16,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 

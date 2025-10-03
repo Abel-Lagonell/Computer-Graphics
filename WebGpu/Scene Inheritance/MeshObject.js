@@ -30,11 +30,12 @@ export class MeshObject extends Transform {
             vertices = [Vector3.Zero.array],
             color = [Color.Black],
             normals = [Vector3.Up.array],
-            specExps = [1]
+            specExps = [1],
+            spec= [Color.Black.slice(0,3)],
         } = options;
 
         super(name, {position: position, rotation: rotation, scale: scale});
 
-        this.vertices = FreeFormShape.GetArray(vertices, color, normals, specExps);
+        this.vertices = FreeFormShape.GetArray(vertices, color, normals, specExps, spec);
     }
 }

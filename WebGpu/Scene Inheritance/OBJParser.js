@@ -94,6 +94,7 @@ export class OBJ {
     GetColorList() {
         let colorList = [];
         let specExpList = [];
+        let specList = [];
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
             for (let i in faces) {
@@ -103,10 +104,11 @@ export class OBJ {
                     let colorArray = material.diffuse.concat(material.transparency);
                     colorList.push(colorArray)
                     specExpList.push(material.specularExponent);
+                    specList.push(material.specularColor);
                 }
             }
         }
-        return [colorList, specExpList];
+        return [colorList, specExpList, specList];
     }
 }
 
@@ -225,13 +227,14 @@ export class OBJParser {
 
         for (let obj of this.OBJs) {
             let [vertices, normals] = obj.GetTriangleList();
-            let [colors, specs] = obj.GetColorList();
+            let [colors, specs, spec] = obj.GetColorList();
             const newObj = new MeshObject({
                 name: obj.name,
                 vertices: vertices,
                 color: colors,
                 normals: normals,
-                specExp: specs
+                specExp: specs,
+                spec: spec
             });
             await parent.AddChild(newObj);
         }

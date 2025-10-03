@@ -4,6 +4,7 @@ import {Camera} from "../Scene Inheritance/Camera.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {PointLight} from "../Scene Inheritance/PointLight.js";
 import {Color} from "../Scene Inheritance/Color.js";
+import {WebGPU} from "../WebGPU.js";
 
 class Main {
     constructor() {

@@ -1,6 +1,7 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
 import {Quaternion} from "./Quaternion.js";
+import {WebGPU} from "../WebGPU.js";
 import {Logger} from "../Logger.js";
 //@ts-check
 /** @type {import('mathjs')}*/
@@ -151,9 +152,10 @@ export class Transform {
 
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
-        if (this.vertexBuffer && this.vertices.length > 10) {
+        //[x,y,z,r,g,b,a,nx,ny,nz,sExp,sx,sy,sz]
+        if (this.vertexBuffer && this.vertices.length > 14) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length / 10);
+            pass.draw(this.vertices.length / 14);
         }
         this.CallInChildren("Render", pass)
     }
@@ -187,11 +189,12 @@ export class Transform {
             );
         }
 
+        const cameraPosition = [...Transform.cameraReference.globalPosition.array]
         const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
         const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
         const normMatrix = [...math.flatten(normalMatrix).toArray()];
         
-        const combinedData = new Float32Array([...clipMatrix, ...worldMatrix, ...normMatrix]);
+        const combinedData = new Float32Array([...clipMatrix, ...worldMatrix, ...normMatrix, ...cameraPosition]);
 
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
     }
@@ -227,7 +230,7 @@ export class Transform {
         }
 
         try {
-            this.uniformBufferSize = 4 * 4 * 4 * 3; // 4 columns * 4 rows * 4 bytes
+            this.uniformBufferSize = 4 * 4 * 4 * 3 + 16; // 4 columns * 4 rows * 4 bytes
 
             /** @type {GPUBuffer}*/
             this.uniformBuffer = this.gpu.device.createBuffer({
@@ -243,15 +246,14 @@ export class Transform {
                 ]
             });
 
-            if (this.vertices.length > 11) {
+            if (this.vertices.length > 14) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,
                     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
                 });
 
-                const packedData = this.packVertexDataSigned(this.vertices);
-                this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, packedData);
+                this.gpu.device.queue.writeBuffer(this.vertexBuffer, 0, new Float32Array(this.vertices));
             }
 
             this._gpuInitialized = true;
@@ -264,6 +266,10 @@ export class Transform {
         } catch (error) {
             console.error(`Error in WriteToGPU for ${this.name}:`, error);
         }
+    }
+
+    get globalPosition(){
+        return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
     }
 
     CalculateGlobalMatrix() {
@@ -369,45 +375,4 @@ export class Transform {
         return false;
     }
 
-    /**
-     * Helper function to pack vertex data with unorm/snorm formats
-     * @param {Array} vertices - Array of vertex data [x, y, z, r, g, b, a, nx, ny, nz, specExp]
-     * @returns {ArrayBuffer} Packed vertex buffer
-     */
-    packVertexDataSigned(vertices) {
-        const vertexCount = vertices.length / 11; 
-        const buffer = new ArrayBuffer(vertexCount * 24); 
-        const floatView = new Float32Array(buffer);
-        const byteView = new Uint8Array(buffer);
-        const signedView = new Int8Array(buffer);
-
-        for (let i = 0; i < vertexCount; i++) {
-            const srcOffset = i * 11; 
-            const dstByteOffset = i * 24; 
-
-            // Position (3 floats) - 12 bytes
-            floatView[i * 6 + 0] = vertices[srcOffset + 0]; // x
-            floatView[i * 6 + 1] = vertices[srcOffset + 1]; // y
-            floatView[i * 6 + 2] = vertices[srcOffset + 2]; // z
-
-            // Color (4 unorm bytes) - 4 bytes at offset 12
-            const colorOffset = dstByteOffset + 12;
-            byteView[colorOffset + 0] = Math.round(vertices[srcOffset + 3] * 255); // r
-            byteView[colorOffset + 1] = Math.round(vertices[srcOffset + 4] * 255); // g
-            byteView[colorOffset + 2] = Math.round(vertices[srcOffset + 5] * 255); // b
-            byteView[colorOffset + 3] = Math.round(vertices[srcOffset + 6] * 255); // a
-
-            // Normal (4 snorm bytes) - 4 bytes at offset 16
-            const normalOffset = dstByteOffset + 16;
-            signedView[normalOffset + 0] = Math.round(vertices[srcOffset + 7] * 127);  // nx
-            signedView[normalOffset + 1] = Math.round(vertices[srcOffset + 8] * 127);  // ny
-            signedView[normalOffset + 2] = Math.round(vertices[srcOffset + 9] * 127);  // nz
-            signedView[normalOffset + 3] = 0; // padding
-
-            // Specular Exponent (1 float) - 4 bytes at offset 20
-            floatView[i * 6 + 5] = vertices[srcOffset + 10]; // specExp
-        }
-
-        return buffer;
-    }
 }

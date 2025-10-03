@@ -4,6 +4,7 @@
     @location(1) normal: vec4f,
     @location(2) worldSpace: vec4f,
     @location(3) specExp: f32,
+    @location(4) spec: vec4f
     //@location(3) vectorToCam: vec3f,
 };
 
@@ -11,18 +12,22 @@ struct UniformMatrix{
     clipSpaceMatrix: mat4x4<f32>,
     worldSpaceMatrix: mat4x4<f32>,
     normalMatrix: mat4x4<f32>,
+    cameraPosition: vec4f,
 }
 
 struct PointLight{
-    position: vec4f,
-    color : vec4f,
+    position: vec4f, // 16 bytes
+    color : vec4f, // 16 bytes
 }
 
 struct pointLightSystem {
     numPoint: u32, // 4 bytes
-    ambient: f32, // 4 bytes
-    //Padding 4 bytes
-    pointLights: array<PointLight, 10>
+    ka: f32, // 4 bytes
+    // 8 bytes padding
+    ia: vec3f, //12 bytes
+    // 4 bytes padding
+
+    pointLights: array<PointLight, 10> //32 bytes
 }
 
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
@@ -32,8 +37,9 @@ struct pointLightSystem {
 fn vertexMain(
     @location(0) position:vec3f, 
     @location(1) color:vec4f, 
-    @location(2) normal:vec3f, 
-    @location(3) specExp:f32
+    @location(2) normal:vec3f,
+    @location(3) specExp:f32,
+    @location(4) spec: vec4f,
 ) -> VertexData {
     var vertex: VertexData;
     vertex.worldSpace = myMatrix.worldSpaceMatrix*vec4f(position, 1.0f);
@@ -41,7 +47,7 @@ fn vertexMain(
     vertex.color = color;
     vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
     vertex.specExp = specExp;
-    //vertex.vectorToCam = myCam.translation - vertex.worldSpace.xyz
+    vertex.spec = spec;
     return vertex;
 }
 
@@ -73,5 +79,5 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
 //        }
         lightPower += light.color.xyz*IL;
     }
-    return vec4f(fsInput.color.xyz*simpleLight.ambient+lightPower, 1);
+    return vec4f(fsInput.color.xyz+lightPower, 1);
 }
