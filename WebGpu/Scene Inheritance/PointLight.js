@@ -4,6 +4,24 @@ import {Color} from "./Color.js";
 import {Uniform} from "./Constants.js";
 
 export class PointLight extends Transform {
+
+    /**
+     * Format: [r,g,b, intensity]
+     * @type {number[]}
+     */
+    static ambientColor = [1,1,1,0.1];
+    /**
+     * Direction of the directional Light
+     * @type {Vector3}
+     */
+    static directionalDirection = new Vector3(-1, -1, 2);
+    /**
+     * Format: [r,g,b, intensity]
+     * @type {number[]}
+     */
+    static directionalColor = [1,1,1,1];
+    
+    
     constructor(options = {}) {
         const {
             name = "PointLight",
@@ -13,12 +31,7 @@ export class PointLight extends Transform {
         super(name, {position: position});
         
         this.color = color;
-        this.ambientReflectionConstant= 1;
-        this.ambientColor = Color.White;
-        this.directionalDirection = new Vector3(-1, -1, 0);
-        this.directionalColor = [1,1,1,1];
-        this.lightIndex = this.gpu.currentPointLight;
-        this.gpu.currentPointLight++;
+        this.BufferArrayPosition()
 
         this.pLightGroup = this.gpu.device.createBindGroup({
             layout: this.gpu.pipeline.getBindGroupLayout(0),
@@ -29,25 +42,24 @@ export class PointLight extends Transform {
         });
         
         if (this.gpu.currentPointLight === 1){
-            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0, new Uint8Array(Uniform.LightBuffer));
-            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ka, new Float32Array([this.ambientReflectionConstant]))
-            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ia, new Float32Array(this.ambientColor))
-            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight, new Float32Array(this.directionalDirection))
-            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight+16, new Float32Array(this.directionalColor))
+            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ambientColor, new Float32Array(PointLight.ambientColor))
+            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight, new Float32Array(PointLight.directionalDirection))
+            this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight+16, new Float32Array(PointLight.directionalColor))
         }
 
+    }
+    
+    BufferArrayPosition(){
+        this.lightIndex = this.gpu.currentPointLight;
+        this.gpu.currentPointLight++;
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0 ,new Uint32Array([this.gpu.currentPointLight]))
     }
 
-    _Update() {
-    }
-
     Render(pass) {
-        const globalPosition = Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
         pass.setBindGroup(0, this.pLightGroup);
 
 
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.pointLights+32*this.lightIndex), new Float32Array(globalPosition))
+        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.pointLights+32*this.lightIndex), new Float32Array(this.globalPosition))
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.pointLights+16+32*this.lightIndex), new Float32Array(this.color))
     }
 }

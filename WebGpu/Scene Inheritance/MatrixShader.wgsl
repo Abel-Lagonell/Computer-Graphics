@@ -14,25 +14,28 @@ struct UniformMatrix{
     cameraPosition: vec4f,
 }
 
-struct PointLight{
-    position: vec4f, // 16 bytes
+struct Light{
+    vector4: vec4f, // 16 bytes
     color : vec4f, // 16 bytes
 }
 
-struct pointLightSystem {
-    numPoint: u32, // 4 bytes
-    ka: f32, // 4 bytes
-    // 8 bytes padding
-    ia: vec3f, //12 bytes
-    // 4 bytes padding
+struct SpotLight {
+    light: Light, // 32 bytes
+    direction: vec4f, // 16 bytes
+}
 
-    dirLightDir: vec4f,
-    dirLightCol: vec4f,
-    pointLights: array<PointLight, 10> //32 bytes per
+struct LightSystem {
+    numPoint: u32, // 4 bytes
+    numSpot: u32, //4 bytes
+    // 8 bytes padding
+    ambientColor: vec4f, //12 bytes
+    dirLight: Light, //32 bytes
+    pointLights: array<Light, 10>, //32 bytes per
+    spotLights: array<SpotLight, 10> //48 bytes per
 }
 
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
-@group(0) @binding(1) var<uniform> simpleLight: pointLightSystem;
+@group(0) @binding(1) var<uniform> simpleLight: LightSystem;
 
 @vertex
 fn vertexMain(
@@ -56,44 +59,40 @@ fn vertexMain(
 fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var diffusePower: vec3f = vec3<f32>(0.0);
     var specPower: vec3f = vec3<f32>(0.0);
-    var light: PointLight;
-    var lRaw : vec3<f32>;
-    var vRaw : vec3<f32>;
+    var light: Light;
     var l : vec3<f32>;
-    var v : vec3<f32>;
-    var L : vec3<f32>;
-    var V : vec3<f32>;
-    var N : vec3<f32>;
-    var R : vec3<f32>;
-    var IL : f32;
-    var IS : f32;
     var attenuation : f32;
-    var end = min(simpleLight.numPoint, 10u);
-
-    let ambient = simpleLight.ka * simpleLight.ia;
+    var pointEnd = min(simpleLight.numPoint, 10u);
+    var spotEnd = min(simpleLight.numSpot, 10u);
+    
+    //Ambient
+    let ambient = simpleLight.ambientColor.xyz * simpleLight.ambientColor.w;
+        
     //Normal
-    N = normalize(fsInput.normal).xyz;
+    var N : vec3f = normalize(fsInput.normal).xyz;
     //View
-    v = (myMatrix.cameraPosition - fsInput.worldSpace).xyz;
-    vRaw = normalize(v);
-    V = select(vec3<f32>(0.0,0.0,1.0), vRaw, all(vRaw != vec3<f32>(0.0)));
+    var v : vec3f = (myMatrix.cameraPosition - fsInput.worldSpace).xyz;
+    var vRaw : vec3f = normalize(v);
+    var V : vec3f = select(vec3<f32>(0.0,0.0,1.0), vRaw, all(vRaw != vec3<f32>(0.0)));
 
     // Directional light
-    lRaw = -normalize(simpleLight.dirLightDir).xyz;
-    L = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
-    R = normalize(2.0 * dot(N, L) * N - L);
+    var lRaw : vec3f = -normalize(simpleLight.dirLight.vector4).xyz;
+    var L : vec3f = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
+    
+    var R : vec3f = normalize(2.0 * dot(N, L) * N - L);
 
-    IL = max(dot(N, L), 0.0);
-    IS = pow(max(dot(R, V), 0.0), fsInput.specExp);
+    var IL : f32 = max(dot(N, L), 0.0);
+    var IS : f32 = pow(max(dot(R, V), 0.0), fsInput.specExp);
 
-    var intensity = simpleLight.dirLightCol.w;
-    diffusePower = simpleLight.dirLightCol.xyz * IL * intensity;
-    specPower += simpleLight.dirLightCol.xyz * fsInput.spec.xyz * IS * intensity;
+    var intensity = simpleLight.dirLight.color.w;
+    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity;
+    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) ;
 
-    for (var i =0u; i < end; i++){
+    //Point Lights
+    for (var i =0u; i < pointEnd; i++){
         light = simpleLight.pointLights[i];
-        l = (light.position-fsInput.worldSpace).xyz;
-        attenuation = 2.0/(length(l)*length(l));
+        l = (light.vector4-fsInput.worldSpace).xyz;
+        attenuation = 0.1 + 1.0/(length(l)*length(l));
         lRaw = normalize(l);
         L = select(vec3<f32>(0.0,0.0,1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
         R = normalize( 2*(dot(N,L))*N-L);
@@ -103,7 +102,11 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
         IS = pow(max(dot(R,V),0.0),fsInput.specExp)* attenuation;
         intensity = light.color.w;
         diffusePower += (light.color.xyz * IL * intensity);
-        specPower += fsInput.spec.xyz * IS * intensity/4;
+        specPower += fsInput.spec.xyz * IS * intensity * IL;
+    }
+    
+    for (var i =0u; i < spotEnd; i++){
+        
     }
     return vec4f(fsInput.color.xyz* (ambient + diffusePower + specPower), 1);
 }

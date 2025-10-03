@@ -18,7 +18,8 @@ export class WebGPU {
      */
     shapes = [];
     currentPointLight = 0;
-
+    currentSpotLight = 0;
+    
     constructor() {
         if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
