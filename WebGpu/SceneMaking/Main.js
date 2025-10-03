@@ -38,7 +38,7 @@ class Main {
 
         let pointLight = new PointLight({
             position: new Vector3(10,2, -10),
-            color: [0,0,1,1]
+            color: [0,0,1,100]
         });
         await floor.AddChild(pointLight);
 

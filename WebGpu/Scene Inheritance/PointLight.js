@@ -15,7 +15,7 @@ export class PointLight extends Transform {
         this.color = color;
         this.ambientReflectionConstant= 1;
         this.ambientColor = Color.White;
-        this.directionalDirection = new Vector3(1, 0, 0);
+        this.directionalDirection = new Vector3(-1, -1, 0);
         this.directionalColor = [1,1,1,1];
         this.lightIndex = this.gpu.currentPointLight;
         this.gpu.currentPointLight++;
@@ -29,7 +29,6 @@ export class PointLight extends Transform {
         });
         
         if (this.gpu.currentPointLight === 1){
-            console.log(this.directionalDirection)
             this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, 0, new Uint8Array(Uniform.LightBuffer));
             this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ka, new Float32Array([this.ambientReflectionConstant]))
             this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ia, new Float32Array(this.ambientColor))

@@ -79,15 +79,15 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     V = select(vec3<f32>(0.0,0.0,1.0), vRaw, all(vRaw != vec3<f32>(0.0)));
 
     // Directional light
-    lRaw = normalize(simpleLight.dirLightDir).xyz;
-    L = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, all(lRaw != vec3<f32>(0.0)));
+    lRaw = -normalize(simpleLight.dirLightDir).xyz;
+    L = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
     R = normalize(2.0 * dot(N, L) * N - L);
 
     IL = max(dot(N, L), 0.0);
     IS = pow(max(dot(R, V), 0.0), fsInput.specExp);
 
     var intensity = simpleLight.dirLightCol.w;
-    var dirPower = simpleLight.dirLightCol.xyz * IL * intensity;
+    diffusePower = simpleLight.dirLightCol.xyz * IL * intensity;
     specPower += simpleLight.dirLightCol.xyz * fsInput.spec.xyz * IS * intensity;
 
     for (var i =0u; i < end; i++){
@@ -95,15 +95,15 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
         l = (light.position-fsInput.worldSpace).xyz;
         attenuation = 2.0/(length(l)*length(l));
         lRaw = normalize(l);
-        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, all(lRaw != vec3<f32>(0.0)));
+        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
         R = normalize( 2*(dot(N,L))*N-L);
 
         //Light intensity goes here multiplied
         IL = max(dot(N,L),0.0)*attenuation;
         IS = pow(max(dot(R,V),0.0),fsInput.specExp)* attenuation;
         intensity = light.color.w;
-        diffusePower += light.color.xyz * IL * intensity;
-        specPower += light.color.xyz*fsInput.spec.xyz*IS * intensity;
+        diffusePower += (light.color.xyz * IL * intensity);
+        specPower += fsInput.spec.xyz * IS * intensity/4;
     }
-    return vec4f(fsInput.color.xyz* (ambient+ diffusePower)+specPower+dirPower, 1);
+    return vec4f(fsInput.color.xyz* (ambient + diffusePower + specPower), 1);
 }
