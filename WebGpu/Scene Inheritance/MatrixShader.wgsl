@@ -28,7 +28,7 @@ struct LightSystem {
     numPoint: u32, // 4 bytes
     numSpot: u32, //4 bytes
     // 8 bytes padding
-    ambientColor: vec4f, //12 bytes
+    ambientColor: vec4f, //16 bytes
     dirLight: Light, //32 bytes
     pointLights: array<Light, 10>, //32 bytes per
     spotLights: array<SpotLight, 10> //48 bytes per
@@ -60,6 +60,8 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var diffusePower: vec3f = vec3<f32>(0.0);
     var specPower: vec3f = vec3<f32>(0.0);
     var light: Light;
+    var spotLight : SpotLight;
+    var focus : f32;
     var l : vec3<f32>;
     var attenuation : f32;
     var pointEnd = min(simpleLight.numPoint, 10u);
@@ -76,7 +78,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var V : vec3f = select(vec3<f32>(0.0,0.0,1.0), vRaw, all(vRaw != vec3<f32>(0.0)));
 
     // Directional light
-    var lRaw : vec3f = -normalize(simpleLight.dirLight.vector4).xyz;
+    var lRaw : vec3f = -normalize(simpleLight.dirLight.vector4.xyz);
     var L : vec3f = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
     
     var R : vec3f = normalize(2.0 * dot(N, L) * N - L);
@@ -106,7 +108,21 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     }
     
     for (var i =0u; i < spotEnd; i++){
-        
+        spotLight = simpleLight.spotLights[i];
+        l = (spotLight.light.vector4-fsInput.worldSpace).xyz;
+        lRaw = normalize(l);
+        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
+        R = normalize( 2*(dot(N,L))*N-L);
+
+
+        focus = dot(L, -normalize(spotLight.direction.xyz));
+        if (focus >= spotLight.direction.w){
+            IL = max(dot(N,L),0.0)*attenuation;
+            IS = pow(max(dot(R,V),0.0),fsInput.specExp)* attenuation;
+            diffusePower += (spotLight.light.color.xyz * IL * intensity);
+            specPower += fsInput.spec.xyz * IS * intensity * IL;
+        }
+
     }
     return vec4f(fsInput.color.xyz* (ambient + diffusePower + specPower), 1);
 }

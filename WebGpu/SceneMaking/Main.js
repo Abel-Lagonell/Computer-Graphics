@@ -5,6 +5,7 @@ import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {PointLight} from "../Scene Inheritance/PointLight.js";
 import {Color} from "../Scene Inheritance/Color.js";
 import {WebGPU} from "../WebGPU.js";
+import {SpotLight} from "../Scene Inheritance/SpotLight.js";
 
 class Main {
     constructor() {
@@ -41,6 +42,14 @@ class Main {
             color: [1,1,1,10]
         });
         await floor.AddChild(pointLight);
+
+        let spotLight = new SpotLight({
+            position: new Vector3(3,3, -12),
+            color: [1,1,1,5],
+            direction: new Vector3(0,-1,0.1),
+            focus: 0.5
+        })
+        await floor.AddChild(spotLight);
 
         await this.web.AddShape([camera, floor]);
     }

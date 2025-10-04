@@ -1,8 +1,9 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
-import {Uniform} from "./Constants";
+import {Uniform} from "./Constants.js";
+import {PointLight} from "./PointLight.js";
 
-class SpotLight extends SpotLight {
+export class SpotLight extends PointLight {
     constructor(options = {}) {
         const {
             name = "SpotLight",
@@ -25,7 +26,6 @@ class SpotLight extends SpotLight {
     }
     
     Render(pass){
-        const globalPosition = Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
         pass.setBindGroup(0, this.pLightGroup);
 
 

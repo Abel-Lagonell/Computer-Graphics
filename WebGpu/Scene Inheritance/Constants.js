@@ -3,7 +3,7 @@
      * 
      * @type {number}
      */
-    static LightBuffer = 48 * 32*10 + 48*10;
+    static LightBuffer = 64 * 32*10 + 48*10;
 
     static LightIndex = Object.freeze({
         numPoints: 0,
@@ -11,7 +11,7 @@
         ambientColor: 16,
         directionalLight: 32,
         pointLights: 64,
-        spotLights: 112,
+        spotLights: 384,
     })
 
     /**
