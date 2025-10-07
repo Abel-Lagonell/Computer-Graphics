@@ -92,10 +92,10 @@ export class Transform {
         if (this.AngularVelocity.magnitude() !== 0 || this.LinearVelocity.magnitude() !== 0 || this.ScalarVelocity.magnitude() !== 0) {
             this.markDirty()
         }
-
-        this.rotation = this.rotation.add(this.AngularVelocity);
-        this.position = this.position.add(this.LinearVelocity);
-        this.scale = this.scale.add(this.ScalarVelocity);
+        
+        this.rotation = this.rotation.add(this.AngularVelocity.scale(this.gpu.deltaTime));
+        this.position = this.position.add(this.LinearVelocity.scale(this.gpu.deltaTime));
+        this.scale = this.scale.add(this.ScalarVelocity.scale(this.gpu.deltaTime));
     }
 
     /**
@@ -171,7 +171,7 @@ export class Transform {
 
         let clipSpaceMatrix = this.globalTransformMatrix;
         let worldSpaceMatrix = this.globalTransformMatrix;
-        let normalMatrix = this.globalTransformMatrix;
+        let normalMatrix = this.globalNormalMatrix;
 
         if (Transform.cameraReference !== null) {
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;

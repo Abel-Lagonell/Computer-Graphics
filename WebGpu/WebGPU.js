@@ -1,4 +1,5 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
+import {Logger} from "./Logger.js";
 
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
@@ -31,6 +32,9 @@ export class WebGPU {
          * @type {Transform[]}
          */
         this.shapes = [];
+        this.deltaTime = 0;
+        this.timeSinceLastFrame = performance.now();
+        
     }
 
     async initialize() {
@@ -243,6 +247,8 @@ export class WebGPU {
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
+        this.deltaTime = (performance.now() - this.timeSinceLastFrame)/1000;
+        this.timeSinceLastFrame = performance.now();
     }
 
     handleCanvasResize() {

@@ -5,8 +5,8 @@
     static Down = new Vector3(0,-1,0);
     static Right = new Vector3(1,0,0);
     static Left = new Vector3(-1,0,0);
-    static Forward = new Vector3(0,0,1);
-    static Backward = new Vector3(0,0,-1);
+    static Forward = new Vector3(0,0,-1);
+    static Backward = new Vector3(0,0,1);
     
     /**
      * @param array : number[]

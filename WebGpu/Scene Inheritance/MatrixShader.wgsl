@@ -109,20 +109,25 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     
     for (var i =0u; i < spotEnd; i++){
         spotLight = simpleLight.spotLights[i];
-        l = (spotLight.light.vector4-fsInput.worldSpace).xyz;
+        light = spotLight.light;
+            
+        l = (light.vector4 - fsInput.worldSpace).xyz;
+        attenuation = 0.1 + 1.0 / (length(l) * length(l));
+            
         lRaw = normalize(l);
-        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
-        R = normalize( 2*(dot(N,L))*N-L);
-
-
+        L = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
+            
         focus = dot(L, -normalize(spotLight.direction.xyz));
-        if (focus >= spotLight.direction.w){
-            IL = max(dot(N,L),0.0)*attenuation;
-            IS = pow(max(dot(R,V),0.0),fsInput.specExp)* attenuation;
-            diffusePower += (spotLight.light.color.xyz * IL * intensity);
+        if (focus >= spotLight.direction.w) {
+            R = normalize(2.0 * dot(N, L) * N - L);
+                
+            intensity = light.color.w;
+            IL = max(dot(N, L), 0.0) * attenuation;
+            IS = pow(max(dot(R, V), 0.0), fsInput.specExp) * attenuation;
+            
+            diffusePower += (light.color.xyz * IL * intensity);
             specPower += fsInput.spec.xyz * IS * intensity * IL;
         }
-
     }
     return vec4f(fsInput.color.xyz* (ambient + diffusePower + specPower), 1);
 }

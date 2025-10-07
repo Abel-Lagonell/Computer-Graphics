@@ -20,7 +20,8 @@ export class FreeFormShape {
         
         
         if (normals.length !== positions.length) {
-            normals = positions;
+            var temp = new Array(positions.length);
+            normals = temp.fill(normals[0])
         }
         if (specExp.length !== positions.length) {
             specExp = new Array(positions.length);
