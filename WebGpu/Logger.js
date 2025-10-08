@@ -37,4 +37,25 @@
         string += suffix;
         return string;
     }
+
+    /**
+     *
+     * @param vector : Vector3
+     * @param options
+     * @constructor
+     */
+    static Vector3Log(vector, options = {}) {
+        return this.VectorLog(math.matrix(vector.array), options)
+    }
+
+    /**
+     *
+     * @param quat : Quaternion
+     * @param options
+     * @returns {string}
+     * @constructor
+     */
+    static QuatLog(quat, options = {}) {
+        return this.VectorLog(math.matrix(quat.array), options)
+    }
 }

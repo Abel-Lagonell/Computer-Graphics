@@ -1,5 +1,6 @@
 ﻿import {Transform} from "./Transform.js";
 import {Vector3} from "./Vector3.js";
+import {Logger} from "../Logger.js";
 
 /**
  * 6-Axis controller Transform that responds to keyboard input
@@ -8,7 +9,6 @@ import {Vector3} from "./Vector3.js";
  */
 export class SixAxisController extends Transform {
     /**
-     * @param {string} name - Name of the transform
      * @param {Object} options - Configuration options
      * @param {string} [options.name="Controller"]
      * @param {number} [options.moveSpeed=5] - Movement speed in units per second
@@ -111,10 +111,12 @@ export class SixAxisController extends Transform {
      * Override Update to handle input
      */
     Update() {
-        console.log("here")
-        super.Update();
         this.updateMovement();
         this.updateRotation();
+        // Logger.continuousLog(
+        //     Logger.QuatLog(this.quaternion) +
+        //     Logger.Vector3Log(this.quaternion.rotateVector(Vector3.fromArray([0,1,0])))
+        // )
     }
 
     _Update() {

@@ -42,7 +42,7 @@ class Main {
         let controller = new SixAxisController({
             position: new Vector3(0,3,-5),
             linearSpeed: 20,
-            localSpace: false,
+            localSpace: true,
         });
         controller.AddChild(camera)
 

@@ -1,4 +1,5 @@
 ﻿import {Vector3} from "./Vector3.js";
+import {Logger} from "../Logger.js";
 
 export class Quaternion {
     static get Identity () {
@@ -10,6 +11,10 @@ export class Quaternion {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    get array(){
+        return [this.w, this.x, this.y, this.z];
     }
 
     /**
@@ -42,6 +47,13 @@ export class Quaternion {
 
         // Perform q * v * q^-1
         const result = this.multiply(vecQuat).multiply(conjugate);
+
+        Logger.continuousLog(
+            Logger.QuatLog(this) +
+            Logger.QuatLog(conjugate)+
+            Logger.QuatLog(vecQuat) +
+            Logger.QuatLog(result)
+        )
 
         // Return as Vector3 (ignore w component which should be ~0)
         return new Vector3(result.x, result.y, result.z);
