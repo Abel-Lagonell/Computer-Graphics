@@ -49,17 +49,44 @@ export class Transform {
             scale = Vector3.One.copy()
         } = options;
 
-        this.position = position;
-        this.rotation = rotation;
-        this.scale = scale;
+        this._position = position;
+        this._rotation = rotation;
+        this._scale = scale;
 
         // Initialize quaternion from euler rotation
-        this.quaternion = Quaternion.fromEuler(this.rotation);
+        this.quaternion = Quaternion.fromEuler(this._rotation);
 
         this.globalTransformMatrix = this.CalculateMatrix();
-        this.vertices = new Float32Array([...this.position.array, ...Color.Black]);
+        this.vertices = new Float32Array([...this._position.array, ...Color.Black]);
 
         this._readyPromise = this._initializedWhenReady();
+    }
+
+    get scale(){
+        return this._scale;
+    }
+
+    get rotation() {
+        return this._rotation;
+    }
+
+    get position() {
+        return this._position;
+    }
+
+    set scale(scale) {
+        this._scale = scale;
+        this.markDirty();
+    }
+
+    set rotation(rotation) {
+        this._rotation = rotation;
+        this.markDirty();
+    }
+
+    set position(position) {
+        this._position = position;
+        this.markDirty();
     }
 
     async _initializedWhenReady() {
@@ -92,10 +119,10 @@ export class Transform {
         if (this.AngularVelocity.magnitude() !== 0 || this.LinearVelocity.magnitude() !== 0 || this.ScalarVelocity.magnitude() !== 0) {
             this.markDirty()
         }
-        
-        this.rotation = this.rotation.add(this.AngularVelocity.scale(this.gpu.deltaTime));
-        this.position = this.position.add(this.LinearVelocity.scale(this.gpu.deltaTime));
-        this.scale = this.scale.add(this.ScalarVelocity.scale(this.gpu.deltaTime));
+
+        this._rotation = this._rotation.add(this.AngularVelocity.scale(this.gpu.deltaTime));
+        this._position = this._position.add(this.LinearVelocity.scale(this.gpu.deltaTime));
+        this._scale = this._scale.add(this.ScalarVelocity.scale(this.gpu.deltaTime));
     }
 
     /**
@@ -169,6 +196,7 @@ export class Transform {
         // Calculate global transform matrix (world space)
         this.CalculateGlobalMatrix();
 
+        let cameraPosition = Vector3.Zero.copy();
         let clipSpaceMatrix = this.globalTransformMatrix;
         let worldSpaceMatrix = this.globalTransformMatrix;
         let normalMatrix = this.globalNormalMatrix;
@@ -187,9 +215,10 @@ export class Transform {
                 viewMatrix,
                 projectionMatrix,
             );
+
+            cameraPosition = [...Transform.cameraReference.globalPosition.array]
         }
 
-        const cameraPosition = [...Transform.cameraReference.globalPosition.array]
         const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
         const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
         const normMatrix = [...math.flatten(normalMatrix).toArray()];
@@ -313,9 +342,9 @@ export class Transform {
                 this.translateMatrix,
             );
             const invScale = math.matrix([
-                [1/this.scale.x, 0, 0, 0],
-                [0, 1/this.scale.y, 0, 0],
-                [0, 0, 1/this.scale.z, 0],
+                [1/this._scale.x, 0, 0, 0],
+                [0, 1/this._scale.y, 0, 0],
+                [0, 0, 1/this._scale.z, 0],
                 [0, 0, 0, 1],
             ]); 
             
@@ -331,35 +360,35 @@ export class Transform {
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
-            [this.position.x, this.position.y, this.position.z, 1],
+            [this._position.x, this._position.y, this._position.z, 1],
         ])
     }
 
     CalculateScaleMatrix() {
         return math.matrix([
-            [this.scale.x, 0, 0, 0],
-            [0, this.scale.y, 0, 0],
-            [0, 0, this.scale.z, 0],
+            [this._scale.x, 0, 0, 0],
+            [0, this._scale.y, 0, 0],
+            [0, 0, this._scale.z, 0],
             [0, 0, 0, 1],
         ]);
     }
 
     CheckPositionChanged() {
-        if (!this.oldPosition.equals(this.position)) {
+        if (!this.oldPosition.equals(this._position)) {
             this.translateMatrix = this.CalculateTranslationMatrix();
-            this.oldPosition = this.position.copy();
+            this.oldPosition = this._position.copy();
             return true;
         }
         return false;
     }
 
     CheckRotationChanged() {
-        if (!this.oldRotation.equals(this.rotation)) {
+        if (!this.oldRotation.equals(this._rotation)) {
             // Update quaternion when euler angles change
-            this.quaternion = Quaternion.fromEuler(this.rotation);
+            this.quaternion = Quaternion.fromEuler(this._rotation);
             this.rotationMatrix = this.quaternion.Matrix;
 
-            this.oldRotation = this.rotation.copy();
+            this.oldRotation = this._rotation.copy();
             this.oldQuaternion = this.quaternion.copy();
             return true;
         }
@@ -367,9 +396,9 @@ export class Transform {
     }
 
     CheckScaleChanged() {
-        if (!this.oldScale.equals(this.scale)) {
+        if (!this.oldScale.equals(this._scale)) {
             this.scaleMatrix = this.CalculateScaleMatrix();
-            this.oldScale = this.scale.copy();
+            this.oldScale = this._scale.copy();
             return true;
         }
         return false;

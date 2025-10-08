@@ -33,6 +33,20 @@ export class Quaternion {
         ); 
     }
 
+    rotateVector(vec) {
+        // Convert vector to quaternion (w=0, x=vec.x, y=vec.y, z=vec.z)
+        const vecQuat = new Quaternion(0, vec.x, vec.y, vec.z);
+
+        // Get conjugate of this quaternion
+        const conjugate = new Quaternion(this.w, -this.x, -this.y, -this.z);
+
+        // Perform q * v * q^-1
+        const result = this.multiply(vecQuat).multiply(conjugate);
+
+        // Return as Vector3 (ignore w component which should be ~0)
+        return new Vector3(result.x, result.y, result.z);
+    }
+
     /**
      * @returns {Vector3}
      */

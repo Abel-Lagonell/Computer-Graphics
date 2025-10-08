@@ -14,7 +14,7 @@ export class SpotLight extends PointLight {
             focus = 0.5
         } = options;
         
-        super({name, position, color});
+        super({name: name, position: position, color: color});
     
         this.direction = direction;
         this.focus = focus;
