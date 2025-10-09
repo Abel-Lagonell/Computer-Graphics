@@ -15,8 +15,8 @@
     })
 
     /**
-     * 4 Rows, 4 Columns, 4 bytes per, 3 matrices
+     * 4 Rows, 4 Columns, 4 bytes per, 4 matrices
      * @type {number}
      */
-    static MatrixBuffer = 4*4*4*3 + 16;
+    static MatrixBuffer = 4*4*4*4 + 16;
 }

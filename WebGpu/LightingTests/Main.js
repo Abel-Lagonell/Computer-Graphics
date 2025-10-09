@@ -39,7 +39,7 @@ class Main {
             focus: 0.9
         });
         pLight1.directionalColor = [1,1,1,2];
-        pLight1.directionalDirection = new Vector3(-1,-1,-1);
+        pLight1.directionalDirection = new Vector3(0,-1,0.05);
 
         let controller = new SixAxisController({
             position: new Vector3(0,3,-5),
