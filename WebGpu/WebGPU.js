@@ -1,4 +1,5 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
+import {PointLight} from "./Scene Inheritance/PointLight.js";
 import {Logger} from "./Logger.js";
 
 function FrameUpdate() {
@@ -20,7 +21,7 @@ export class WebGPU {
     shapes = [];
     currentPointLight = 0;
     currentSpotLight = 0;
-    
+
     constructor() {
         if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
@@ -34,7 +35,7 @@ export class WebGPU {
         this.shapes = [];
         this.deltaTime = 0;
         this.timeSinceLastFrame = performance.now();
-        
+
     }
 
     async initialize() {
@@ -131,7 +132,7 @@ export class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 13 +4 , // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
+            arrayStride: 4 * 14, // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
             attributes: [
                 {
                     format: "float32x3",
@@ -150,12 +151,12 @@ export class WebGPU {
                 },
                 {
                     format: "float32",
-                    offset: 10 * 4 ,
+                    offset: 10 * 4,
                     shaderLocation: 3,
                 },
                 {
                     format: "float32x3",
-                    offset: 10 * 4 +4,
+                    offset: 10 * 4 + 4,
                     shaderLocation: 4,
                 },
             ]
@@ -247,7 +248,7 @@ export class WebGPU {
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
-        this.deltaTime = (performance.now() - this.timeSinceLastFrame)/1000;
+        this.deltaTime = (performance.now() - this.timeSinceLastFrame) / 1000;
         this.timeSinceLastFrame = performance.now();
     }
 

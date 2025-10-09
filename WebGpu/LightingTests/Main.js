@@ -38,6 +38,8 @@ class Main {
             direction: new Vector3(0, -1, -1),
             focus: 0.9
         });
+        pLight1.directionalColor = [1,1,1,2];
+        pLight1.directionalDirection = new Vector3(-1,-1,-1);
 
         let controller = new SixAxisController({
             position: new Vector3(0,3,-5),
@@ -46,7 +48,7 @@ class Main {
         });
         controller.AddChild(camera)
 
-        await this.web.AddShape([plane, cube, pLight1, controller]);
+        await this.web.AddShape([plane, cube, controller]);
     }
 }
 

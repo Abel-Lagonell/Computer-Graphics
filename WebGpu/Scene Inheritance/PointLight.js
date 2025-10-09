@@ -52,16 +52,27 @@ export class PointLight extends Transform {
 
     }
 
+    /**
+     * Format: [r,g,b, intensity]
+     * @param ambientColor : number[]
+     */
     set ambientColor(ambientColor) {
         PointLight.ambientColor = ambientColor;
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.ambientColor, new Float32Array(PointLight.ambientColor));
     }
 
+    /**
+     * Format: [r,g,b, intensity]
+     * @param directionalColor : number[]
+     */
     set directionalColor(directionalColor) {
-        PointLight.directionalDirection = directionalColor;
+        PointLight.directionalColor = directionalColor;
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight + 16, new Float32Array(PointLight.directionalColor))
     }
 
+    /**
+     * @param directionalDirection : Vector3
+     */
     set directionalDirection(directionalDirection) {
         PointLight.directionalDirection = directionalDirection;
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.directionalLight, new Float32Array(PointLight.directionalDirection))

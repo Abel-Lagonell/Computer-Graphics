@@ -58,4 +58,8 @@
     static QuatLog(quat, options = {}) {
         return this.VectorLog(math.matrix(quat.array), options)
     }
+    
+    static ArrayLog(arr, options = {}){
+        return this.VectorLog(math.matrix(arr), options)
+    }
 }
