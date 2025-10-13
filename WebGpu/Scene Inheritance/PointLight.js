@@ -86,4 +86,21 @@ export class PointLight extends Transform {
         
         this.CallInChildren("Render", pass)
     }
+    
+    get OrthographicMatrix() {
+        const hSize = 2500;
+        const vSize = 2500;
+        
+        return [
+            [2/hSize,0,0,0],
+            [0,2/vSize,0,0],
+            [0,0,0,0],
+            [0,0,0,1],
+        ]
+    }
+    
+    get DirLightViewMatrix() {
+        //Might need to be negative (direction)
+        return this.getLookAtLH(PointLight.directionalDirection.scale(-30), PointLight.directionalDirection, Vector3.Up)
+    }
 }
