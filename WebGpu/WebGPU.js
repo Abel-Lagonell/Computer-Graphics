@@ -1,5 +1,8 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
+import {PointLight} from "./Scene Inheritance/PointLight.js";
 import {Logger} from "./Logger.js";
+import {Transform} from "./Scene Inheritance/Transform.js";
+import {Vector3} from "./Scene Inheritance/Vector3.js";
 
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
@@ -20,7 +23,7 @@ export class WebGPU {
     shapes = [];
     currentPointLight = 0;
     currentSpotLight = 0;
-    
+
     constructor() {
         if (WebGPU.Instance === undefined) {
             WebGPU.Instance = this;
@@ -34,12 +37,13 @@ export class WebGPU {
         this.shapes = [];
         this.deltaTime = 0;
         this.timeSinceLastFrame = performance.now();
-        
+
     }
 
     async initialize() {
         try {
             this.shaderCode = await this.loadWGSLShader("../Scene Inheritance/MatrixShader.wgsl");
+            this.shadowCode = await this.loadWGSLShader("../Scene Inheritance/ShadowShader.wgsl");
             await this.SetUpGPU();
             this.isReady = true;
             console.log("WebGPU fully initialized");
@@ -131,7 +135,7 @@ export class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 13 +4 , // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
+            arrayStride: 4 * 13 + 4, // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
             attributes: [
                 {
                     format: "float32x3",
@@ -150,12 +154,12 @@ export class WebGPU {
                 },
                 {
                     format: "float32",
-                    offset: 10 * 4 ,
+                    offset: 10 * 4,
                     shaderLocation: 3,
                 },
                 {
                     format: "float32x3",
-                    offset: 10 * 4 +4,
+                    offset: 10 * 4 + 4,
                     shaderLocation: 4,
                 },
             ]
@@ -171,6 +175,65 @@ export class WebGPU {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 
+        this.shadowShaderModule = this.device.createShaderModule({
+            label: "Shadow Shader",
+            code: this.shadowCode
+        });
+
+        this.lightDepthTexture = this.device.createTexture({
+            size: [1024, 1024],
+            dimension: '2d',
+            format: 'depth32float',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT |
+                GPUTextureUsage.COPY_SRC |
+                GPUTextureUsage.TEXTURE_BINDING
+        });
+
+        this.lightColorTexture = this.device.createTexture({
+            size: [1024, 1024],
+            dimension: '2d',
+            format: 'bgra8unorm',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+
+        this.copiedBuffer = this.device.createBuffer({
+            size: 1024 * 1024 * 4,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+
+        this.lightProjectionMatrixBuffer = this.device.createBuffer({
+            label: "Light",
+            size: 4 * 4 * 4 * 2, // mat4x4<f32>
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
+        this.shadowPipeline = this.device.createRenderPipeline({
+            label: "Shadow Pipeline",
+            layout: "auto",
+            vertex: {
+                module: this.shadowShaderModule,
+                entryPoint: "vs_main",
+                buffers: [this.vertexBufferLayout]
+            },
+            fragment: {
+                module: this.shadowShaderModule,
+                entryPoint: "fs_main",
+                targets: [{
+                    format: 'bgra8unorm'
+                }]
+            },
+            primitive: {
+                topology: "triangle-list",
+                cullMode: "none"
+            },
+            depthStencil: {
+                format: 'depth32float',
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+            }
+        });
+
+        this.hasDumped = false; // Track if we've dumped already
 
         this.pipeline = this.device.createRenderPipeline(
             {
@@ -224,6 +287,45 @@ export class WebGPU {
         this.handleCanvasResize();
         this.encoder = this.device.createCommandEncoder();
 
+        this.lightPass = this.encoder.beginRenderPass({
+            colorAttachments: [{
+                view: this.lightColorTexture.createView(),
+                clearValue: {r: 1, g: 0, b: 0, a: 1},
+                loadOp: "clear",
+                storeOp: 'store'
+            }],
+            depthStencilAttachment: {
+                view: this.lightDepthTexture.createView(),
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store',
+            }
+        });
+
+        this.lightPass.setPipeline(this.shadowPipeline);
+        this.lightPass.setViewport(0, 0, 1024, 1024, 0, 1);
+
+        this.dirLightMatrix = [...math.flatten(PointLight.DirLightMatrix).toArray()];
+        
+        Logger.continuousLog(
+            Logger.matrixLog(PointLight.DirLightViewMatrix())
+        );
+        
+        for (let shape of this.shapes) {
+            shape.RenderShadow(this.lightPass);
+        }
+
+        this.lightPass.end();
+
+        if (!this.hasDumped) {
+            this.encoder.copyTextureToBuffer(
+                {texture: this.lightDepthTexture, origin: {x: 0, y: 0}},
+                {buffer: this.copiedBuffer, bytesPerRow: 1024 * 4},
+                {width: 1024, height: 1024}
+            );
+        }
+
+
         this.commandPass = this.encoder.beginRenderPass({
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),
@@ -247,8 +349,69 @@ export class WebGPU {
         this.commandPass.end();
         this.commandBuffer = this.encoder.finish();
         this.device.queue.submit([this.commandBuffer]);
-        this.deltaTime = (performance.now() - this.timeSinceLastFrame)/1000;
+        // ADD: Dump the depth buffer (only once)
+        if (!this.hasDumped) {
+            this.hasDumped = true;
+            this.dumpDepthBuffer();
+        }
+        this.deltaTime = (performance.now() - this.timeSinceLastFrame) / 1000;
         this.timeSinceLastFrame = performance.now();
+    }
+
+    async dumpDepthBuffer() {
+        // return;
+        await this.device.queue.onSubmittedWorkDone();
+        await this.copiedBuffer.mapAsync(GPUMapMode.READ, 0, 1024 * 1024 * 4);
+
+        const depthData = new Float32Array(this.copiedBuffer.getMappedRange());
+        const imageData = new Uint8ClampedArray(1024 * 1024 * 4);
+
+        let maxDepth = -999;
+        let minDepth = 999;
+
+        // First pass: find min/max
+        for (let i = 0; i < 1024 * 1024; i++) {
+            const depth = depthData[i];
+            if (maxDepth < depth) maxDepth = depth;
+            if (minDepth > depth) minDepth = depth;
+        }
+
+        console.log("Shadow map depth range:", minDepth, "to", maxDepth);
+
+        const range = maxDepth - minDepth;
+        if (range <= 0) return; 
+
+        // Second pass: normalize and visualize
+        for (let i = 0; i < 1024 * 1024; i++) {
+            const depth = depthData[i];
+            const normalizedDepth = range > 0 ? (depth - minDepth) / range : 0;
+            const visualDepth = normalizedDepth * 255.0;
+
+            imageData[i * 4] = visualDepth;
+            imageData[i * 4 + 1] = visualDepth;
+            imageData[i * 4 + 2] = visualDepth;
+            imageData[i * 4 + 3] = 255;
+        }
+
+        this.copiedBuffer.unmap();
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        const imgData = new ImageData(imageData, 1024, 1024);
+        ctx.putImageData(imgData, 0, 0);
+
+        // Convert canvas to blob and download
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `shadow-map-${Date.now()}.png`;
+            link.click();
+            URL.revokeObjectURL(url);
+            console.log("Shadow map saved to file");
+        });
     }
 
     handleCanvasResize() {

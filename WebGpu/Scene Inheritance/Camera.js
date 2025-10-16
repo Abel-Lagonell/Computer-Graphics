@@ -24,5 +24,15 @@ export class Camera extends Transform {
             [(right + left) / (right - left), (top + bottom) / (top - bottom), (far + near) / (far - near), 1],
             [0, 0, 2 * far * near / (far - near), 1]
         ]);
+        
+        
+    }
+    
+    get viewMatrix(){
+        const upVector3 = new Vector3(this.globalTransformMatrix.get([1, 0]), this.globalTransformMatrix.get([1, 1]), this.globalTransformMatrix.get([1, 2]));
+        const forwardVector3 = new Vector3(this.globalTransformMatrix.get([2, 0]), this.globalTransformMatrix.get([2, 1]), this.globalTransformMatrix.get([2, 2]));
+        const posVec3 = new Vector3(this.globalTransformMatrix.get([3, 0]), this.globalTransformMatrix.get([3, 1]), this.globalTransformMatrix.get([3, 2]));
+
+        return this.getLookAtLH(posVec3, forwardVector3, upVector3);
     }
 }

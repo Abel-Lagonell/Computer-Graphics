@@ -62,7 +62,7 @@ export class Transform {
         this._readyPromise = this._initializedWhenReady();
     }
 
-    get scale(){
+    get scale() {
         return this._scale;
     }
 
@@ -187,6 +187,29 @@ export class Transform {
         this.CallInChildren("Render", pass)
     }
 
+    RenderShadow(pass) {
+        if (!this._gpuInitialized) return;
+
+        pass.setBindGroup(0, this.shadowBindGroup);
+
+        //Write to Buffer
+        // Calculate transforms
+        this.CalculateMatrix();
+        this.CalculateGlobalMatrix();
+
+        // Write world matrix to uniform buffer
+        const worldMatrix = [...math.flatten(this.globalTransformMatrix).toArray()];
+        this.gpu.device.queue.writeBuffer(this.gpu.lightProjectionMatrixBuffer, 0, new Float32Array([...this.gpu.dirLightMatrix, ...worldMatrix]));
+        //End of write to buffer
+
+        if (this.vertexBuffer && this.vertices.length > 14) {
+            pass.setVertexBuffer(0, this.vertexBuffer);
+            pass.draw(this.vertices.length / 14);
+        }
+
+        this.CallInChildren("RenderShadow", pass);
+    }
+
     WriteToBuffer() {
         if (!this._gpuInitialized || !this.uniformBuffer) return;
 
@@ -203,12 +226,8 @@ export class Transform {
 
         if (Transform.cameraReference !== null) {
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
-            const globalMatrix = Transform.cameraReference.globalTransformMatrix;
-            const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
-            const forwardVector3 = new Vector3(globalMatrix.get([2, 0]), globalMatrix.get([2, 1]), globalMatrix.get([2, 2]));
-            const posVec3 = new Vector3(globalMatrix.get([3, 0]), globalMatrix.get([3, 1]), globalMatrix.get([3, 2]));
+            const viewMatrix = Transform.cameraReference.viewMatrix;
 
-            const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
 
             clipSpaceMatrix = math.multiply(
                 this.globalTransformMatrix,
@@ -222,7 +241,7 @@ export class Transform {
         const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
         const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
         const normMatrix = [...math.flatten(normalMatrix).toArray()];
-        
+
         const combinedData = new Float32Array([...clipMatrix, ...worldMatrix, ...normMatrix, ...cameraPosition]);
 
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
@@ -235,9 +254,30 @@ export class Transform {
      * @param up : Vector3
      */
     getLookAtLH(pos, forward, up) {
+        return Transform.getLookAtLH(pos, forward, up);
+    }
+    
+    /**
+     * @param pos : Vector3
+     * @param forward : Vector3
+     * @param up : Vector3
+     * @param print : boolean
+     */
+    static getLookAtLH(pos, forward, up, print=false) {
         var zAxis = forward.normalize();
         var xAxis = up.cross(forward).normalize();
         var yAxis = xAxis.cross(zAxis);
+
+        if (print){
+            Logger.continuousLog(
+                Logger.Vector3Log(pos, {prefix: "Position"})
+                + Logger.Vector3Log(zAxis, {prefix: "Z-Axis"})
+                + Logger.Vector3Log(xAxis, {prefix: "X-Axis"})
+                + Logger.Vector3Log(yAxis, {prefix: "Y-Axis"})
+                + zAxis.dot(pos)
+            )
+        }
+
 
         return math.matrix([
             [xAxis.x, -yAxis.x, zAxis.x, 0],
@@ -275,6 +315,19 @@ export class Transform {
                 ]
             });
 
+            this.lightBuffer = this.gpu.device.createBuffer({
+                size: 4 * 4 * 4 * 2,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+            })
+
+            this.shadowBindGroup = this.gpu.device.createBindGroup({
+                label: "Shadow Bind Group",
+                layout: this.gpu.shadowPipeline.getBindGroupLayout(0),
+                entries: [
+                    {binding: 0, resource: {buffer: this.lightBuffer}},
+                ]
+            });
+
             if (this.vertices.length > 14) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
@@ -297,8 +350,8 @@ export class Transform {
         }
     }
 
-    get globalPosition(){
-        return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
+    get globalPosition() {
+        return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0, 3));
     }
 
     CalculateGlobalMatrix() {
@@ -308,7 +361,7 @@ export class Transform {
                 this.localTransformMatrix,
                 this.parent.globalTransformMatrix,
             );
-            
+
             this.globalNormalMatrix = math.multiply(
                 this.localNormalMatrix,
                 this.parent.globalNormalMatrix,
@@ -342,14 +395,14 @@ export class Transform {
                 this.translateMatrix,
             );
             const invScale = math.matrix([
-                [1/this._scale.x, 0, 0, 0],
-                [0, 1/this._scale.y, 0, 0],
-                [0, 0, 1/this._scale.z, 0],
+                [1 / this._scale.x, 0, 0, 0],
+                [0, 1 / this._scale.y, 0, 0],
+                [0, 0, 1 / this._scale.z, 0],
                 [0, 0, 0, 1],
-            ]); 
-            
+            ]);
+
             this.localNormalMatrix = math.multiply(invScale, this.rotationMatrix);
-            
+
             this.markDirty();
         }
         return this.localTransformMatrix;

@@ -2,7 +2,6 @@
 import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
 import {Uniform} from "./Constants.js";
-import {Logger} from "../Logger.js";
 
 export class PointLight extends Transform {
 
@@ -15,13 +14,16 @@ export class PointLight extends Transform {
      * Direction of the directional Light
      * @type {Vector3}
      */
-    static directionalDirection = new Vector3(-1, -1, 2);
+    static directionalDirection = new Vector3(0, -1, 1);
     /**
      * Format: [r,g,b, intensity]
      * @type {number[]}
      */
     static directionalColor = [1, 1, 1, 0.2];
-
+    static DirLightMatrix = math.multiply(
+        PointLight.DirLightViewMatrix(),  // View
+        PointLight.OrthographicMatrix(),
+    )
 
     constructor(options = {}) {
         const {
@@ -83,24 +85,29 @@ export class PointLight extends Transform {
 
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.pointLights + 32 * this.lightIndex), new Float32Array(this.globalPosition))
         this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.pointLights + 16 + 32 * this.lightIndex), new Float32Array(this.color))
-        
+
         this.CallInChildren("Render", pass)
     }
-    
-    get OrthographicMatrix() {
+
+    static OrthographicMatrix() {
         const hSize = 2500;
         const vSize = 2500;
-        
-        return [
-            [2/hSize,0,0,0],
-            [0,2/vSize,0,0],
-            [0,0,0,0],
-            [0,0,0,1],
-        ]
+
+        return math.matrix([
+            [2 / hSize, 0, 0, 0],
+            [0, 2 / vSize, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 1],
+        ])
     }
-    
-    get DirLightViewMatrix() {
+
+    static DirLightViewMatrix() {
         //Might need to be negative (direction)
-        return this.getLookAtLH(PointLight.directionalDirection.scale(-30), PointLight.directionalDirection, Vector3.Up)
+        return Transform.getLookAtLH(
+            PointLight.directionalDirection.normalize().scale(-30),
+            PointLight.directionalDirection,
+            Vector3.Up,
+            // true
+        )
     }
 }
