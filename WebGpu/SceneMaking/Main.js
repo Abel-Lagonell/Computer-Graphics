@@ -2,10 +2,10 @@
 import {Transform} from "../Scene Inheritance/Transform.js";
 import {Camera} from "../Scene Inheritance/Camera.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
-import {PointLight} from "../Scene Inheritance/PointLight.js";
+import {PointLight} from "../Scene Inheritance/Light/PointLight.js";
 import {Color} from "../Scene Inheritance/Color.js";
 import {WebGPU} from "../WebGPU.js";
-import {SpotLight} from "../Scene Inheritance/SpotLight.js";
+import {SpotLight} from "../Scene Inheritance/Light/SpotLight.js";
 
 class Main {
     constructor() {

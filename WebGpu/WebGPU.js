@@ -1,5 +1,5 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
-import {PointLight} from "./Scene Inheritance/PointLight.js";
+import {PointLight} from "./Scene Inheritance/Light/PointLight.js";
 
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();

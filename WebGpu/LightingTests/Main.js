@@ -4,11 +4,13 @@ import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {Camera} from "../Scene Inheritance/Camera.js";
 import {Transform} from "../Scene Inheritance/Transform.js";
 import {Color} from "../Scene Inheritance/Color.js";
-import {SpotLight} from "../Scene Inheritance/SpotLight.js";
-import {PointLight} from "../Scene Inheritance/PointLight.js";
+import {SpotLight} from "../Scene Inheritance/Light/SpotLight.js";
+import {PointLight} from "../Scene Inheritance/Light/PointLight.js";
 import {Logger} from "../Logger.js";
 import {OBJParser} from "../Scene Inheritance/OBJParser.js";
 import {SixAxisController} from "../Scene Inheritance/SixAxisController.js";
+import {AmbientLight} from "../Scene Inheritance/Light/AmbientLight.js";
+import {DirectionalLight} from "../Scene Inheritance/Light/DirectionalLight.js";
 
 class Main {
     constructor() {
@@ -32,14 +34,15 @@ class Main {
         let cube = await this.parser.parseObj("../Models/", "Cube");
         cube.position = new Vector3(0,1,0)
 
+        let ambient = new AmbientLight();
+        let direction = new DirectionalLight();
+        
         let pLight1 = new SpotLight({
             position: new Vector3(0,4,2),
             color: [1,1,1, 10],
             direction: new Vector3(0, -1, -1),
             focus: 0.9
         });
-        pLight1.directionalColor = [1,1,1,2];
-        pLight1.directionalDirection = new Vector3(0,-1,0.05);
 
         let controller = new SixAxisController({
             position: new Vector3(0,3,-5),
@@ -48,7 +51,7 @@ class Main {
         });
         controller.AddChild(camera)
 
-        await this.web.AddShape([plane, cube, controller]);
+        await this.web.AddShape([plane, cube, controller, pLight1]);
     }
 }
 

@@ -1,8 +1,8 @@
-﻿import {Vector3} from "./Vector3.js";
-import {Color} from "./Color.js";
-import {Uniform} from "./Constants.js";
+﻿import {Vector3} from "../Vector3.js";
+import {Color} from "../Color.js";
+import {Uniform} from "../Constants.js";
 import {PointLight} from "./PointLight.js";
-import {Logger} from "../Logger.js";
+import {Logger} from "../../Logger.js";
 
 export class SpotLight extends PointLight {
     constructor(options = {}) {
