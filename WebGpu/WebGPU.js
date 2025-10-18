@@ -1,5 +1,6 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
 import {PointLight} from "./Scene Inheritance/Light/PointLight.js";
+import {DirectionalLight} from "./Scene Inheritance/Light/DirectionalLight.js";
 
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
@@ -268,7 +269,7 @@ export class WebGPU {
         if (!this.isReady || !this.device) return;
 
         // Calculate light space matrix
-        const lightSpaceMatrix = PointLight.getDirectionalLightMatrix();
+        const lightSpaceMatrix = DirectionalLight.getDirectionalLightMatrix();
         this.currentLightSpaceMatrix = lightSpaceMatrix; // Store for main pass
 
         // Create buffer for light space matrix

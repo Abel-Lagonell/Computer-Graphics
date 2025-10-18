@@ -48,8 +48,8 @@ fn calculateShadow(lightSpacePos: vec4f) -> f32 {
     // Transform to [0,1] range for texture sampling
     projCoords.x = projCoords.x * 0.5 + 0.5;
     projCoords.y = projCoords.y * 0.5 + 0.5;
-//    // Y is flipped in texture coordinates
-//    projCoords.y = 1.0 - projCoords.y;
+    // Y is flipped in texture coordinates
+    projCoords.y = 1.0 - projCoords.y;
     
     // Get current fragment depth
     let currentDepth = projCoords.z;
@@ -133,8 +133,8 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     let shadow = calculateShadow(fsInput.lightSpacePos);
 
     var intensity = simpleLight.dirLight.color.w;
-    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity ;
-    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) ;
+    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity *shadow ;
+    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) * shadow ;
 
     //Point Lights
     for (var i =0u; i < pointEnd; i++){

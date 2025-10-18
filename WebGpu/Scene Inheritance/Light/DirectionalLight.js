@@ -1,8 +1,10 @@
 ﻿import {AmbientLight} from "./AmbientLight.js";
 import {Vector3} from "../Vector3.js";
 import {Uniform} from "../Constants.js";
+import {Quaternion} from "../Quaternion.js";
 
 export class DirectionalLight extends AmbientLight {
+    /**@type null/DirectionalLight */
     static Instance = null;
 
     constructor(options = {}) {
@@ -15,20 +17,25 @@ export class DirectionalLight extends AmbientLight {
 
         super({...options, name: name, color: color, rotation: rotation});
 
+
         if (DirectionalLight.Instance === null) {
+            this.CalculateMatrix()
+            this.CalculateGlobalMatrix()
+            this.direction = this.quaternion.rotateVector(Vector3.Forward)
             DirectionalLight.Instance = this;
             this.SetBuffer();
+            console.log(this.viewMatrix)
         }
     }
 
     SetBuffer() {
-        const direction = this.quaternion.rotateVector(Vector3.Forward)
+        this.direction = this.quaternion.rotateVector(Vector3.Forward)
 
         // Only bind directional light data
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
             Uniform.LightIndex.directionalLight,
-            new Float32Array(direction));
+            new Float32Array(this.direction));
 
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
@@ -37,32 +44,36 @@ export class DirectionalLight extends AmbientLight {
     }
 
     static getDirectionalLightMatrix() {
-        const lightDir = this.Instance?.position?.normalize() || new Vector3(-1, -1, 2).normalize();
-        const lightPos = lightDir.scale(-30);
+        if (DirectionalLight.Instance === null) {
+            return math.matrix([
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ])
+        }
 
-        const target = new Vector3(0, 0, 0);
-        const up = Math.abs(lightDir.y) > 0.999 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+        const dirLight = this.Instance
 
-        const forward = target.subtract(lightPos).normalize();
-        const right = forward.cross(up).normalize();
-        const upCorrected = right.cross(forward).normalize();
+        const globalMatrix = dirLight.globalTransformMatrix;
+        const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
+        const forwardVector3 = new Vector3(globalMatrix.get([2, 0]), globalMatrix.get([2, 1]), globalMatrix.get([2, 2]));
+        const posVec3 = dirLight.direction.scale(-100)
 
-        const viewMatrix = math.matrix([
-            [right.x, right.y, right.z, 0],
-            [upCorrected.x, upCorrected.y, upCorrected.z, 0],
-            [-forward.x, -forward.y, -forward.z, 0],
-            [-right.dot(lightPos), -upCorrected.dot(lightPos), forward.dot(lightPos), 1]
-        ]);
+        const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3)
 
-        const size = 0.0001;
-        const near = 0.0001;
-        const far = 5000;
+        const near = 0.001;
+        const far = 5000
+        const right = 0.001
+        const left = -0.001
+        const top = 0.00
+        const bottom = -0.001
 
         const projectionMatrix = math.matrix([
-            [1 / size, 0, 0, 0],
-            [0, 1 / size, 0, 0],
-            [0, 0, 2 / (far - near), 0],
-            [0, 0, -(far + near) / (far - near), 1]
+            [(2 * near) / (right - left), 0, 0, 0],
+            [0, 2 * near / (top - bottom), 0, 0],
+            [(right + left) / (right - left), (top + bottom) / (top - bottom), (far + near) / (far - near), 1],
+            [0, 0, 2 * far * near / (far - near), 1]
         ]);
 
         return math.multiply(viewMatrix, projectionMatrix);

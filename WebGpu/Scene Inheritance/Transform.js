@@ -209,12 +209,7 @@ export class Transform {
 
         if (Transform.cameraReference !== null) {
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
-            const globalMatrix = Transform.cameraReference.globalTransformMatrix;
-            const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
-            const forwardVector3 = new Vector3(globalMatrix.get([2, 0]), globalMatrix.get([2, 1]), globalMatrix.get([2, 2]));
-            const posVec3 = new Vector3(globalMatrix.get([3, 0]), globalMatrix.get([3, 1]), globalMatrix.get([3, 2]));
-
-            const viewMatrix = this.getLookAtLH(posVec3, forwardVector3, upVector3);
+            const viewMatrix = Transform.cameraReference.viewMatrix;
 
             clipSpaceMatrix = math.multiply(
                 this.globalTransformMatrix,
@@ -248,16 +243,7 @@ export class Transform {
      * @param up : Vector3
      */
     getLookAtLH(pos, forward, up) {
-        var zAxis = forward.normalize();
-        var xAxis = up.cross(forward).normalize();
-        var yAxis = xAxis.cross(zAxis);
-
-        return math.matrix([
-            [xAxis.x, -yAxis.x, zAxis.x, 0],
-            [xAxis.y, -yAxis.y, zAxis.y, 0],
-            [xAxis.z, -yAxis.z, zAxis.z, 0],
-            [-xAxis.dot(pos), yAxis.dot(pos), -zAxis.dot(pos), 1]
-        ]);
+        return Transform.getLookAtLH(pos, forward, up);
     }
 
     static getLookAtLH(pos, forward, up) {
@@ -336,6 +322,15 @@ export class Transform {
 
     get globalPosition(){
         return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
+    }
+
+    get viewMatrix() {
+        const globalMatrix = this.globalTransformMatrix;
+        const upVector3 = new Vector3(globalMatrix.get([1, 0]), globalMatrix.get([1, 1]), globalMatrix.get([1, 2]));
+        const forwardVector3 = new Vector3(globalMatrix.get([2, 0]), globalMatrix.get([2, 1]), globalMatrix.get([2, 2]));
+        const posVec3 = new Vector3(globalMatrix.get([3, 0]), globalMatrix.get([3, 1]), globalMatrix.get([3, 2]));
+
+        return this.getLookAtLH(posVec3, forwardVector3, upVector3);
     }
 
     CalculateGlobalMatrix() {
