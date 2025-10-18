@@ -20,7 +20,7 @@ class RobotArm {
                 color: [Color.Red, Color.Red, Color.Blue]
             }
         )
-        base.AngularVelocity = new Vector3(0, 0, 0.1 * Math.PI / 180)
+        base.angularVelocity = new Vector3(0, 0, 0.1 * Math.PI / 180)
 
         const child = new MeshObject(
             {
@@ -31,7 +31,7 @@ class RobotArm {
                 color: [Color.Blue, Color.Blue, Color.Green],
             }
         );
-        child.AngularVelocity = new Vector3(0.1*Math.PI/180, 0, 0);
+        child.angularVelocity = new Vector3(0.1*Math.PI/180, 0, 0);
 
         const grandchild = new MeshObject(
             {name: "Grandchild",
@@ -40,7 +40,7 @@ class RobotArm {
             vertices: [B, A, C],
             color: [Color.Green, Color.Green, Color.Red],}
         );
-        grandchild.AngularVelocity = new Vector3(0, 0.1 * Math.PI / 180,0)
+        grandchild.angularVelocity = new Vector3(0, 0.1 * Math.PI / 180,0)
 
         child.AddChild(grandchild);
         base.AddChild(child);

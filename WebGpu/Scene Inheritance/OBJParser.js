@@ -1,5 +1,7 @@
 ﻿import {Transform} from "./Transform.js";
 import {MeshObject} from "./MeshObject.js";
+import {WebGPU} from "../WebGPU.js";
+import {Uniform} from "./Constants.js";
 
 export class Material {
     specularExponent = 0; //Ns
@@ -14,13 +16,46 @@ export class Material {
     refraction = 0; //Ni
     transparency = 0; //d
     illuminationMode = 0; //illum
+    tracked = false;
+    materialIndex = -1;
+
+    async WriteMaterialToBuffer(){
+        const gpu = WebGPU.Instance;
+        if (gpu)
+            await gpu.WaitForReady()
+
+        if (this.tracked) return this.materialIndex;
+
+        this.materialIndex = gpu.currentMaterial;
+        if (this.materialIndex === 9)
+            return -1;
+
+        const material = new Float32Array([
+            ...this.ambient,
+            this.transparency,
+            ...this.diffuse,
+            this.refraction,
+            ...this.specularColor,
+            this.specularExponent,
+        ]);
+
+        gpu.device.queue.writeBuffer(
+            gpu.materialBuffer,
+            Uniform.Material*this.materialIndex,
+            material
+        )
+
+        this.tracked = true;
+
+        return gpu.currentMaterial++;
+    }
 }
 
 export class OBJ {
     /**
      * @type {{string: number[][]}}
      */
-    materialFaceElements = {"default": []};
+    materialFaceElements = {};
 
     /**
      *
@@ -89,6 +124,19 @@ export class OBJ {
         }
 
         return [triangleVertices, triangleNormals];
+    }
+
+    GetMaterialIndex() {
+        let materialIndex = [];
+        for (let materialName in this.materialFaceElements) {
+            let faces = this.materialFaceElements[materialName];
+            for (let face of faces) {
+                for (let i = 1; i < face.length - 2; i++) {
+                    materialIndex.push(this.materialReference[materialName].materialIndex)
+                }
+            }
+        }
+        return materialIndex;
     }
 
     GetColorList() {
@@ -228,13 +276,15 @@ export class OBJParser {
         for (let obj of this.OBJs) {
             let [vertices, normals] = obj.GetTriangleList();
             let [colors, specs, spec] = obj.GetColorList();
+            let mats = obj.GetMaterialIndex();
             const newObj = new MeshObject({
                 name: obj.name,
                 vertices: vertices,
                 color: colors,
                 normals: normals,
                 specExp: specs,
-                spec: spec
+                spec: spec,
+                materialIndex: mats,
             });
             await parent.AddChild(newObj);
         }
@@ -286,6 +336,10 @@ export class OBJParser {
                     this.materials[this.currentMaterial].illuminationMode = +content[0];
                     break;
             }
+        }
+
+        for (let material in this.materials) {
+            this.materials[material].WriteMaterialToBuffer();
         }
     }
 }

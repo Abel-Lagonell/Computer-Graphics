@@ -1,11 +1,8 @@
 ﻿struct VertexData{
     @builtin(position) position: vec4f,
-    @location(0) color: vec4f,
     @location(1) normal: vec4f,
     @location(2) worldSpace: vec4f,
-    @location(3) specExp: f32,
-    @location(4) spec: vec4f,
-    @location(5) lightSpacePos: vec4f,
+    @interpolate(flat) @location(3) materialIndex: u32,
 };
 
 struct UniformMatrix{
@@ -46,22 +43,19 @@ struct Material { //48 bytes
 
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
+@group(0) @binding(2) var<uniform> materials: array<Material, 10>;
 
 @vertex
 fn vertexMain(
     @location(0) position:vec3f, 
-    @location(1) color:vec4f, 
-    @location(2) normal:vec3f,
-    @location(3) specExp:f32,
-    @location(4) spec: vec4f,
+    @location(1) normal:vec3f,
+    @location(2) material: f32,
 ) -> VertexData {
     var vertex: VertexData;
     vertex.worldSpace = myMatrix.worldSpaceMatrix*vec4f(position, 1.0f);
     vertex.position = myMatrix.clipSpaceMatrix*vec4f(position, 1.0f);
-    vertex.color = color;
     vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
-    vertex.specExp = specExp;
-    vertex.spec = spec;
+    vertex.materialIndex = u32(material);
     return vertex;
 }
 
@@ -76,7 +70,9 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var attenuation : f32;
     var pointEnd = min(simpleLight.numPoint, 10u);
     var spotEnd = min(simpleLight.numSpot, 10u);
-    
+
+    var material = materials[fsInput.materialIndex];
+
     //Ambient
     let ambient = simpleLight.ambientColor.xyz * simpleLight.ambientColor.w;
         
@@ -94,11 +90,11 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var R : vec3f = normalize(2.0 * dot(N, L) * N - L);
 
     var IL : f32 = max(dot(N, L), 0.0);
-    var IS : f32 = pow(max(dot(R, V), 0.0), fsInput.specExp);
+    var IS : f32 = pow(max(dot(R, V), 0.0), material.specularExponent);
 
     var intensity = simpleLight.dirLight.color.w;
     diffusePower += simpleLight.dirLight.color.xyz * IL * intensity;
-    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1);
+    specPower +=  material.specular.xyz * IS * (intensity *0.1);
 
     //Point Lights
     for (var i =0u; i < pointEnd; i++){
@@ -111,10 +107,10 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
 
         //Light intensity goes here multiplied
         IL = max(dot(N,L),0.0)*attenuation;
-        IS = pow(max(dot(R,V),0.0),fsInput.specExp)* attenuation;
+        IS = pow(max(dot(R,V),0.0), material.specularExponent)* attenuation;
         intensity = light.color.w;
         diffusePower += (light.color.xyz * IL * intensity);
-        specPower += fsInput.spec.xyz * IS * intensity * IL;
+        specPower += material.specular.xyz * IS * intensity * IL;
     }
     
     for (var i =0u; i < spotEnd; i++){
@@ -133,11 +129,11 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
                 
             intensity = light.color.w;
             IL = max(dot(N, L), 0.0) * attenuation;
-            IS = pow(max(dot(R, V), 0.0), fsInput.specExp) * attenuation;
+            IS = pow(max(dot(R, V), 0.0), material.specularExponent) * attenuation;
             
             diffusePower += (light.color.xyz * IL * intensity);
-            specPower += fsInput.spec.xyz * IS * intensity * IL;
+            specPower += material.specular * IS * intensity * IL;
         }
     }
-    return vec4f(fsInput.color.xyz* (ambient + diffusePower + specPower), 1);
+    return vec4f(material.diffuse.xyz* (ambient + diffusePower + specPower), 1);
 }

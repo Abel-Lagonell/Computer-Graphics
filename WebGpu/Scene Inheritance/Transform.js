@@ -23,14 +23,14 @@ export class Transform {
     /** @type {Camera/null}*/
     static cameraReference = null;
 
-    AngularVelocity = Vector3.Zero.copy();
-    LinearVelocity = Vector3.Zero.copy();
-    ScalarVelocity = Vector3.Zero.copy();
+    angularVelocity = Vector3.Zero.copy();
+    linearVelocity = Vector3.Zero.copy();
+    scalarVelocity = Vector3.Zero.copy();
 
-    oldPosition = Vector3.Empty();
-    oldRotation = Vector3.Empty();
-    oldScale = Vector3.Empty();
-    oldQuaternion = Quaternion.Identity.copy();
+    _oldPosition = Vector3.Empty();
+    _oldRotation = Vector3.Empty();
+    _oldScale = Vector3.Empty();
+    _oldQuaternion = Quaternion.Identity.copy();
 
     _gpuInitialized = false;
     _globalTransformDirty = true;
@@ -81,17 +81,17 @@ export class Transform {
     /**@return Vector3*/
     set scale(scale) {
         this._scale = scale;
-        this.markDirty();
+        this.MarkDirty();
     }
 
     set rotation(rotation) {
         this._rotation = rotation;
-        this.markDirty();
+        this.MarkDirty();
     }
 
     set position(position) {
         this._position = position;
-        this.markDirty();
+        this.MarkDirty();
     }
 
     async _initializedWhenReady() {
@@ -121,21 +121,21 @@ export class Transform {
     }
 
     PhysicsUpdate() {
-        if (this.AngularVelocity.magnitude() !== 0 || this.LinearVelocity.magnitude() !== 0 || this.ScalarVelocity.magnitude() !== 0) {
-            this.markDirty()
+        if (this.angularVelocity.magnitude() !== 0 || this.linearVelocity.magnitude() !== 0 || this.scalarVelocity.magnitude() !== 0) {
+            this.MarkDirty()
         }
 
-        this._rotation = this._rotation.add(this.AngularVelocity.scale(this.gpu.deltaTime));
-        this._position = this._position.add(this.LinearVelocity.scale(this.gpu.deltaTime));
-        this._scale = this._scale.add(this.ScalarVelocity.scale(this.gpu.deltaTime));
+        this._rotation = this._rotation.add(this.angularVelocity.scale(this.gpu.deltaTime));
+        this._position = this._position.add(this.linearVelocity.scale(this.gpu.deltaTime));
+        this._scale = this._scale.add(this.scalarVelocity.scale(this.gpu.deltaTime));
     }
 
     /**
      * Mark this transform and all children as dirty
      */
-    markDirty() {
+    MarkDirty() {
         this._globalTransformDirty = true;
-        this.CallInChildren("markDirty");
+        this.CallInChildren("MarkDirty");
     }
 
     /**
@@ -173,7 +173,7 @@ export class Transform {
 
         await child.WriteToGPU()
         child.parent = this;
-        child.markDirty(); // Child's global transform needs recalculation
+        child.MarkDirty(); // Child's global transform needs recalculation
     }
 
     /**
@@ -184,10 +184,10 @@ export class Transform {
 
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
-        //[x,y,z,r,g,b,a,nx,ny,nz,sExp,sx,sy,sz]
-        if (this.vertexBuffer && this.vertices.length > 14) {
+        //[x,y,z,nx,ny,nz,mat]
+        if (this.vertexBuffer && this.vertices.length > 7) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length / 14);
+            pass.draw(this.vertices.length / 7);
         }
         this.CallInChildren("Render", pass)
     }
@@ -268,12 +268,10 @@ export class Transform {
         }
 
         try {
-            this.uniformBufferSize = Uniform.MatrixBuffer; // 4 columns * 4 rows * 4 bytes
-
             /** @type {GPUBuffer}*/
             this.uniformBuffer = this.gpu.device.createBuffer({
                 label: "Uniform Buffer",
-                size: this.uniformBufferSize,
+                size: Uniform.MatrixBuffer,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
             });
 
@@ -282,6 +280,7 @@ export class Transform {
                 entries: [
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
+                    {binding: 2, resource: {buffer: this.gpu.materialBuffer}}
                 ]
             });
 
@@ -369,7 +368,7 @@ export class Transform {
             
             this.localNormalMatrix = math.multiply(invScale, this.rotationMatrix);
             
-            this.markDirty();
+            this.MarkDirty();
         }
         return this.localTransformMatrix;
     }
@@ -393,31 +392,31 @@ export class Transform {
     }
 
     CheckPositionChanged() {
-        if (!this.oldPosition.equals(this._position)) {
+        if (!this._oldPosition.equals(this._position)) {
             this.translateMatrix = this.CalculateTranslationMatrix();
-            this.oldPosition = this._position.copy();
+            this._oldPosition = this._position.copy();
             return true;
         }
         return false;
     }
 
     CheckRotationChanged() {
-        if (!this.oldRotation.equals(this._rotation)) {
+        if (!this._oldRotation.equals(this._rotation)) {
             // Update quaternion when euler angles change
             this.quaternion = Quaternion.fromEuler(this._rotation);
             this.rotationMatrix = this.quaternion.Matrix;
 
-            this.oldRotation = this._rotation.copy();
-            this.oldQuaternion = this.quaternion.copy();
+            this._oldRotation = this._rotation.copy();
+            this._oldQuaternion = this.quaternion.copy();
             return true;
         }
         return false;
     }
 
     CheckScaleChanged() {
-        if (!this.oldScale.equals(this._scale)) {
+        if (!this._oldScale.equals(this._scale)) {
             this.scaleMatrix = this.CalculateScaleMatrix();
-            this.oldScale = this._scale.copy();
+            this._oldScale = this._scale.copy();
             return true;
         }
         return false;

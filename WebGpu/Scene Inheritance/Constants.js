@@ -14,6 +14,19 @@
         spotLights: 384,
     })
 
+    static MaterialBuffer = 48*10;
+
+    static Material = 48;
+
+    static MaterialIndex = Object.freeze({
+        ambientColor: 0,
+        transparency: 12,
+        diffuseColor: 16,
+        refraction: 28,
+        specularColor: 32,
+        specularExponent: 44,
+    })
+
     /**
      * 4 Rows, 4 Columns, 4 bytes per, 4 matrices
      * @type {number}

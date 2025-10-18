@@ -22,6 +22,7 @@ export class PointLight extends DirectionalLight {
                 entries: [
                     {binding: 0, resource: {buffer: this.gpu.DUMMYUniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
+                    {binding: 2, resource: {buffer: this.gpu.materialBuffer}}
                 ]
             });
         })

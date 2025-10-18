@@ -21,6 +21,7 @@ export class WebGPU {
     shapes = [];
     currentPointLight = 0;
     currentSpotLight = 0;
+    currentMaterial = 0;
 
     constructor() {
         if (WebGPU.Instance === undefined) {
@@ -132,7 +133,7 @@ export class WebGPU {
         console.log("Created Simple Shader!")
 
         this.vertexBufferLayout = {
-            arrayStride: 4 * 14, // 3-Position, 4-Color, 3-Normal, 1-SpecularExp, 3 Spec
+            arrayStride: 4 * 7, // 3-Position, 3-Normal, 1-MatIndex
             attributes: [
                 {
                     format: "float32x3",
@@ -145,20 +146,10 @@ export class WebGPU {
                     shaderLocation: 1,
                 },
                 {
-                    format: "float32x3",
-                    offset: 7 * 4,
-                    shaderLocation: 2,
-                },
-                {
                     format: "float32",
-                    offset: 10 * 4,
-                    shaderLocation: 3,
-                },
-                {
-                    format: "float32x3",
-                    offset: 10 * 4 + 4,
-                    shaderLocation: 4,
-                },
+                    offset: 6*4,
+                    shaderLocation: 2,
+                }
             ]
         }
 
@@ -173,6 +164,11 @@ export class WebGPU {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 
+        this.materialBuffer = this.device.createBuffer({
+            label: "Material Buffer",
+            size: Uniform.MaterialBuffer,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        })
 
         this.pipeline = this.device.createRenderPipeline(
             {
