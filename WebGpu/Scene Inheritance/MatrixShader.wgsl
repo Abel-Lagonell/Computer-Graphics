@@ -13,7 +13,6 @@ struct UniformMatrix{
     worldSpaceMatrix: mat4x4<f32>,
     normalMatrix: mat4x4<f32>,
     cameraPosition: vec4f,
-    lightSpaceMatrix: mat4x4<f32>,
 }
 
 struct Light{
@@ -36,49 +35,17 @@ struct LightSystem {
     spotLights: array<SpotLight, 10> //48 bytes per
 }
 
+struct Material { //48 bytes
+    ambient: vec3f, //12 bytes
+    transparency: f32, // 4 bytes
+    diffuse: vec3f, //12 bytes
+    refraction: f32, // 4 bytes
+    specular: vec3f, // 12 bytes
+    specularExponent: f32, // 4 bytes
+}
+
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
-@group(0) @binding(2) var shadowMap: texture_depth_2d;
-@group(0) @binding(3) var shadowSampler: sampler_comparison;
-
-fn calculateShadow(lightSpacePos: vec4f) -> f32 {
-    // Perspective divide
-    var projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    
-    // Transform to [0,1] range for texture sampling
-    projCoords.x = projCoords.x * 0.5 + 0.5;
-    projCoords.y = projCoords.y * 0.5 + 0.5;
-    // Y is flipped in texture coordinates
-    projCoords.y = 1.0 - projCoords.y;
-    
-    // Get current fragment depth
-    let currentDepth = projCoords.z;
-    
-    // Bias to prevent shadow acne
-    let bias = 0.01;
-    
-    // PCF (Percentage Closer Filtering) for softer shadows
-    var shadow = 0.0;
-    let texelSize = 1.0 / 2048.0; // Match your shadow map size
-    
-    for (var x = -1; x <= 1; x++) {
-        for (var y = -1; y <= 1; y++) {
-            let offset = vec2<f32>(f32(x), f32(y)) * texelSize;
-            let sampleCoord = projCoords.xy + offset;
-            
-            // Sample shadow map and compare
-            shadow += textureSampleCompare(
-                shadowMap, 
-                shadowSampler, 
-                sampleCoord, 
-                currentDepth - bias
-            );
-        }
-    }
-    shadow /= 9.0; // Average of 9 samples
-    
-    return shadow;
-}
 
 @vertex
 fn vertexMain(
@@ -95,7 +62,6 @@ fn vertexMain(
     vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
     vertex.specExp = specExp;
     vertex.spec = spec;
-    vertex.lightSpacePos = myMatrix.lightSpaceMatrix * vec4f(position, 1.0f);
     return vertex;
 }
 
@@ -130,11 +96,9 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var IL : f32 = max(dot(N, L), 0.0);
     var IS : f32 = pow(max(dot(R, V), 0.0), fsInput.specExp);
 
-    let shadow = calculateShadow(fsInput.lightSpacePos);
-
     var intensity = simpleLight.dirLight.color.w;
-    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity *shadow ;
-    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) * shadow ;
+    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity;
+    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1);
 
     //Point Lights
     for (var i =0u; i < pointEnd; i++){

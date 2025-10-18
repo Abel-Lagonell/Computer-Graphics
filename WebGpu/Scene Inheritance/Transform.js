@@ -205,7 +205,6 @@ export class Transform {
         let clipSpaceMatrix = this.globalTransformMatrix;
         let worldSpaceMatrix = this.globalTransformMatrix;
         let normalMatrix = this.globalNormalMatrix;
-        let lightSpaceMatrix = this.gpu.currentLightSpaceMatrix;
 
         if (Transform.cameraReference !== null) {
             const projectionMatrix = Transform.cameraReference.perspectiveMatrix;
@@ -223,14 +222,12 @@ export class Transform {
         const clipMatrix = [...math.flatten(clipSpaceMatrix).toArray()];
         const worldMatrix = [...math.flatten(worldSpaceMatrix).toArray()];
         const normMatrix = [...math.flatten(normalMatrix).toArray()];
-        const lightMatrix = [...math.flatten(lightSpaceMatrix).toArray()];
-        
+
         const combinedData = new Float32Array([
             ...clipMatrix, 
             ...worldMatrix, 
             ...normMatrix, 
             ...cameraPosition, 
-            ...lightMatrix
         ]);
 
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
@@ -285,19 +282,9 @@ export class Transform {
                 entries: [
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
-                    {binding: 2, resource: this.gpu.shadowMapTexture.createView()},
-                    {binding: 3, resource: this.gpu.shadowSampler},
                 ]
             });
 
-            // // Shadow bind group
-            // this.shadowBindGroup = this.gpu.device.createBindGroup({
-            //     layout: this.gpu.shadowPipeline.getBindGroupLayout(0),
-            //     entries: [
-            //         {binding: 0, resource: {buffer: this.gpu.lightMatrixBuffer}}
-            //     ]
-            // });
-            //
             if (this.vertices.length > 14) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,

@@ -216,130 +216,15 @@ export class WebGPU {
         );
         console.log("Created Pipeline")
 
-        const shadowMapSize = 2048;
-        
-        // Shadow map texture (1024x1024 is typical)
-        this.shadowMapTexture = this.device.createTexture({
-            size: [shadowMapSize, shadowMapSize],
-            format: 'depth32float',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
-        });
-
-        // Shadow map sampler (comparison sampler for PCF)
-        this.shadowSampler = this.device.createSampler({
-            magFilter: 'linear',
-            minFilter: 'linear',
-            compare: 'less', // This enables depth comparison
-        });
-
-        // Load shadow shader
-        this.shadowShaderCode = await this.loadWGSLShader("../Scene Inheritance/ShadowShader.wgsl");
-
-        this.shadowShaderModule = this.device.createShaderModule({
-            label: "Shadow Shader",
-            code: this.shadowShaderCode
-        });
-
-        // Shadow pipeline (only needs position, no colors/normals)
-        this.shadowPipeline = this.device.createRenderPipeline({
-            label: "Shadow Pipeline",
-            layout: "auto",
-            vertex: {
-                module: this.shadowShaderModule,
-                entryPoint: "vertexMain",
-                buffers: [this.vertexBufferLayout] // Same vertex format
-            },
-            // No fragment shader output (depth only)
-            primitive: {
-                topology: "triangle-list",
-                cullMode: "back" // Can also try "front" to reduce peter-panning
-            },
-            depthStencil: {
-                format: 'depth32float',
-                depthWriteEnabled: true,
-                depthCompare: 'less',
-            }
-        });
-
         this.isReady = true;
 
     }
 
-    RenderShadowMap() {
-        if (!this.isReady || !this.device) return;
 
-        // Calculate light space matrix
-        const lightSpaceMatrix = DirectionalLight.getDirectionalLightMatrix();
-        this.currentLightSpaceMatrix = lightSpaceMatrix; // Store for main pass
-
-        // Create buffer for light space matrix
-        if (!this.shadowUniformBuffer) {
-            this.shadowUniformBuffer = this.device.createBuffer({
-                size: 64, // 4x4 matrix = 16 floats = 64 bytes
-                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-            });
-        }
-
-        // Write light space matrix to buffer
-        const matrixData = new Float32Array(math.flatten(lightSpaceMatrix).toArray());
-        this.device.queue.writeBuffer(this.shadowUniformBuffer, 0, matrixData);
-
-        // Create bind group for shadow pass
-        if (!this.shadowBindGroup) {
-            this.shadowBindGroup = this.device.createBindGroup({
-                layout: this.shadowPipeline.getBindGroupLayout(0),
-                entries: [
-                    { binding: 0, resource: { buffer: this.shadowUniformBuffer } }
-                ]
-            });
-        } else {
-            // Update bind group (recreate with updated buffer)
-            this.shadowBindGroup = this.device.createBindGroup({
-                layout: this.shadowPipeline.getBindGroupLayout(0),
-                entries: [
-                    { binding: 0, resource: { buffer: this.shadowUniformBuffer } }
-                ]
-            });
-        }
-
-        // Begin shadow render pass
-        const shadowEncoder = this.device.createCommandEncoder();
-        const shadowPass = shadowEncoder.beginRenderPass({
-            label: "Shadow Map Pass",
-            colorAttachments: [], // No color output!
-            depthStencilAttachment: {
-                view: this.shadowMapTexture.createView(),
-                depthClearValue: 1.0,
-                depthLoadOp: 'clear',
-                depthStoreOp: 'store',
-            }
-        });
-
-        shadowPass.setPipeline(this.shadowPipeline);
-        shadowPass.setBindGroup(0, this.shadowBindGroup);
-
-        // Render all shapes from light's perspective
-        for (let shape of this.shapes) {
-            if (shape.vertexBuffer && shape.vertices.length > 14) {
-                shadowPass.setVertexBuffer(0, shape.vertexBuffer);
-                shadowPass.draw(shape.vertices.length / 14);
-            }
-        }
-
-        shadowPass.end();
-
-        // Submit shadow pass
-        const shadowCommandBuffer = shadowEncoder.finish();
-        this.device.queue.submit([shadowCommandBuffer]);
-    }
-    
     RenderAll() {
         if (!this.isReady || !this.device) return;
 
         this.handleCanvasResize();
-        
-        this.RenderShadowMap()
-
         this.encoder = this.device.createCommandEncoder();
         this.commandPass = this.encoder.beginRenderPass({
             colorAttachments: [{
