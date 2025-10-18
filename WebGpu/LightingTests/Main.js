@@ -36,17 +36,17 @@ class Main {
 
         let ambient = new AmbientLight();
         let direction = new DirectionalLight();
-        
+
         let pLight1 = new SpotLight({
             position: new Vector3(0,4,2),
             color: [1,1,1, 10],
-            direction: new Vector3(0, -1, -1),
+            rotation: new Vector3(-Math.PI/4,  0,0),
             focus: 0.9
         });
 
         let controller = new SixAxisController({
             position: new Vector3(0,3,-5),
-            linearSpeed: 20,
+            linearSpeed: 50,
             localSpace: true,
         });
         controller.AddChild(camera)

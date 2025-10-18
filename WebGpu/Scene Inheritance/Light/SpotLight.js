@@ -10,35 +10,47 @@ export class SpotLight extends PointLight {
             name = "SpotLight",
             position = Vector3.Zero,
             color = Color.White,
-            direction = Vector3.Down,
+            rotation =  new Vector3(0, 0, 0),
             focus = 0.5
         } = options;
-        
-        super({name: name, position: position, color: color});
-    
-        this.direction = direction;
+
+        super({...options, name: name, position: position, color: color, rotation: rotation});
+
         this.focus = focus;
     }
-    
-    async BufferArrayPosition(){
-        if (this.gpu){
+
+    async BufferArrayPosition() {
+        if (this.gpu) {
             await this.gpu.WaitForReady();
-        } 
+        }
         this.lightIndex = this.gpu.currentSpotLight;
         this.gpu.currentSpotLight++;
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, Uniform.LightIndex.numSpots,new Uint32Array([this.gpu.currentSpotLight]))
+        this.gpu.device.queue.writeBuffer(
+            this.gpu.lightBuffer,
+            Uniform.LightIndex.numSpots,
+            new Uint32Array([this.gpu.currentSpotLight])
+        )
     }
 
-    Render(pass){
+    Render(pass) {
         this.CalculateMatrix();
         this.CalculateGlobalMatrix();
         pass.setBindGroup(0, this.pLightGroup);
+        const direction = this.quaternion.rotateVector(Vector3.Forward)
 
+        this.gpu.device.queue.writeBuffer(
+            this.gpu.lightBuffer,
+            (Uniform.LightIndex.spotLights + 32 * this.lightIndex),
+            new Float32Array(this.globalPosition))
+        this.gpu.device.queue.writeBuffer(
+            this.gpu.lightBuffer,
+            (Uniform.LightIndex.spotLights + 16 + 32 * this.lightIndex),
+            new Float32Array(this.color))
+        this.gpu.device.queue.writeBuffer(
+            this.gpu.lightBuffer,
+            (Uniform.LightIndex.spotLights + 32 + 32 * this.lightIndex),
+            new Float32Array([...direction.array, this.focus]))
 
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.spotLights+32*this.lightIndex), new Float32Array(this.globalPosition))
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.spotLights+16+32*this.lightIndex), new Float32Array(this.color))
-        this.gpu.device.queue.writeBuffer(this.gpu.lightBuffer, (Uniform.LightIndex.spotLights+32+32*this.lightIndex), new Float32Array([...this.direction.array, this.focus]))
-        
         this.CallInChildren("Render", pass)
     }
 }

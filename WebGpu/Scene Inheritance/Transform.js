@@ -63,18 +63,22 @@ export class Transform {
         this._readyPromise = this._initializedWhenReady();
     }
 
+    /**@return Vector3*/
     get scale(){
         return this._scale;
     }
 
+    /**@return Vector3*/
     get rotation() {
         return this._rotation;
     }
 
+    /**@return Vector3*/
     get position() {
         return this._position;
     }
 
+    /**@return Vector3*/
     set scale(scale) {
         this._scale = scale;
         this.markDirty();

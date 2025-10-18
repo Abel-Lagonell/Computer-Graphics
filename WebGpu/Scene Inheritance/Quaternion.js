@@ -2,23 +2,23 @@
 import {Logger} from "../Logger.js";
 
 export class Quaternion {
-    static get Identity () {
-        return new Quaternion(1,0,0,0)
-    }   
-    
-    constructor(w=1,x=0,y=0,z=0) {
+    static get Identity() {
+        return new Quaternion(1, 0, 0, 0)
+    }
+
+    constructor(w = 1, x = 0, y = 0, z = 0) {
         this.w = w;
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
-    get array(){
+    get array() {
         return [this.w, this.x, this.y, this.z];
     }
 
     /**
-     * 
+     *
      * @param euler : Vector3
      * @returns {Quaternion}
      */
@@ -35,10 +35,10 @@ export class Quaternion {
             sx * cy * cz - cx * sy * sz,
             cx * sy * cz + sx * cy * sz,
             cx * cy * sz - sx * sy * cz
-        ); 
+        );
     }
 
-    rotateVector(vec) {
+    rotateVector(vec, print = false) {
         // Convert vector to quaternion (w=0, x=vec.x, y=vec.y, z=vec.z)
         const vecQuat = new Quaternion(0, vec.x, vec.y, vec.z);
 
@@ -48,12 +48,13 @@ export class Quaternion {
         // Perform q * v * q^-1
         const result = this.multiply(vecQuat).multiply(conjugate);
 
-        Logger.continuousLog(
-            Logger.QuatLog(this) +
-            Logger.QuatLog(conjugate)+
-            Logger.QuatLog(vecQuat) +
-            Logger.QuatLog(result)
-        )
+        if (print)
+            Logger.continuousLog(
+                Logger.QuatLog(this, {prefix: "Our Quaternion"}) +
+                Logger.QuatLog(vecQuat, {prefix: "Vector"}) +
+                Logger.QuatLog(conjugate, {prefix: "Conjugate"}) +
+                Logger.QuatLog(result, {prefix: "Result"})
+            )
 
         // Return as Vector3 (ignore w component which should be ~0)
         return new Vector3(result.x, result.y, result.z);
@@ -62,7 +63,7 @@ export class Quaternion {
     /**
      * @returns {Vector3}
      */
-    get Euler(){
+    get Euler() {
         // Roll (x-axis rotation)
         const sinr_cosp = 2 * (this.w * this.x + this.y * this.z);
         const cosr_cosp = 1 - 2 * (this.x * this.x + this.y * this.y);
@@ -90,9 +91,9 @@ export class Quaternion {
         const w2 = w * w, x2 = x * x, y2 = y * y, z2 = z * z;
 
         return math.matrix([
-            [1 - 2*(y2 + z2), 2*(x*y - w*z), 2*(x*z + w*y), 0],
-            [2*(x*y + w*z), 1 - 2*(x2 + z2), 2*(y*z - w*x), 0],
-            [2*(x*z - w*y), 2*(y*z + w*x), 1 - 2*(x2 + y2), 0],
+            [1 - 2 * (y2 + z2), 2 * (x * y - w * z), 2 * (x * z + w * y), 0],
+            [2 * (x * y + w * z), 1 - 2 * (x2 + z2), 2 * (y * z - w * x), 0],
+            [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x2 + y2), 0],
             [0, 0, 0, 1]
         ]);
     }

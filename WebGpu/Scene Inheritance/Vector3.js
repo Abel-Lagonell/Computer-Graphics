@@ -1,11 +1,19 @@
 ﻿export class Vector3 {
+    /**[1,1,1]*/
     static One = new Vector3(1, 1, 1);
+    /**[0,0,0]*/
     static Zero = new Vector3(0,0,0);
+    /**[0,1,0]*/
     static Up = new Vector3(0,1,0);
+    /**[0,-1,0]*/
     static Down = new Vector3(0,-1,0);
+    /**[1,0,0]*/
     static Right = new Vector3(1,0,0);
+    /**[-1,0,0]*/
     static Left = new Vector3(-1,0,0);
+    /**[0,0,-1]*/
     static Forward = new Vector3(0,0,-1);
+    /**[0,0,1]*/
     static Backward = new Vector3(0,0,1);
     
     /**

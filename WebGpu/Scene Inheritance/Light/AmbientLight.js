@@ -11,27 +11,20 @@ export class AmbientLight extends Transform {
             color = [1, 1, 1, 0.5]
         } = options;
         
-        if (options === {}) 
-            options ={
-            name: name,
-                color: color,
-            }
-
         super(name, options);
+        this.color = color;
 
-        if (AmbientLight.Instance !== null)
-            return;
-        
-        this.lightColor = color;
+        if (AmbientLight.Instance === null){
+            AmbientLight.Instance = this;
+            this.SetBuffer()
+        }
 
-        this.SetBuffer();
     }
 
     SetBuffer() {
-        AmbientLight.Instance = this;
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
             Uniform.LightIndex.ambientColor,
-            new Float32Array(this.lightColor));
+            new Float32Array(this.color));
     }
 }

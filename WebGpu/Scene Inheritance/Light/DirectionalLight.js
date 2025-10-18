@@ -9,37 +9,35 @@ export class DirectionalLight extends AmbientLight {
 
         const {
             name = "DirectionalLight",
-            color = [1, 1, 1, 10],
-            direction = new Vector3(-1, -1, 2)
+            color = [1, 1, 1, 1],
+            rotation = new Vector3(-Math.PI / 4, Math.PI, 0)
         } = options;
 
-        
-        super({name: name,  color: color, direction: direction});
-        
-        if (DirectionalLight.Instance)
-            return;
-        this.lightDirection = direction;
+        super({...options, name: name, color: color, rotation: rotation});
 
-        this.SetBuffer();
+        if (DirectionalLight.Instance === null) {
+            DirectionalLight.Instance = this;
+            this.SetBuffer();
+        }
     }
 
     SetBuffer() {
-        DirectionalLight.Instance = this;
+        const direction = this.quaternion.rotateVector(Vector3.Forward)
 
         // Only bind directional light data
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
             Uniform.LightIndex.directionalLight,
-            new Float32Array(this.lightDirection));
+            new Float32Array(direction));
 
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
             Uniform.LightIndex.directionalLight + 16,
-            new Float32Array(this.lightColor));
+            new Float32Array(this.color));
     }
 
     static getDirectionalLightMatrix() {
-        const lightDir = this.Instance?.lightDirection?.normalize() || new Vector3(-1, -1, 2).normalize();
+        const lightDir = this.Instance?.position?.normalize() || new Vector3(-1, -1, 2).normalize();
         const lightPos = lightDir.scale(-30);
 
         const target = new Vector3(0, 0, 0);
@@ -61,10 +59,10 @@ export class DirectionalLight extends AmbientLight {
         const far = 5000;
 
         const projectionMatrix = math.matrix([
-            [1/size, 0, 0, 0],
-            [0, 1/size, 0, 0],
-            [0, 0, 2/(far-near), 0],
-            [0, 0, -(far+near)/(far-near), 1]
+            [1 / size, 0, 0, 0],
+            [0, 1 / size, 0, 0],
+            [0, 0, 2 / (far - near), 0],
+            [0, 0, -(far + near) / (far - near), 1]
         ]);
 
         return math.multiply(viewMatrix, projectionMatrix);

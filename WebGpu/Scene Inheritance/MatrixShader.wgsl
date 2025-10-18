@@ -133,8 +133,8 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     let shadow = calculateShadow(fsInput.lightSpacePos);
 
     var intensity = simpleLight.dirLight.color.w;
-    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity * shadow;
-    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) * shadow ;
+    diffusePower += simpleLight.dirLight.color.xyz * IL * intensity ;
+    specPower +=  fsInput.spec.xyz * IS * (intensity *0.1) ;
 
     //Point Lights
     for (var i =0u; i < pointEnd; i++){
@@ -156,7 +156,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     for (var i =0u; i < spotEnd; i++){
         spotLight = simpleLight.spotLights[i];
         light = spotLight.light;
-            
+
         l = (light.vector4 - fsInput.worldSpace).xyz;
         attenuation = 0.1 + 1.0 / (length(l) * length(l));
             
