@@ -226,7 +226,7 @@ export class WebGPU {
             colorAttachments: [{
                 view: this.context.getCurrentTexture().createView(),
                 loadOp: "clear",
-                clearValue: {r: 1, g: 1, b: 1, a: 1},
+                clearValue: {r: 0.1, g: 0.1, b: 0.1, a: 1},
                 storeOp: "store",
             }],
             depthStencilAttachment: {
