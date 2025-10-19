@@ -43,7 +43,7 @@ struct Material { //48 bytes
 
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
-@group(0) @binding(2) var<uniform> materials: array<Material, 10>;
+@group(0) @binding(2) var<uniform> materials: array<Material, 20>;
 
 @vertex
 fn vertexMain(

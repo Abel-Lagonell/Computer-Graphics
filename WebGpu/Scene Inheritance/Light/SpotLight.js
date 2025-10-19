@@ -40,15 +40,15 @@ export class SpotLight extends PointLight {
 
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
-            (Uniform.LightIndex.spotLights + 32 * this.lightIndex),
+            (Uniform.LightIndex.spotLights + 48 * this.lightIndex),
             new Float32Array(this.globalPosition))
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
-            (Uniform.LightIndex.spotLights + 16 + 32 * this.lightIndex),
+            (Uniform.LightIndex.spotLights + 16 + 48 * this.lightIndex),
             new Float32Array(this.color))
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,
-            (Uniform.LightIndex.spotLights + 32 + 32 * this.lightIndex),
+            (Uniform.LightIndex.spotLights + 32 + 48 * this.lightIndex),
             new Float32Array([...direction.array, this.focus]))
 
         this.CallInChildren("Render", pass)

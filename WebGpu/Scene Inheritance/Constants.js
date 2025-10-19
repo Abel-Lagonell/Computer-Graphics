@@ -11,10 +11,10 @@
         ambientColor: 16,
         directionalLight: 32,
         pointLights: 64,
-        spotLights: 384,
+        spotLights: 64+32*10,
     })
 
-    static MaterialBuffer = 48*10;
+    static MaterialBuffer = 48*20;
 
     static Material = 48;
 

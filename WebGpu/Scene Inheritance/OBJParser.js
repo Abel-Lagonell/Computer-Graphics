@@ -27,7 +27,7 @@ export class Material {
         if (this.tracked) return this.materialIndex;
 
         this.materialIndex = gpu.currentMaterial;
-        if (this.materialIndex === 9)
+        if (this.materialIndex === 19)
             return -1;
 
         const material = new Float32Array([
@@ -131,7 +131,7 @@ export class OBJ {
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
             for (let face of faces) {
-                for (let i = 1; i < face.length - 2; i++) {
+                for (let i = 1; i < face.length - 1; i++) {
                     materialIndex.push(this.materialReference[materialName].materialIndex)
                 }
             }

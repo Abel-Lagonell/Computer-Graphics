@@ -148,7 +148,7 @@ export class SixAxisController extends Transform {
             if (this.localSpace) {
                 // Transform movement vector by object's rotation
                 const rotatedMovement = this.quaternion.rotateVector(movement);
-                this.position = this.position.add(rotatedMovement.scale(this.gpu.deltaTime));
+                this.position = this.position.add(rotatedMovement);
             } else {
                 // World space movement
                 this.position = this.position.add(movement.scale(this.gpu.deltaTime));
