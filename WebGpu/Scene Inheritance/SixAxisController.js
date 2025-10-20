@@ -111,12 +111,8 @@ export class SixAxisController extends Transform {
      * Override Update to handle input
      */
     Update() {
-        this.updateMovement();
-        this.updateRotation();
-        // Logger.continuousLog(
-        //     Logger.QuatLog(this.quaternion) +
-        //     Logger.Vector3Log(this.quaternion.rotateVector(Vector3.fromArray([0,1,0])))
-        // )
+        this.UpdateMovement();
+        this.UpdateRotation();
     }
 
     _Update() {
@@ -124,7 +120,7 @@ export class SixAxisController extends Transform {
         this.Update();
     }
 
-    updateMovement() {
+    UpdateMovement() {
         const movement = new Vector3(0, 0, 0);
         const dt = this.gpu.deltaTime;
 
@@ -147,7 +143,7 @@ export class SixAxisController extends Transform {
 
             if (this.localSpace) {
                 // Transform movement vector by object's rotation
-                const rotatedMovement = this.quaternion.rotateVector(movement);
+                const rotatedMovement = this.quaternion.rotateVector(movement, true);
                 this.position = this.position.add(rotatedMovement);
             } else {
                 // World space movement
@@ -156,7 +152,7 @@ export class SixAxisController extends Transform {
         }
     }
 
-    updateRotation() {
+    UpdateRotation() {
         const rotation = new Vector3(0, 0, 0);
         const rotSpeed = this.rotateSpeed * this.gpu.deltaTime;
 

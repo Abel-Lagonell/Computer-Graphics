@@ -60,31 +60,48 @@ class Main {
         plane.AddChild(pLight3)
         plane.AddChild(pLight4)
 
+        var currentTime = 0;
         //White Lights
         let pLight5 = new PointLight({
             position: new Vector3(15.5,10,3),
             color: [1,1,1,2],
         });
+        pLight5.Update = () => {
+            currentTime += this.web.deltaTime
+            pLight5.position = new Vector3(15.5, 10 + 5*Math.sin(currentTime), 3)
+        }
 
         let pLight6 = new PointLight({
             position: new Vector3(26.5,10,3),
             color: [1,1,1,2],
         });
+        pLight6.Update = () => {
+            pLight6.position = new Vector3(26.5, 10 + 5*Math.sin(currentTime), 3)
+        }
 
         let pLight7 = new PointLight({
             position: new Vector3(37.5,10,3),
             color: [1,1,1,2],
         });
+        pLight7.Update = () => {
+            pLight7.position = new Vector3(37.5, 10 + 5*Math.sin(currentTime), 3)
+        }
 
         let pLight8 = new PointLight({
             position: new Vector3(4.5,10,3),
             color: [1,1,1,2],
         });
+        pLight8.Update = () => {
+            pLight8.position = new Vector3(4.5, 10 + 5*Math.sin(currentTime), 3)
+        }
 
         let pLight9 = new PointLight({
             position: new Vector3(46,10,3),
             color: [1,1,1,1],
         });
+        pLight9.Update = () => {
+            pLight9.position = new Vector3(46, 10 + 5*Math.sin(currentTime), 3)
+        }
 
         plane.AddChild(pLight5)
         plane.AddChild(pLight6)
