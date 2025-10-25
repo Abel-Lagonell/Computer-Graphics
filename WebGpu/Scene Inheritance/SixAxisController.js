@@ -121,8 +121,8 @@ export class SixAxisController extends Transform {
     }
 
     UpdateMovement() {
-        const movement = new Vector3(0, 0, 0);
-        const dt = this.gpu.deltaTime;
+        let movement = new Vector3(0, 0, 0);
+        const moveSpeed = this.gpu.deltaTime * this.moveSpeed;
 
         // Forward/Backward (W/S)
         if (this.isActionPressed('movement', 'forward')) movement.z += 1;
@@ -138,8 +138,9 @@ export class SixAxisController extends Transform {
 
         if (movement.magnitude() > 0) {
             // Normalize to prevent faster diagonal movement
-            movement.normalize();
-            movement.scale(this.moveSpeed * dt);
+            movement = movement.normalize();
+            movement = movement.scale(moveSpeed);
+            console.log(movement)
 
             if (this.localSpace) {
                 // Transform movement vector by object's rotation
