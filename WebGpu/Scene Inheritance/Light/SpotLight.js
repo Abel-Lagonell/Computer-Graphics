@@ -36,7 +36,7 @@ export class SpotLight extends PointLight {
         this.CalculateMatrix();
         this.CalculateGlobalMatrix();
         pass.setBindGroup(0, this.pLightGroup);
-        const direction = this.quaternion.rotateVector(Vector3.Forward)
+        const direction = this._quaternion.rotateVector(Vector3.Forward)
 
         this.gpu.device.queue.writeBuffer(
             this.gpu.lightBuffer,

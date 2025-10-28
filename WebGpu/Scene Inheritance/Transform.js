@@ -28,7 +28,7 @@ export class Transform {
     scalarVelocity = Vector3.Zero.copy();
 
     _oldPosition = Vector3.Empty();
-    _oldRotation = Vector3.Empty();
+    _oldRotation = Quaternion.Empty();
     _oldScale = Vector3.Empty();
 
     _gpuInitialized = false;
@@ -50,8 +50,8 @@ export class Transform {
         } = options;
 
         this._position = position;
-        this._rotation = rotation;
         this._scale = scale;
+        this._quaternion = Quaternion.fromEuler(rotation);
 
         this.globalTransformMatrix = this.CalculateMatrix();
         this.vertices = new Float32Array([...this._position.array, ...Color.Black]);
@@ -66,12 +66,17 @@ export class Transform {
 
     /**@return Vector3*/
     get rotation() {
-        return this._rotation;
+        return this._quaternion.Euler;
     }
 
     /**@return Vector3*/
     get position() {
         return this._position;
+    }
+    
+    /**@return Quaternion*/
+    get quaternion() {
+        return this._quaternion;
     }
 
     /**@return Vector3*/
@@ -80,13 +85,18 @@ export class Transform {
         this.MarkDirty();
     }
 
-    set rotation(rotation) {
-        this._rotation = rotation;
-        this.MarkDirty();
-    }
-
     set position(position) {
         this._position = position;
+        this.MarkDirty();
+    }
+    
+    set rotation(rotation){
+        this._quaternion = Quaternion.fromEuler(rotation);
+        this.MarkDirty()
+    }
+    
+    set quaternion(quaternion) {
+        this._quaternion = quaternion;
         this.MarkDirty();
     }
 
@@ -121,7 +131,7 @@ export class Transform {
             this.MarkDirty()
         }
 
-        this._rotation = this._rotation.add(this.angularVelocity.scale(this.gpu.deltaTime));
+        this._quaternion = this._quaternion.multiply(Quaternion.fromEuler(this.angularVelocity.scale(this.gpu.deltaTime)))
         this._position = this._position.add(this.linearVelocity.scale(this.gpu.deltaTime));
         this._scale = this._scale.add(this.scalarVelocity.scale(this.gpu.deltaTime));
     }
@@ -388,28 +398,7 @@ export class Transform {
     }
 
     CalculateRotationMatrix() {
-        this._xRotation = math.matrix([
-            [1, 0, 0, 0],
-            [0, Math.cos(this._rotation.x), Math.sin(this._rotation.x), 0],
-            [0, -1* Math.sin(this._rotation.x), Math.cos(this._rotation.x), 0],
-            [0, 0, 0, 1],
-        ])
-
-        this._yRotation = math.matrix([
-            [Math.cos(this._rotation.y), 0, -1* Math.sin(this._rotation.y), 0],
-            [0, 1, 0, 0],
-            [Math.sin(this._rotation.y), 0, Math.cos(this._rotation.y), 0],
-            [0, 0, 0, 1],
-        ])
-
-        this._zRotation = math.matrix([
-            [Math.cos(this._rotation.z), Math.sin(this._rotation.z), 0, 0],
-            [-1* Math.sin(this._rotation.z), Math.cos(this._rotation.z), 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ])
-
-        return math.multiply(this._zRotation, this._yRotation, this._xRotation);
+        return math.transpose(this._quaternion.Matrix);
     }
 
     CheckPositionChanged() {
@@ -422,9 +411,9 @@ export class Transform {
     }
 
     CheckRotationChanged() {
-        if (!this._oldRotation.equals(this._rotation)) {
+        if (!this._oldRotation.equals(this._quaternion)) {
             this.rotationMatrix = this.CalculateRotationMatrix();
-            this._oldRotation = this._rotation.copy();
+            this._oldRotation = this._quaternion.copy();
             return true;
         }
         return false;
@@ -440,13 +429,11 @@ export class Transform {
     }
 
     RotateVector(vec, print) {
-        const quat = Quaternion.fromEuler(this.rotation);
-        const temp = quat.rotateVector(vec);
+        const temp = this._quaternion.rotateVector(vec);
         if (print)
             Logger.continuousLog(
                 Logger.Vector3Log(vec, {prefix: "Input"}) +
                 Logger.Vector3Log(this.rotation, {prefix: "Current Rotation"}) + 
-                Logger.matrixLog(quat.Matrix, {prefix: "Quaternion Matrix"})+
                 Logger.matrixLog(this.rotationMatrix, {prefix: "Rotation Matrix"})+ 
                 Logger.Vector3Log(temp, {prefix: "Output"})
             )

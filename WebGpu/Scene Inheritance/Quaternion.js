@@ -202,4 +202,8 @@ export class Quaternion {
     copy() {
         return new Quaternion(this.w, this.x, this.y, this.z);
     }
+    
+    static Empty() {
+        return new Quaternion(Infinity, Infinity, Infinity, Infinity);
+    }
 }

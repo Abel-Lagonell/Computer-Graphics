@@ -1,6 +1,7 @@
 ﻿import {Transform} from "./Transform.js";
 import {Vector3} from "./Vector3.js";
 import {Logger} from "../Logger.js";
+import {Quaternion} from "./Quaternion.js";
 
 /**
  * 6-Axis controller Transform that responds to keyboard input
@@ -144,10 +145,10 @@ export class SixAxisController extends Transform {
             if (this.localSpace) {
                 // Transform movement vector by object's rotation
                 const rotatedMovement = this.RotateVector(movement);
-                this.position = this.position.add(rotatedMovement);
+                this._position = this._position.add(rotatedMovement);
             } else {
                 // World space movement
-                this.position = this.position.add(movement.scale(this.gpu.deltaTime));
+                this._position = this._position.add(movement);
             }
         }
     }
@@ -155,7 +156,7 @@ export class SixAxisController extends Transform {
     UpdateRotation() {
         const rotation = new Vector3(0, 0, 0);
         const rotSpeed = this.rotateSpeed * this.gpu.deltaTime;
-
+        
         // Pitch (X-axis) - I/K
         if (this.isActionPressed('rotation', 'pitchUp')) rotation.x += rotSpeed;
         if (this.isActionPressed('rotation', 'pitchDown')) rotation.x -= rotSpeed;
@@ -169,7 +170,8 @@ export class SixAxisController extends Transform {
         if (this.isActionPressed('rotation', 'rollRight')) rotation.z -= rotSpeed;
 
         if (rotation.magnitude() > 0) {
-            this.rotation = this.rotation.add(rotation);
+            const addQuat = Quaternion.fromEuler(rotation);
+            this._quaternion = this._quaternion.multiply(addQuat);
         }
     }
 
