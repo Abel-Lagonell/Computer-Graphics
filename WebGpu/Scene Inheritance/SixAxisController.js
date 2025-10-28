@@ -140,11 +140,10 @@ export class SixAxisController extends Transform {
             // Normalize to prevent faster diagonal movement
             movement = movement.normalize();
             movement = movement.scale(moveSpeed);
-            console.log(movement)
 
             if (this.localSpace) {
                 // Transform movement vector by object's rotation
-                const rotatedMovement = this.quaternion.rotateVector(movement, true);
+                const rotatedMovement = this.RotateVector(movement);
                 this.position = this.position.add(rotatedMovement);
             } else {
                 // World space movement
@@ -162,8 +161,8 @@ export class SixAxisController extends Transform {
         if (this.isActionPressed('rotation', 'pitchDown')) rotation.x -= rotSpeed;
 
         // Yaw (Y-axis) - J/L
-        if (this.isActionPressed('rotation', 'yawLeft')) rotation.y += rotSpeed;
-        if (this.isActionPressed('rotation', 'yawRight')) rotation.y -= rotSpeed;
+        if (this.isActionPressed('rotation', 'yawLeft')) rotation.y -= rotSpeed;
+        if (this.isActionPressed('rotation', 'yawRight')) rotation.y += rotSpeed;
 
         // Roll (Z-axis) - O/P
         if (this.isActionPressed('rotation', 'rollLeft')) rotation.z += rotSpeed;

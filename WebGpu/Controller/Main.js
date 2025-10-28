@@ -27,15 +27,22 @@ class Main {
         let camera = new Camera();
         Transform.setCameraReference(camera);
 
-        let cube = await this.parser.parseObj("../Models/", "Cube")
+        let cube = await this.parser.parseObj("../Models/", "Cube");
+        let cube2 = await this.parser.parseObj("../Models/", "Cube");
+        cube2.position = new Vector3(0, 0, 1);
+        cube2.scale = new Vector3(1, 1, 1).scale(.5);
+        cube.AddChild(cube2);
+        
         let controller = new SixAxisController({
             linearSpeed: 1,
-            position: new Vector3(0, 2, -5),
+            position: new Vector3(0, -2, +5),
             rotation: new Vector3(0, Math.PI/4, 0),
         });
-        controller.AddChild(camera);
+        controller.AddChild(cube);
+        
+        // camera.angularVelocity= new Vector3(0, 0.0, 2);
 
-        this.web.AddShape([controller, cube])
+        this.web.AddShape([controller, camera])
     }
 }
 

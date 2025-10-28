@@ -1,9 +1,9 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {Color} from "./Color.js";
-import {Quaternion} from "./Quaternion.js";
 import {WebGPU} from "../WebGPU.js";
 import {Logger} from "../Logger.js";
 import {Uniform} from "./Constants.js";
+import {Quaternion} from "./Quaternion.js";
 //@ts-check
 /** @type {import('mathjs')}*/
 
@@ -30,7 +30,6 @@ export class Transform {
     _oldPosition = Vector3.Empty();
     _oldRotation = Vector3.Empty();
     _oldScale = Vector3.Empty();
-    _oldQuaternion = Quaternion.Identity.copy();
 
     _gpuInitialized = false;
     _globalTransformDirty = true;
@@ -54,9 +53,6 @@ export class Transform {
         this._rotation = rotation;
         this._scale = scale;
 
-        // Initialize quaternion from euler rotation
-        this.quaternion = Quaternion.fromEuler(this._rotation);
-
         this.globalTransformMatrix = this.CalculateMatrix();
         this.vertices = new Float32Array([...this._position.array, ...Color.Black]);
 
@@ -64,7 +60,7 @@ export class Transform {
     }
 
     /**@return Vector3*/
-    get scale(){
+    get scale() {
         return this._scale;
     }
 
@@ -224,10 +220,10 @@ export class Transform {
         const normMatrix = [...math.flatten(normalMatrix).toArray()];
 
         const combinedData = new Float32Array([
-            ...clipMatrix, 
-            ...worldMatrix, 
-            ...normMatrix, 
-            ...cameraPosition, 
+            ...clipMatrix,
+            ...worldMatrix,
+            ...normMatrix,
+            ...cameraPosition,
         ]);
 
         this.gpu.device.queue.writeBuffer(this.uniformBuffer, 0, combinedData);
@@ -253,9 +249,9 @@ export class Transform {
             [xAxis.y, -yAxis.y, zAxis.y, 0],
             [xAxis.z, -yAxis.z, zAxis.z, 0],
             [-xAxis.dot(pos), yAxis.dot(pos), -zAxis.dot(pos), 1]
-        ]); 
+        ]);
     }
-    
+
     async WriteToGPU() {
         // Ensure WebGPU is ready before proceeding
         if (this.gpu) {
@@ -306,8 +302,8 @@ export class Transform {
         }
     }
 
-    get globalPosition(){
-        return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0,3));
+    get globalPosition() {
+        return Vector3.fromArray(math.flatten(math.row(this.globalTransformMatrix, 3)).toArray().slice(0, 3));
     }
 
     get viewMatrix() {
@@ -326,7 +322,7 @@ export class Transform {
                 this.localTransformMatrix,
                 this.parent.globalTransformMatrix,
             );
-            
+
             this.globalNormalMatrix = math.multiply(
                 this.localNormalMatrix,
                 this.parent.globalNormalMatrix,
@@ -360,14 +356,14 @@ export class Transform {
                 this.translateMatrix,
             );
             const invScale = math.matrix([
-                [1/this._scale.x, 0, 0, 0],
-                [0, 1/this._scale.y, 0, 0],
-                [0, 0, 1/this._scale.z, 0],
+                [1 / this._scale.x, 0, 0, 0],
+                [0, 1 / this._scale.y, 0, 0],
+                [0, 0, 1 / this._scale.z, 0],
                 [0, 0, 0, 1],
-            ]); 
-            
+            ]);
+
             this.localNormalMatrix = math.multiply(invScale, this.rotationMatrix);
-            
+
             this.MarkDirty();
         }
         return this.localTransformMatrix;
@@ -391,6 +387,31 @@ export class Transform {
         ]);
     }
 
+    CalculateRotationMatrix() {
+        this._xRotation = math.matrix([
+            [1, 0, 0, 0],
+            [0, Math.cos(this._rotation.x), Math.sin(this._rotation.x), 0],
+            [0, -1* Math.sin(this._rotation.x), Math.cos(this._rotation.x), 0],
+            [0, 0, 0, 1],
+        ])
+
+        this._yRotation = math.matrix([
+            [Math.cos(this._rotation.y), 0, -1* Math.sin(this._rotation.y), 0],
+            [0, 1, 0, 0],
+            [Math.sin(this._rotation.y), 0, Math.cos(this._rotation.y), 0],
+            [0, 0, 0, 1],
+        ])
+
+        this._zRotation = math.matrix([
+            [Math.cos(this._rotation.z), Math.sin(this._rotation.z), 0, 0],
+            [-1* Math.sin(this._rotation.z), Math.cos(this._rotation.z), 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ])
+
+        return math.multiply(this._zRotation, this._yRotation, this._xRotation);
+    }
+
     CheckPositionChanged() {
         if (!this._oldPosition.equals(this._position)) {
             this.translateMatrix = this.CalculateTranslationMatrix();
@@ -402,12 +423,8 @@ export class Transform {
 
     CheckRotationChanged() {
         if (!this._oldRotation.equals(this._rotation)) {
-            // Update quaternion when euler angles change
-            this.quaternion = Quaternion.fromEuler(this._rotation);
-            this.rotationMatrix = this.quaternion.Matrix;
-
+            this.rotationMatrix = this.CalculateRotationMatrix();
             this._oldRotation = this._rotation.copy();
-            this._oldQuaternion = this.quaternion.copy();
             return true;
         }
         return false;
@@ -420,6 +437,21 @@ export class Transform {
             return true;
         }
         return false;
+    }
+
+    RotateVector(vec, print) {
+        const quat = Quaternion.fromEuler(this.rotation);
+        const temp = quat.rotateVector(vec);
+        if (print)
+            Logger.continuousLog(
+                Logger.Vector3Log(vec, {prefix: "Input"}) +
+                Logger.Vector3Log(this.rotation, {prefix: "Current Rotation"}) + 
+                Logger.matrixLog(quat.Matrix, {prefix: "Quaternion Matrix"})+
+                Logger.matrixLog(this.rotationMatrix, {prefix: "Rotation Matrix"})+ 
+                Logger.Vector3Log(temp, {prefix: "Output"})
+            )
+        
+        return temp
     }
 
 }

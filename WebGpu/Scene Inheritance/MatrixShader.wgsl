@@ -74,7 +74,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var material = materials[fsInput.materialIndex];
 
     //Ambient
-    let ambient = simpleLight.ambientColor.xyz * simpleLight.ambientColor.w;
+    let ambient = (simpleLight.ambientColor.xyz * simpleLight.ambientColor.w) * material.ambient;
         
     //Normal
     var N : vec3f = normalize(fsInput.normal).xyz;
