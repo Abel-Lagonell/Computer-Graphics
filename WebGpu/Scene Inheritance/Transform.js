@@ -281,12 +281,17 @@ export class Transform {
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
             });
 
+            // Create bind group with texture support
+            const textureViews = this.gpu.textures.map(tex => tex.createView());
+
             this.bindGroup = this.gpu.device.createBindGroup({
                 layout: this.gpu.pipeline.getBindGroupLayout(0),
                 entries: [
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
-                    {binding: 2, resource: {buffer: this.gpu.materialBuffer}}
+                    {binding: 2, resource: {buffer: this.gpu.materialBuffer}},
+                    {binding: 3, resource: textureViews},
+                    {binding: 4, resource: this.gpu.sampler}
                 ]
             });
 

@@ -73,7 +73,7 @@ export class FreeFormShape {
         return new Float32Array(combinedArray);
     }
 
-    static GetSimpleArray(positions, normals = [], materialIndex = []) {
+    static GetSimpleArray(positions, normals = [], materialIndex = [], textureCoords = []) {
         if (normals.length !== positions.length) {
             var temp = new Array(positions.length);
             normals = temp.fill(normals[0])
@@ -87,6 +87,7 @@ export class FreeFormShape {
             // console.log(Math.floor(i/3)%materialIndex.length);
             combinedArray = combinedArray.concat(materialIndex[Math.floor(i/3)%materialIndex.length]);
             // combinedArray = combinedArray.concat(materialIndex[0])
+            combinedArray = combinedArray.concat(textureCoords[i]);
         }
 
         // console.log(combinedArray);

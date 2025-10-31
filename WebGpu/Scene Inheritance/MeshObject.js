@@ -33,12 +33,13 @@ export class MeshObject extends Transform {
             specExps = [1],
             spec= [Color.Black.slice(0,3)],
             materialIndex = [0],
+            textureCoords = [[0.0,0.0]]
         } = options;
 
 
 
         super(name, {position: position, rotation: rotation, scale: scale});
 
-        this.vertices = FreeFormShape.GetSimpleArray(vertices, normals, materialIndex)
+        this.vertices = FreeFormShape.GetSimpleArray(vertices, normals, materialIndex, textureCoords)
     }
 }

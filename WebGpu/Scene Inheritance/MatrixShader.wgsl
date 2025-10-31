@@ -3,6 +3,7 @@
     @location(1) normal: vec4f,
     @location(2) worldSpace: vec4f,
     @interpolate(flat) @location(3) materialIndex: u32,
+    @location(4) textCoord: vec2f,
 };
 
 struct UniformMatrix{
@@ -44,18 +45,22 @@ struct Material { //48 bytes
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
 @group(0) @binding(2) var<uniform> materials: array<Material, 20>;
+@group(0) @binding(3) var textures: binding_array<texture_2d<f32>, 20>;
+@group(0) @binding(4) var ourSampler: sampler;
 
 @vertex
 fn vertexMain(
     @location(0) position:vec3f, 
     @location(1) normal:vec3f,
     @location(2) material: f32,
+    @location(3) textCoord: vec2f,
 ) -> VertexData {
     var vertex: VertexData;
     vertex.worldSpace = myMatrix.worldSpaceMatrix*vec4f(position, 1.0f);
     vertex.position = myMatrix.clipSpaceMatrix*vec4f(position, 1.0f);
     vertex.normal = myMatrix.normalMatrix*vec4f(normal, 0.0f);
     vertex.materialIndex = u32(material);
+    vertex.textCoord = textCoord;
     return vertex;
 }
 
@@ -72,6 +77,18 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var spotEnd = min(simpleLight.numSpot, 10u);
 
     var material = materials[fsInput.materialIndex];
+    
+    // Determine base color (either from texture or material diffuse)
+    var baseColor: vec3f;
+    if (material.diffuse.x < 0.0) {
+        // Use texture - the negative value encodes the texture index
+        let texIndex = u32(-material.diffuse.x - 1.0);
+        let sampledColor = textureSample(textures[texIndex], ourSampler, fsInput.texCoord);
+        baseColor = sampledColor.rgb;
+    } else {
+        // Use material diffuse color
+        baseColor = material.diffuse;
+    }
 
     //Ambient
     let ambient = (simpleLight.ambientColor.xyz * simpleLight.ambientColor.w) * material.ambient;
@@ -84,36 +101,36 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var V : vec3f = select(vec3<f32>(0.0,0.0,1.0), vRaw, all(vRaw != vec3<f32>(0.0)));
 
     // Directional light
-    var lRaw : vec3f = -normalize(simpleLight.dirLight.vector4.xyz);
-    var L : vec3f = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
+    var lRaw: vec3f = -normalize(simpleLight.dirLight.vector4.xyz);
+    var L: vec3f = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
     
-    var R : vec3f = normalize(2.0 * dot(N, L) * N - L);
+    var R: vec3f = normalize(2.0 * dot(N, L) * N - L);
 
-    var IL : f32 = max(dot(N, L), 0.0);
-    var IS : f32 = pow(max(dot(R, V), 0.0), material.specularExponent);
+    var IL: f32 = max(dot(N, L), 0.0);
+    var IS: f32 = pow(max(dot(R, V), 0.0), material.specularExponent);
 
     var intensity = simpleLight.dirLight.color.w;
     diffusePower += simpleLight.dirLight.color.xyz * IL * intensity;
-    specPower +=  material.specular.xyz * IS * (intensity *0.1);
+    specPower += material.specular.xyz * IS * (intensity * 0.1);
 
-    //Point Lights
-    for (var i =0u; i < pointEnd; i++){
+    // Point Lights
+    for (var i = 0u; i < pointEnd; i++) {
         light = simpleLight.pointLights[i];
-        l = (light.vector4-fsInput.worldSpace).xyz;
-        attenuation = 0.1 + 1.0/(length(l)*length(l));
+        l = (light.vector4 - fsInput.worldSpace).xyz;
+        attenuation = 0.1 + 1.0 / (length(l) * length(l));
         lRaw = normalize(l);
-        L = select(vec3<f32>(0.0,0.0,1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
-        R = normalize( 2*(dot(N,L))*N-L);
+        L = select(vec3<f32>(0.0, 0.0, 1.0), lRaw, any(lRaw != vec3<f32>(0.0)));
+        R = normalize(2.0 * (dot(N, L)) * N - L);
 
-        //Light intensity goes here multiplied
-        IL = max(dot(N,L),0.0)*attenuation;
-        IS = pow(max(dot(R,V),0.0), material.specularExponent)* attenuation;
+        IL = max(dot(N, L), 0.0) * attenuation;
+        IS = pow(max(dot(R, V), 0.0), material.specularExponent) * attenuation;
         intensity = light.color.w;
         diffusePower += (light.color.xyz * IL * intensity);
         specPower += material.specular.xyz * IS * intensity * IL;
     }
     
-    for (var i =0u; i < spotEnd; i++){
+    // Spot Lights
+    for (var i = 0u; i < spotEnd; i++) {
         spotLight = simpleLight.spotLights[i];
         light = spotLight.light;
 
@@ -135,5 +152,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
             specPower += material.specular * IS * intensity * IL;
         }
     }
-    return vec4f(material.diffuse.xyz* (ambient + diffusePower + specPower), 1);
+    
+    // Apply lighting to base color (texture or diffuse)
+    return vec4f(baseColor * (ambient + diffusePower + specPower), material.transparency);
 }
