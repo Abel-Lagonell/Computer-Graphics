@@ -27,18 +27,15 @@ class Main {
         let camera = new Camera();
         Transform.setCameraReference(camera);
 
-        let cube = await this.parser.parseObj("../STARWARS/Textured/", "TestingModel");
+        let cube = await this.parser.parseObj("../STARWARS/Textured/", "WallSection");
 
 
         let controller = new SixAxisController({
-            linearSpeed: 1,
+            linearSpeed: 5,
             position: new Vector3(0, +2, -5),
-            rotation: new Vector3(0, Math.PI/4, 0),
         });
         controller.AddChild(camera);
         
-        // camera.angularVelocity= new Vector3(0, 0.0, 2);
-
         this.web.AddShape([controller, cube])
     }
 }

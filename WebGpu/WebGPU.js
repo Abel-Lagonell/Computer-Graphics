@@ -30,7 +30,7 @@ export class WebGPU {
 
     // Track which layers have been written to
     textureLayersUsed = new Array(20).fill(false);
-    maxTextureSize = 2048; // Maximum texture dimension
+    maxTextureSize = 640; // Maximum texture dimension
 
     constructor() {
         if (WebGPU.Instance === undefined) {

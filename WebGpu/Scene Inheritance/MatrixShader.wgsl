@@ -48,6 +48,13 @@ struct Material { //48 bytes
 @group(0) @binding(3) var textures: texture_2d_array<f32>;
 @group(0) @binding(4) var ourSampler: sampler;
 
+fn repeatTexCoord(coord: vec2f) -> vec2f {
+    var wrapped = fract(coord);
+    let epsilon = 0.001;
+    wrapped = clamp(wrapped, vec2f(epsilon), vec2f(1.0 - epsilon));
+    return wrapped;
+}
+
 @vertex
 fn vertexMain(
     @location(0) position:vec3f, 
@@ -83,12 +90,10 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     // Use texture - the negative value encodes the texture index
     let texIndex = u32(-material.diffuse.x - 1.0);
 
-    //Use Diffuse y and z for the size of the texture and then do math to calculate the exact size of the texture and
-    //  convert the over u and v values to be within the new texture size, keeping in mind that the max size of the
-    //  texture would be 2048 and that the texture would change within actual texture repeat
+    var textCoord = repeatTexCoord(fsInput.textCoord);
+    textCoord = vec2f((textCoord.x*material.diffuse.y)/640, ((1-textCoord.y)*material.diffuse.y)/640);
 
-
-    let sampledColor = textureSample(textures, ourSampler, fsInput.textCoord, texIndex);
+    let sampledColor = textureSample(textures, ourSampler, textCoord, texIndex);
 
     if (material.diffuse.x < 0.0) {
         baseColor = sampledColor.rgb;

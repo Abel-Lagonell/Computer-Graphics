@@ -7,7 +7,6 @@ export class TextureMap {
     tracked = false;
     textureIndex = -1;
     imageUrl = "";
-    gpuTexture = null;
 
     constructor(imageUrl) {
         this.imageUrl = imageUrl;
@@ -36,10 +35,10 @@ export class TextureMap {
 
         try {
             // Load the image
-            const img = await this.LoadImage();
+            this.img = await this.LoadImage();
 
             // Write image to the texture array at the current layer
-            gpu.WriteImageToTextureLayer(img, this.textureIndex);
+            gpu.WriteImageToTextureLayer(this.img, this.textureIndex);
 
             this.tracked = true;
             console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl}`);
@@ -92,8 +91,9 @@ export class Material {
 
             // If texture loaded successfully, set diffuse to indicate texture usage
             if (this.textureIndex >= 0) {
+                let max = Math.max(this.textureMapReference.img.height, this.textureMapReference.img.width);
                 // Use negative texture index in diffuse[0] to signal shader to use texture
-                this.diffuse = [-(this.textureIndex + 1), 0, 0];
+                this.diffuse = [-(this.textureIndex + 1), max, 0];
             }
         }
 
@@ -106,6 +106,7 @@ export class Material {
             this.specularExponent,
         ]);
 
+        
         gpu.device.queue.writeBuffer(
             gpu.materialBuffer,
             Uniform.Material * this.materialIndex,
