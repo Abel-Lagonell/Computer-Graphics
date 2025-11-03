@@ -6,6 +6,8 @@ import {Uniform} from "./Constants.js";
 export class TextureMap {
     tracked = false;
     textureIndex = -1;
+    imageUrl = "";
+    gpuTexture = null;
 
     constructor(imageUrl) {
         this.imageUrl = imageUrl;
@@ -17,49 +19,27 @@ export class TextureMap {
             img.onload = () => resolve(img);
             img.onerror = reject;
             img.src = this.imageUrl;
-        })
+        });
     }
 
     async WriteTextureToBuffer() {
-        const gpu = WebGPU().Instance;
+        const gpu = WebGPU.Instance;
         if (gpu) await gpu.WaitForReady();
         if (this.tracked) return this.textureIndex;
 
         this.textureIndex = gpu.currentTexture;
-        if (this.textureIndex === 19) return -1;
+
+        if (this.textureIndex >= 20) {
+            console.warn(`Texture limit reached (20 max). Skipping texture: ${this.imageUrl}`);
+            return -1;
+        }
 
         try {
             // Load the image
-            const img = await this.loadImage();
+            const img = await this.LoadImage();
 
-            // Create GPU texture
-            this.gpuTexture = gpu.device.createTexture({
-                label: `Texture ${this.textureIndex}`,
-                size: [img.width, img.height, 1],
-                format: 'rgba8unorm',
-                usage: GPUTextureUsage.TEXTURE_BINDING |
-                    GPUTextureUsage.COPY_DST |
-                    GPUTextureUsage.RENDER_ATTACHMENT
-            });
-
-            // Create a canvas to get image data
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, img.width, img.height);
-
-            // Write image data to GPU texture
-            gpu.device.queue.writeTexture(
-                { texture: this.gpuTexture },
-                imageData.data,
-                { bytesPerRow: img.width * 4 },
-                { width: img.width, height: img.height }
-            );
-
-            // Add to GPU's texture array
-            gpu.textures[this.textureIndex] = this.gpuTexture;
+            // Write image to the texture array at the current layer
+            gpu.WriteImageToTextureLayer(img, this.textureIndex);
 
             this.tracked = true;
             console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl}`);
@@ -70,11 +50,6 @@ export class TextureMap {
             console.error(`Failed to load texture: ${this.imageUrl}`, error);
             return -1;
         }
-
-        //Load texture into shader
-        this.tracked = true;
-
-        return gpu.currentTexture++;
     }
 }
 
@@ -93,10 +68,12 @@ export class Material {
     illuminationMode = 0; //illum
     tracked = false;
     materialIndex = -1;
-    /** @type {TextureMap} */
-    textureReference = null;
+    diffuseMap = "";
+    /** @type {TextureMap|null} */
+    textureMapReference = null;
+    textureIndex = -1;
 
-    async WriteMaterialToBuffer() {
+    async WriteMaterialToBuffer(){
         const gpu = WebGPU.Instance;
         if (gpu)
             await gpu.WaitForReady()
@@ -104,13 +81,20 @@ export class Material {
         if (this.tracked) return this.materialIndex;
 
         this.materialIndex = gpu.currentMaterial;
-        if (this.materialIndex === 19)
+        if (this.materialIndex >= 20) {
+            console.warn('Material limit reached (20 max)');
             return -1;
+        }
 
-        if (this.textureReference === null){
-            const textIndex = await this.textureReference.WriteTextureToBuffer();
-            if (textIndex > 0)
-                this.diffuse = [-(textIndex+1),0,0]
+        // Handle texture if present
+        if (this.textureMapReference !== null) {
+            this.textureIndex = await this.textureMapReference.WriteTextureToBuffer();
+
+            // If texture loaded successfully, set diffuse to indicate texture usage
+            if (this.textureIndex >= 0) {
+                // Use negative texture index in diffuse[0] to signal shader to use texture
+                this.diffuse = [-(this.textureIndex + 1), 0, 0];
+            }
         }
 
         const material = new Float32Array([
@@ -126,7 +110,7 @@ export class Material {
             gpu.materialBuffer,
             Uniform.Material * this.materialIndex,
             material
-        )
+        );
 
         this.tracked = true;
 
@@ -167,33 +151,31 @@ export class OBJ {
     }
 
     /**
-     * Returns a flat array of triangle vertices suitable for WebGPU
-     * Each triangle is 3 consecutive vertices (9 numbers total: x1,y1,z1,x2,y2,z2,x3,y3,z3)
-     * @returns {number[][]} Flat array of vertex coordinates
+     * Returns triangle vertices, normals, and texture coordinates
+     * @returns {[number[][], number[][], number[][]]} [vertices, normals, texCoords]
      */
     GetTriangleList() {
         let triangleVertices = [];
         let triangleNormals = [];
-        let triangleTextCoord = [];
+        let triangleTexCoords = [];
 
         for (let materialName in this.materialFaceElements) {
             let faces = this.materialFaceElements[materialName];
 
             for (let face of faces) {
                 // Convert face to triangles (triangulate if needed)
-                // OBJ faces can be triangles (3 vertices) or quads (4 vertices) or polygons
                 for (let i = 1; i < face.length - 1; i++) {
                     // Create triangle: vertex 0, vertex i, vertex i+1
                     let triangle = [face[i + 1], face[i], face[0]];
 
                     for (let vertexIndex of triangle) {
-                        let vertex = this.vertices[vertexIndex[0]]; // vertexIndex[0] is the vertex position index
+                        let vertex = this.vertices[vertexIndex[0]];
                         if (vertex === undefined) {
                             console.log(this.vertices)
                             console.log(vertexIndex[0]);
                             throw Error(`Vertex ISSUE for ${this.name}`);
                         }
-                        triangleVertices.push(vertex); // Push x, y, z
+                        triangleVertices.push(vertex);
 
                         let normal = this.vertexNormals[vertexIndex[2]];
                         if (normal === undefined) {
@@ -202,20 +184,20 @@ export class OBJ {
                             throw Error(`NORMAL ISSUE for ${this.name}`)
                         }
                         triangleNormals.push(normal)
-                        
+
                         let textCoords = this.textureCoordinates[vertexIndex[1]]
                         if (textCoords === undefined) {
                             console.log(this.textureCoordinates);
                             console.log(vertexIndex[1]);
                             throw Error(`Texture ISSUE for ${this.name}`);
-                        } 
-                        triangleTextCoord.push(textCoords);
+                        }
+                        triangleTexCoords.push(textCoords);
                     }
                 }
             }
         }
 
-        return [triangleVertices, triangleNormals, triangleTextCoord];
+        return [triangleVertices, triangleNormals, triangleTexCoords];
     }
 
     GetMaterialIndex() {
@@ -364,7 +346,7 @@ export class OBJParser {
         const parent = new Transform(this.textName);
 
         for (let obj of this.OBJs) {
-            let [vertices, normals, uvs] = obj.GetTriangleList();
+            let [vertices, normals, texCoords] = obj.GetTriangleList();
             let [colors, specs, spec] = obj.GetColorList();
             let mats = obj.GetMaterialIndex();
             const newObj = new MeshObject({
@@ -375,8 +357,7 @@ export class OBJParser {
                 specExp: specs,
                 spec: spec,
                 materialIndex: mats,
-                textureCoords: uvs,
-                
+                textureCoords: texCoords,
             });
             await parent.AddChild(newObj);
         }
@@ -387,10 +368,10 @@ export class OBJParser {
 
     async parseMtl(materialUrl) {
         this.textFile = await this.loadFile(materialUrl);
-        this.parseMtlFile(this.textFile);
+        await this.parseMtlFile(this.textFile);
     }
 
-    parseMtlFile(textFile) {
+    async parseMtlFile(textFile) {
         /** @type {string[]} */
         let lines = textFile.split("\n");
         for (let line of lines) {
@@ -428,7 +409,10 @@ export class OBJParser {
                     this.materials[this.currentMaterial].illuminationMode = +content[0];
                     break;
                 case "map_Kd":
-                    const location = content[0].trim();
+                    const texturePath = this.location + content[0].trim();
+                    this.materials[this.currentMaterial].diffuseMap = content[0];
+
+                    // Create or reuse texture
                     if (!this.textures[content[0]]) {
                         this.textures[content[0]] = new TextureMap(texturePath);
                     }
@@ -437,8 +421,9 @@ export class OBJParser {
             }
         }
 
+        // Write all materials to buffer
         for (let material in this.materials) {
-            this.materials[material].WriteMaterialToBuffer();
+            await this.materials[material].WriteMaterialToBuffer();
         }
     }
 }

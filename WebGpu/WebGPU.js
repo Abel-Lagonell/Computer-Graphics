@@ -23,10 +23,14 @@ export class WebGPU {
     currentMaterial = 0;
     currentTexture = 0;
 
-    /** @type {GPUTexture[]} */
-    textures = [];
+    /** @type {GPUTexture} */
+    textureArray = null;
     /** @type {GPUSampler} */
     sampler = null;
+
+    // Track which layers have been written to
+    textureLayersUsed = new Array(20).fill(false);
+    maxTextureSize = 2048; // Maximum texture dimension
 
     constructor() {
         if (WebGPU.Instance === undefined) {
@@ -115,12 +119,10 @@ export class WebGPU {
         this.canvas = document.querySelector("canvas");
         this.context = this.canvas.getContext("webgpu");
         this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-        this.context.configure(
-            {
-                device: this.device,
-                format: this.presentationFormat
-            }
-        );
+        this.context.configure({
+            device: this.device,
+            format: this.presentationFormat
+        });
         console.log("Created context with device and format");
 
         this.depthTexture = this.device.createTexture({
@@ -136,6 +138,7 @@ export class WebGPU {
 
         console.log("Created Simple Shader!");
 
+        // Updated vertex buffer layout to include texture coordinates
         this.vertexBufferLayout = {
             arrayStride: 4 * 9, // 3-Position, 3-Normal, 1-MatIndex, 2-TexCoord
             attributes: [
@@ -188,11 +191,8 @@ export class WebGPU {
             addressModeV: 'repeat',
         });
 
-        // Initialize placeholder textures array (will be populated as textures load)
-        this.textures = new Array(20).fill(null);
-
-        // Create a default 1x1 white texture for materials without textures
-        this.createDefaultTexture();
+        // Create 2D texture array with 20 layers
+        this.createTextureArray();
 
         this.pipeline = this.device.createRenderPipeline({
             label: "Simple Pipeline",
@@ -236,28 +236,94 @@ export class WebGPU {
         this.isReady = true;
     }
 
-    createDefaultTexture() {
-        // Create a 1x1 white texture as default
-        const defaultTexture = this.device.createTexture({
-            label: 'Default White Texture',
-            size: [1, 1, 1],
+    createTextureArray() {
+        // Create a 2D texture array with 20 layers
+        this.textureArray = this.device.createTexture({
+            label: 'Texture Array',
+            size: [this.maxTextureSize, this.maxTextureSize, 20], // width, height, array layers
             format: 'rgba8unorm',
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+            usage: GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+            dimension: '2d',
         });
 
-        // Write white pixel data
-        const whitePixel = new Uint8Array([255, 255, 255, 255]);
+        // Initialize all layers with white pixels
+        const whitePixel = new Uint8Array(4 * this.maxTextureSize * this.maxTextureSize);
+        for (let i = 0; i < whitePixel.length; i += 4) {
+            whitePixel[i] = 255;     // R
+            whitePixel[i + 1] = 255; // G
+            whitePixel[i + 2] = 255; // B
+            whitePixel[i + 3] = 255; // A
+        }
+
+        // Write white to all layers initially
+        for (let layer = 0; layer < 20; layer++) {
+            this.device.queue.writeTexture(
+                {
+                    texture: this.textureArray,
+                    origin: { x: 0, y: 0, z: layer }
+                },
+                whitePixel,
+                {
+                    bytesPerRow: this.maxTextureSize * 4,
+                    rowsPerImage: this.maxTextureSize
+                },
+                {
+                    width: this.maxTextureSize,
+                    height: this.maxTextureSize,
+                    depthOrArrayLayers: 1
+                }
+            );
+        }
+
+        console.log(`Created texture array with 20 layers (${this.maxTextureSize}x${this.maxTextureSize})`);
+    }
+
+    /**
+     * Write an image to a specific layer of the texture array
+     * @param {HTMLImageElement} image
+     * @param {number} layerIndex
+     */
+    WriteImageToTextureLayer(image, layerIndex) {
+        if (layerIndex < 0 || layerIndex >= 20) {
+            console.error(`Invalid texture layer index: ${layerIndex}`);
+            return;
+        }
+
+        // Create a canvas to get image data and resize if needed
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Determine the size to use (scale down if too large)
+        const size = Math.min(this.maxTextureSize, Math.max(image.width, image.height));
+        canvas.width = size;
+        canvas.height = size;
+
+        // Draw image scaled to fit
+        ctx.drawImage(image, 0, 0, size, size);
+        const imageData = ctx.getImageData(0, 0, size, size);
+
+        // Write to the specific layer
         this.device.queue.writeTexture(
-            { texture: defaultTexture },
-            whitePixel,
-            { bytesPerRow: 4 },
-            { width: 1, height: 1 }
+            {
+                texture: this.textureArray,
+                origin: { x: 0, y: 0, z: layerIndex }
+            },
+            imageData.data,
+            {
+                bytesPerRow: size * 4,
+                rowsPerImage: size
+            },
+            {
+                width: size,
+                height: size,
+                depthOrArrayLayers: 1
+            }
         );
 
-        // Fill all slots with default texture initially
-        for (let i = 0; i < 20; i++) {
-            this.textures[i] = defaultTexture;
-        }
+        this.textureLayersUsed[layerIndex] = true;
+        console.log(`Wrote texture to layer ${layerIndex} (${size}x${size})`);
     }
 
     RenderAll() {

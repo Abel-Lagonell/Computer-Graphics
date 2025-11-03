@@ -191,9 +191,9 @@ export class Transform {
         pass.setBindGroup(0, this.bindGroup)
         this.WriteToBuffer()
         //[x,y,z,nx,ny,nz,mat]
-        if (this.vertexBuffer && this.vertices.length > 7) {
+        if (this.vertexBuffer && this.vertices.length > 9) {
             pass.setVertexBuffer(0, this.vertexBuffer);
-            pass.draw(this.vertices.length / 7);
+            pass.draw(this.vertices.length / 9);
         }
         this.CallInChildren("Render", pass)
     }
@@ -281,21 +281,22 @@ export class Transform {
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
             });
 
-            // Create bind group with texture support
-            const textureViews = this.gpu.textures.map(tex => tex.createView());
-
+            // Create bind group with texture array support
             this.bindGroup = this.gpu.device.createBindGroup({
                 layout: this.gpu.pipeline.getBindGroupLayout(0),
                 entries: [
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
                     {binding: 2, resource: {buffer: this.gpu.materialBuffer}},
-                    {binding: 3, resource: textureViews},
+                    {binding: 3, resource: this.gpu.textureArray.createView({
+                            dimension: '2d-array',
+                            arrayLayerCount: 20
+                        })},
                     {binding: 4, resource: this.gpu.sampler}
                 ]
             });
 
-            if (this.vertices.length > 14) {
+            if (this.vertices.length > 9) {
                 this.vertexBuffer = this.gpu.device.createBuffer({
                     label: this.name,
                     size: this.vertices.byteLength,

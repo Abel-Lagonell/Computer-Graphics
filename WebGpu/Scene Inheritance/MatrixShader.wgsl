@@ -45,7 +45,7 @@ struct Material { //48 bytes
 @group(0) @binding(0) var<uniform> myMatrix: UniformMatrix;
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
 @group(0) @binding(2) var<uniform> materials: array<Material, 20>;
-@group(0) @binding(3) var textures: binding_array<texture_2d<f32>, 20>;
+@group(0) @binding(3) var textures: texture_2d_array<f32>;
 @group(0) @binding(4) var ourSampler: sampler;
 
 @vertex
@@ -78,15 +78,21 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
 
     var material = materials[fsInput.materialIndex];
     
-    // Determine base color (either from texture or material diffuse)
     var baseColor: vec3f;
+
+    // Use texture - the negative value encodes the texture index
+    let texIndex = u32(-material.diffuse.x - 1.0);
+
+    //Use Diffuse y and z for the size of the texture and then do math to calculate the exact size of the texture and
+    //  convert the over u and v values to be within the new texture size, keeping in mind that the max size of the
+    //  texture would be 2048 and that the texture would change within actual texture repeat
+
+
+    let sampledColor = textureSample(textures, ourSampler, fsInput.textCoord, texIndex);
+
     if (material.diffuse.x < 0.0) {
-        // Use texture - the negative value encodes the texture index
-        let texIndex = u32(-material.diffuse.x - 1.0);
-        let sampledColor = textureSample(textures[texIndex], ourSampler, fsInput.texCoord);
         baseColor = sampledColor.rgb;
     } else {
-        // Use material diffuse color
         baseColor = material.diffuse;
     }
 
