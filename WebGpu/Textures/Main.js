@@ -30,6 +30,7 @@ class Main {
         Transform.setCameraReference(camera);
 
         let cube = await this.parser.parseObj("../STARWARS/Textured/", "TestingModel");
+        cube.angularVelocity = new Vector3(0, 1, 0)
 
 
         let controller = new SixAxisController({
