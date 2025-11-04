@@ -46,7 +46,8 @@ struct Material { //48 bytes
 @group(0) @binding(1) var<uniform> simpleLight: LightSystem;
 @group(0) @binding(2) var<uniform> materials: array<Material, 20>;
 @group(0) @binding(3) var textures: texture_2d_array<f32>;
-@group(0) @binding(4) var ourSampler: sampler;
+@group(0) @binding(4) var normals: texture_2d_array<f32>;
+@group(0) @binding(5) var ourSampler: sampler;
 
 fn repeatTexCoord(coord: vec2f) -> vec2f {
     var wrapped = fract(coord);
@@ -86,6 +87,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     var material = materials[fsInput.materialIndex];
     
     var baseColor: vec3f;
+    var normalDir: vec3f;
 
     // Use texture - the negative value encodes the texture index
     let texIndex = u32(-material.diffuse.x - 1.0);
@@ -94,18 +96,22 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     textCoord = vec2f((textCoord.x*material.diffuse.y)/640, ((1-textCoord.y)*material.diffuse.y)/640);
 
     let sampledColor = textureSample(textures, ourSampler, textCoord, texIndex);
+    let normalColor = textureSample(normals, ourSampler, textCoord, texIndex);
 
     if (material.diffuse.x < 0.0) {
         baseColor = sampledColor.rgb;
+        let normalSample = normalColor.xyz * 2.0 - 1.0;
+        normalDir = normalize((myMatrix.normalMatrix * vec4f(normalSample, 0.0)).xyz);
     } else {
         baseColor = material.diffuse;
+        normalDir = fsInput.normal.xyz;
     }
 
     //Ambient
     let ambient = (simpleLight.ambientColor.xyz * simpleLight.ambientColor.w) * material.ambient;
         
     //Normal
-    var N : vec3f = normalize(fsInput.normal).xyz;
+    var N : vec3f = normalize(normalDir).xyz;
     //View
     var v : vec3f = (myMatrix.cameraPosition - fsInput.worldSpace).xyz;
     var vRaw : vec3f = normalize(v);

@@ -10,14 +10,15 @@ export class TextureMap {
 
     constructor(imageUrl) {
         this.imageUrl = imageUrl;
+        console.log(`imageUrl ${imageUrl.slice(0,-4).concat("_normal.jpg")}`);
     }
 
-    async LoadImage() {
+    async LoadImage(imageUrl = this.imageUrl) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
             img.onerror = reject;
-            img.src = this.imageUrl;
+            img.src = imageUrl;
         });
     }
 
@@ -36,9 +37,10 @@ export class TextureMap {
         try {
             // Load the image
             this.img = await this.LoadImage();
+            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"))
 
             // Write image to the texture array at the current layer
-            gpu.WriteImageToTextureLayer(this.img, this.textureIndex);
+            gpu.WriteImageToTextureLayer(this.img, this.normalImg, this.textureIndex);
 
             this.tracked = true;
             console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl}`);

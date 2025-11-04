@@ -23,11 +23,13 @@ class Main {
         await this.web.WaitForReady();
 
         let ambient = new AmbientLight();
-        let direction = new DirectionalLight();
+        let direction = new DirectionalLight({
+            color: [1, 1, 1, 1],
+        });
         let camera = new Camera();
         Transform.setCameraReference(camera);
 
-        let cube = await this.parser.parseObj("../STARWARS/Textured/", "WallSection");
+        let cube = await this.parser.parseObj("../STARWARS/Textured/", "TestingModel");
 
 
         let controller = new SixAxisController({

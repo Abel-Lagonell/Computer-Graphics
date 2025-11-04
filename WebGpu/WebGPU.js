@@ -25,6 +25,8 @@ export class WebGPU {
 
     /** @type {GPUTexture} */
     textureArray = null;
+    /** @type {GPUTexture} */
+    normalTextureArray = null;
     /** @type {GPUSampler} */
     sampler = null;
 
@@ -192,7 +194,8 @@ export class WebGPU {
         });
 
         // Create 2D texture array with 20 layers
-        this.createTextureArray();
+        this.CreateTextureArray();
+        this.CreateNormalTextureArray();
 
         this.pipeline = this.device.createRenderPipeline({
             label: "Simple Pipeline",
@@ -236,7 +239,7 @@ export class WebGPU {
         this.isReady = true;
     }
 
-    createTextureArray() {
+    CreateTextureArray() {
         // Create a 2D texture array with 20 layers
         this.textureArray = this.device.createTexture({
             label: 'Texture Array',
@@ -280,12 +283,56 @@ export class WebGPU {
         console.log(`Created texture array with 20 layers (${this.maxTextureSize}x${this.maxTextureSize})`);
     }
 
+    CreateNormalTextureArray() {
+        this.normalTextureArray = this.device.createTexture({
+            label: "Normal Texture Array",
+            size: [this.maxTextureSize, this.maxTextureSize, 20],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+            dimension: '2d',
+        })
+
+        // Initialize all layers with white pixels
+        const whitePixel = new Uint8Array(4 * this.maxTextureSize * this.maxTextureSize);
+        for (let i = 0; i < whitePixel.length; i += 4) {
+            whitePixel[i] = 0;     // R
+            whitePixel[i + 1] = 0; // G
+            whitePixel[i + 2] = 255; // B
+            whitePixel[i + 3] = 255; // A
+        }
+
+        // Write white to all layers initially
+        for (let layer = 0; layer < 20; layer++) {
+            this.device.queue.writeTexture(
+                {
+                    texture: this.normalTextureArray,
+                    origin: { x: 0, y: 0, z: layer }
+                },
+                whitePixel,
+                {
+                    bytesPerRow: this.maxTextureSize * 4,
+                    rowsPerImage: this.maxTextureSize
+                },
+                {
+                    width: this.maxTextureSize,
+                    height: this.maxTextureSize,
+                    depthOrArrayLayers: 1
+                }
+            );
+        }
+
+        console.log(`Created texture array with 20 layers (${this.maxTextureSize}x${this.maxTextureSize})`);
+    }
+
     /**
      * Write an image to a specific layer of the texture array
      * @param {HTMLImageElement} image
+     * @param {HTMLImageElement} normalImage
      * @param {number} layerIndex
      */
-    WriteImageToTextureLayer(image, layerIndex) {
+    WriteImageToTextureLayer(image, normalImage, layerIndex) {
         if (layerIndex < 0 || layerIndex >= 20) {
             console.error(`Invalid texture layer index: ${layerIndex}`);
             return;
@@ -311,6 +358,27 @@ export class WebGPU {
                 origin: { x: 0, y: 0, z: layerIndex }
             },
             imageData.data,
+            {
+                bytesPerRow: size * 4,
+                rowsPerImage: size
+            },
+            {
+                width: size,
+                height: size,
+                depthOrArrayLayers: 1
+            }
+        );
+
+        ctx.drawImage(normalImage, 0, 0, size, size);
+        const normalImageData = ctx.getImageData(0, 0, size, size);
+
+        // Write to the specific layer
+        this.device.queue.writeTexture(
+            {
+                texture: this.normalTextureArray,
+                origin: { x: 0, y: 0, z: layerIndex }
+            },
+            normalImageData.data,
             {
                 bytesPerRow: size * 4,
                 rowsPerImage: size

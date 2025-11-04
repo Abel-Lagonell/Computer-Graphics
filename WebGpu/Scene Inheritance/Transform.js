@@ -292,7 +292,11 @@ export class Transform {
                             dimension: '2d-array',
                             arrayLayerCount: 20
                         })},
-                    {binding: 4, resource: this.gpu.sampler}
+                    {binding: 4, resource: this.gpu.normalTextureArray.createView({
+                            dimension: '2d-array',
+                            arrayLayerCount: 20
+                        })},
+                    {binding: 5, resource: this.gpu.sampler}
                 ]
             });
 
