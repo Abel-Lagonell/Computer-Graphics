@@ -28,6 +28,8 @@ export class TextureMap {
         if (this.tracked) return this.textureIndex;
 
         this.textureIndex = gpu.currentTexture;
+        let validTexture = -1;
+        let normalTexture = -1;
 
         if (this.textureIndex >= 20) {
             console.warn(`Texture limit reached (20 max). Skipping texture: ${this.imageUrl}`);
@@ -37,20 +39,37 @@ export class TextureMap {
         try {
             // Load the image
             this.img = await this.LoadImage();
-            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"))
 
             // Write image to the texture array at the current layer
-            gpu.WriteImageToTextureLayer(this.img, this.normalImg, this.textureIndex);
+            gpu.WriteImageToTextureLayer(this.img, this.textureIndex);
 
             this.tracked = true;
             console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl}`);
 
-            return gpu.currentTexture++;
+            validTexture = gpu.currentTexture++;
 
         } catch (error) {
             console.error(`Failed to load texture: ${this.imageUrl}`, error);
             return -1;
         }
+
+        try {
+            // Load the image
+            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"))
+
+            // Write image to the texture array at the current layer
+            gpu.WriteImageToTextureLayer(this.normalImg, this.textureIndex, gpu.normalTextureArray);
+
+            console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`);
+
+            normalTexture = 1;
+
+        } catch (error){
+            console.warn(`Failed to load texture: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`, error);
+        }
+
+
+        return [validTexture, normalTexture];
     }
 }
 
@@ -73,6 +92,7 @@ export class Material {
     /** @type {TextureMap|null} */
     textureMapReference = null;
     textureIndex = -1;
+    normalIndex = -1;
 
     async WriteMaterialToBuffer(){
         const gpu = WebGPU.Instance;
@@ -89,13 +109,12 @@ export class Material {
 
         // Handle texture if present
         if (this.textureMapReference !== null) {
-            this.textureIndex = await this.textureMapReference.WriteTextureToBuffer();
+            [this.textureIndex, this.normalIndex] = await this.textureMapReference.WriteTextureToBuffer();
 
             // If texture loaded successfully, set diffuse to indicate texture usage
             if (this.textureIndex >= 0) {
                 let max = Math.max(this.textureMapReference.img.height, this.textureMapReference.img.width);
-                // Use negative texture index in diffuse[0] to signal shader to use texture
-                this.diffuse = [-(this.textureIndex + 1), max, 0];
+                this.diffuse = [-(this.textureIndex + 1), max, this.normalIndex];
             }
         }
 

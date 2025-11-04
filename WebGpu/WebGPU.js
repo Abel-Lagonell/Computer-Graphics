@@ -1,6 +1,4 @@
 ﻿import {Uniform} from "./Scene Inheritance/Constants.js";
-import {PointLight} from "./Scene Inheritance/Light/PointLight.js";
-import {DirectionalLight} from "./Scene Inheritance/Light/DirectionalLight.js";
 
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
@@ -265,7 +263,7 @@ export class WebGPU {
             this.device.queue.writeTexture(
                 {
                     texture: this.textureArray,
-                    origin: { x: 0, y: 0, z: layer }
+                    origin: {x: 0, y: 0, z: layer}
                 },
                 whitePixel,
                 {
@@ -308,7 +306,7 @@ export class WebGPU {
             this.device.queue.writeTexture(
                 {
                     texture: this.normalTextureArray,
-                    origin: { x: 0, y: 0, z: layer }
+                    origin: {x: 0, y: 0, z: layer}
                 },
                 whitePixel,
                 {
@@ -329,10 +327,10 @@ export class WebGPU {
     /**
      * Write an image to a specific layer of the texture array
      * @param {HTMLImageElement} image
-     * @param {HTMLImageElement} normalImage
      * @param {number} layerIndex
+     * @param imageArray : GPUTexture
      */
-    WriteImageToTextureLayer(image, normalImage, layerIndex) {
+    WriteImageToTextureLayer(image, layerIndex, imageArray = this.textureArray) {
         if (layerIndex < 0 || layerIndex >= 20) {
             console.error(`Invalid texture layer index: ${layerIndex}`);
             return;
@@ -354,31 +352,10 @@ export class WebGPU {
         // Write to the specific layer
         this.device.queue.writeTexture(
             {
-                texture: this.textureArray,
-                origin: { x: 0, y: 0, z: layerIndex }
+                texture: imageArray,
+                origin: {x: 0, y: 0, z: layerIndex}
             },
             imageData.data,
-            {
-                bytesPerRow: size * 4,
-                rowsPerImage: size
-            },
-            {
-                width: size,
-                height: size,
-                depthOrArrayLayers: 1
-            }
-        );
-
-        ctx.drawImage(normalImage, 0, 0, size, size);
-        const normalImageData = ctx.getImageData(0, 0, size, size);
-
-        // Write to the specific layer
-        this.device.queue.writeTexture(
-            {
-                texture: this.normalTextureArray,
-                origin: { x: 0, y: 0, z: layerIndex }
-            },
-            normalImageData.data,
             {
                 bytesPerRow: size * 4,
                 rowsPerImage: size

@@ -100,12 +100,17 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
 
     if (material.diffuse.x < 0.0) {
         baseColor = sampledColor.rgb;
+    } else {
+        baseColor = material.diffuse;
+    }
+
+    if (material.diffuse.z == 1){
         let normalSample = normalColor.xyz * 2.0 - 1.0;
         normalDir = normalize((myMatrix.normalMatrix * vec4f(normalSample, 0.0)).xyz);
     } else {
-        baseColor = material.diffuse;
         normalDir = fsInput.normal.xyz;
     }
+
 
     //Ambient
     let ambient = (simpleLight.ambientColor.xyz * simpleLight.ambientColor.w) * material.ambient;
