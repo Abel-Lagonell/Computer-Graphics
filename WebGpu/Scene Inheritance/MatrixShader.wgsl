@@ -105,34 +105,21 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     }
 
 
-    // Compute tangent and bitangent from derivatives
     let pos_dx = dpdx(fsInput.worldSpace.xyz);
-    let pos_dy = dpdy(fsInput.worldSpace.xyz);
-    let tex_dx = dpdx(fsInput.textCoord);
-    let tex_dy = dpdy(fsInput.textCoord);
-            
 
     if (material.diffuse.z == 1){
         // Get normal map sample and convert from [0,1] to [-1,1]
         let normalSample = normalColor.xyz * 2.0 - 1.0;
-            
-        // Build TBN matrix for tangent space to world space transformation
-        let N_geom = normalize(fsInput.normal.xyz);
-            
-        let T = normalize(pos_dx * tex_dy.y - pos_dy * tex_dx.y);
-        let B = normalize(pos_dy * tex_dx.x - pos_dx * tex_dy.x);
-            
-        // Ensure orthogonal tangent
-        let T_ortho = normalize(T - N_geom * dot(N_geom, T));
-        let B_ortho = normalize(B - N_geom * dot(N_geom, B) - T_ortho * dot(T_ortho, B));
-            
-        // Transform normal from tangent space to world space
-        normalDir = normalize(
-            T_ortho * normalSample.x +
-            B_ortho * normalSample.y +
-            N_geom * normalSample.z
-        );
 
+        let N = normalize(fsInput.normal.xyz);
+        let B = normalize(cross(N, pos_dx));
+        let T = normalize(cross(B, N));
+        
+       normalDir = normalize(
+           T * normalSample.x +
+           B * normalSample.y +
+           N * normalSample.z
+       ); 
     } else {
         normalDir = fsInput.normal.xyz;
     }
