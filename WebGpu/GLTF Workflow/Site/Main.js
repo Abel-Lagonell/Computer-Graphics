@@ -1,4 +1,10 @@
-﻿const Type = Object.freeze({
+﻿import {MeshObject} from "../../Scene Inheritance/MeshObject.js";
+import {WebGPU} from "../../WebGPU.js";
+import {Vector3} from "../../Scene Inheritance/Vector3.js";
+import {Camera} from "../../Scene Inheritance/Camera.js";
+import {SixAxisController} from "../../Scene Inheritance/SixAxisController.js";
+
+const Type = Object.freeze({
     "SCALAR": 1,
     "VEC2": 2,
     "VEC3": 3,
@@ -13,8 +19,8 @@ const ComponentType = Object.freeze({
     5121: Uint8Array,
     5122: Int16Array,
     5123: Uint16Array,
-    5125: Int32Array,
-    5126: Uint32Array,
+    5125: Uint32Array,
+    5126: Float32Array,
 })
 
 class Main {
@@ -30,34 +36,58 @@ class Main {
         /** @type {GLTF} */
         this.gltf = JSON.parse(text_gltf);
         console.log(this.gltf);
-        const text_bin = await this.LoadBin("../GLTF/TextureSample.bin");
+        await this.LoadBin("../GLTF/TextureSample.bin");
         while (!this.arrayBuffer) {
             await this.Sleep(200);
         }
-        document.getElementById("log").innerHTML = text_gltf;
 
-        let vec = await this.ArrayGetter(this.arrayBuffer, this.gltf.bufferViews[1].byteLength, this.gltf.bufferViews[1].byteOffset, Type.VEC3, this.gltf.accessors[1].componentType)
+        const parsed = await this.ParseGLTF(this.gltf);
 
-        this.ParseGLTF(this.gltf)
+
+        this.web = new WebGPU;
+        let camera = new Camera();
+        let six = new SixAxisController({
+            linearSpeed: 5,
+            position: new Vector3(0, +2, -5),
+        });
+
+
+        let mesh = new MeshObject({
+            vertices: parsed[0],
+            normals: parsed[1],
+            textureCoords: parsed[2],
+            materialIndex: [0],
+        })
+
+        six.AddChild(camera)
+
+        this.web.AddShape([mesh, six])
+
+        console.log(mesh.vertices);
+
     }
 
     /**
      * @param gltf : GLTF
      * @constructor
      */
-    ParseGLTF(gltf) {
+    async ParseGLTF(gltf) {
         /** @type GLTFScene */
         var defaultScene = gltf.scenes[gltf.scene]
+
+        let arrays = []
 
         for (let node in defaultScene.nodes) {
             for (let mesh in node) {
                 for (let primitive of gltf.meshes[mesh].primitives) {
                     for (const key in primitive.attributes){
-                        console.log(gltf.accessors[primitive.attributes[key]]);
+                        arrays.push(await this.AccessorGetter(gltf.accessors[primitive.attributes[key]]));
                     } 
                 } 
             }
         }
+
+        return arrays;
     }
 
     Sleep(ms) {
@@ -86,8 +116,26 @@ class Main {
 
     /** @param accessor : GLTFAccessor */
     async AccessorGetter(accessor){
-        
+        var bufferType = Type[accessor.type]
+        var bufferComponentType = ComponentType[accessor.componentType]
+        var array = new bufferComponentType(this.arrayBuffer)
+        var componentLength = array.byteLength/array.length;
+        var bufferView = this.gltf.bufferViews[accessor.bufferView];
+        var bufferLength = bufferView.byteLength/componentLength;
+        var bufferOffset = bufferView.byteOffset/componentLength;
+
+        let result = [];
+        let temp = [];
+        for (let i = bufferOffset; i < bufferOffset + bufferLength; i++) {
+            temp[i % bufferType] = array[i];
+            if (temp.length === bufferType) {
+                result.push(temp);
+                temp = []
+            }
+        }
+        return result
     }
+
     
     async ArrayGetter(buffer, bufferLength, bufferOffset, type, componentType) {
         console.log(bufferLength, bufferOffset);

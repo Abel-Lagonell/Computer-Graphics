@@ -49,7 +49,7 @@ export class WebGPU {
 
     async initialize() {
         try {
-            this.shaderCode = await this.loadWGSLShader("../Scene Inheritance/MatrixShader.wgsl");
+            this.shaderCode = await this.loadWGSLShader("../../Scene Inheritance/MatrixShader.wgsl");
             await this.SetUpGPU();
             this.isReady = true;
             console.log("WebGPU fully initialized");
