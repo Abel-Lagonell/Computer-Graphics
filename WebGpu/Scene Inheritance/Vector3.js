@@ -176,4 +176,15 @@
     equals(other){
         return (this.x === other.x) && (this.y === other.y) && (this.z === other.z);     
     }
+
+    /**
+     * @param start : Vector3
+     * @param end : Vector3
+     * @param amt : number
+     * @returns {Vector3}
+     * @constructor
+     */
+    static Lerp(start, end, amt) {
+        return start.scale(1-amt).add(end.scale(amt));
+    }
 }

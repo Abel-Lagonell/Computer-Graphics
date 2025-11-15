@@ -124,6 +124,7 @@ export class Transform {
 
     _Update() {
         this.PhysicsUpdate();
+        this.Update()
         this.CallInChildren("Update")
         this.CallInChildren("_Update")
     }
@@ -452,7 +453,13 @@ export class Transform {
         return false;
     }
 
-    RotateVector(vec, print) {
+    /**
+     * @param vec : Vector3
+     * @param print : boolean
+     * @returns {Vector3}
+     * @constructor
+     */
+    RotateVector(vec, print = false) {
         const temp = this._quaternion.rotateVector(vec);
         if (print)
             Logger.continuousLog(

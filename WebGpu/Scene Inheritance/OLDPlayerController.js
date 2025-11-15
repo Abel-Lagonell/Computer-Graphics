@@ -1,7 +1,7 @@
 ﻿import {Vector3} from "./Vector3.js";
 import {MeshObject} from "./MeshObject.js";
 
-export class PlayerController extends MeshObject {
+export class OLDPlayerController extends MeshObject {
     constructor(name, vertices, color, position, rotation, scale) {
         super({name: name, vertices: vertices, color: color, position: position, rotation: rotation, scale:scale});
     }

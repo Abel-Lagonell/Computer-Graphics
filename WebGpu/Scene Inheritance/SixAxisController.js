@@ -116,11 +116,6 @@ export class SixAxisController extends Transform {
         this.UpdateRotation();
     }
 
-    _Update() {
-        super._Update();
-        this.Update();
-    }
-
     UpdateMovement() {
         let movement = new Vector3(0, 0, 0);
         const moveSpeed = this.gpu.deltaTime * this.moveSpeed;
