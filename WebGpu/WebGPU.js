@@ -16,6 +16,9 @@ export class WebGPU {
      * @type {Transform[]}
      */
     shapes = [];
+
+    total= 0;
+    registeredShapes = {};
     currentPointLight = 0;
     currentSpotLight = 0;
     currentMaterial = 0;
@@ -80,8 +83,17 @@ export class WebGPU {
         await this.WaitForReady();
         for (let shape of shapes) {
             this.shapes.push(shape);
+            await this.RegisterTransform(shape);
             await shape.WriteToGPU();
         }
+    }
+
+    async RegisterTransform(transform){
+        if (transform.ID !== -1) return transform.ID;
+
+        this.registeredShapes[this.total] = transform;
+        transform.ID = this.total;
+        this.total++;
     }
 
     async SlowStart() {

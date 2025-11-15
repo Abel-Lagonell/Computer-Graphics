@@ -25,7 +25,7 @@ export class TextureMap {
     async WriteTextureToBuffer() {
         const gpu = WebGPU.Instance;
         if (gpu) await gpu.WaitForReady();
-        if (this.tracked) return this.textureIndex;
+        if (this.tracked) return [this.textureIndex, this.normalIndex];
 
         this.textureIndex = gpu.currentTexture;
         let validTexture = -1;
@@ -33,7 +33,7 @@ export class TextureMap {
 
         if (this.textureIndex >= 20) {
             console.warn(`Texture limit reached (20 max). Skipping texture: ${this.imageUrl}`);
-            return -1;
+            return [-1, -1];
         }
 
         try {
@@ -46,29 +46,31 @@ export class TextureMap {
             this.tracked = true;
             console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl}`);
 
-            validTexture = gpu.currentTexture++;
+            validTexture = this.textureIndex;
+            gpu.currentTexture++;
 
         } catch (error) {
             console.error(`Failed to load texture: ${this.imageUrl}`, error);
-            return -1;
+            return [-1, -1];
         }
 
         try {
-            // Load the image
-            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"))
+            // Load the normal map
+            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"));
 
-            // Write image to the texture array at the current layer
+            // Write normal map to the same texture layer in the normal texture array
             gpu.WriteImageToTextureLayer(this.normalImg, this.textureIndex, gpu.normalTextureArray);
 
-            console.log(`Loaded texture ${this.textureIndex}: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`);
+            console.log(`Loaded normal texture ${this.textureIndex}: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`);
 
             normalTexture = 1;
 
-        } catch (error){
-            console.warn(`Failed to load texture: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`, error);
+        } catch (error) {
+            console.warn(`Failed to load normal texture: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`, error);
+            normalTexture = -1;
         }
 
-
+        this.normalIndex = normalTexture;
         return [validTexture, normalTexture];
     }
 }
