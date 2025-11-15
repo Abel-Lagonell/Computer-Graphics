@@ -16,6 +16,8 @@ import {Quaternion} from "./Quaternion.js";
 
 export class Transform {
 
+    ID = -1;
+    totalChildren = 0;
     /** @type {Transform|null} */
     parent = null;
     /** @type {Transform[]} */
@@ -155,6 +157,7 @@ export class Transform {
         }
 
         for (let child of this.children) {
+            if (child === null) continue;
             try {
                 if (child && typeof child[funcName] === 'function') {
                     child[funcName](...parameters);
@@ -177,9 +180,19 @@ export class Transform {
             await this.gpu.WaitForReady();
         }
 
+        await this.gpu.RegisterTransform(child);
         await child.WriteToGPU()
         child.parent = this;
         child.MarkDirty(); // Child's global transform needs recalculation
+    }
+
+    async RemoveChild(badChild){
+        for (let i =0; i < this.children.length; i++) {
+            if (this.children[i] === badChild){
+                badChild.parent = null;
+                this.children[i] = null;
+            }
+        }
     }
 
     /**
@@ -315,6 +328,7 @@ export class Transform {
 
             // Initialize children
             for (let child of this.children) {
+                if (child === null) continue;
                 await child.WriteToGPU();
             }
         } catch (error) {
