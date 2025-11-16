@@ -189,12 +189,11 @@ export class Quaternion {
      * @returns {boolean}
      */
     equals(other, epsilon = 1e-6) {
-        const dot = this.w * other.w + this.x * other.x + this.y * other.y + this.z * other.z;
-        return Math.abs(Math.abs(dot) - 1) < epsilon;
+        return Math.abs(Math.abs(this.dot(other)) - 1) < epsilon;
     }
 
     normalize() {
-        const length = Math.sqrt(this.w * this.w + this.x * this.x + this.y * this.y + this.z * this.z);
+        const length = Math.sqrt(this.dot(this));
         if (length === 0) return Quaternion.Identity;
         return new Quaternion(this.w / length, this.x / length, this.y / length, this.z / length);
     }
@@ -205,5 +204,31 @@ export class Quaternion {
     
     static Empty() {
         return new Quaternion(Infinity, Infinity, Infinity, Infinity);
+    }
+
+    dot(other) {
+        return this.w * other.w + this.x * other.x + this.y * other.y + this.z * other.z;
+    }
+
+    negate() {
+        return new Quaternion(-this.w, -this.x, -this.y, -this.z);
+    }
+
+    static Lerp(start, end, amt){
+        const l2 = start.dot(end);
+        if (l2 < 0)
+            end = end.negate();
+
+        let result = Quaternion.Identity;
+
+        result.x = start.x - amt * (start.x - end.x);
+        result.y = start.y - amt * (start.y - end.y);
+        result.z = start.z - amt * (start.z - end.z);
+        result.w = start.w - amt * (start.w - end.w);
+        return result;
+    }
+
+    Lerp(other, amt){
+        return Quaternion.Lerp(this, other, amt);
     }
 }

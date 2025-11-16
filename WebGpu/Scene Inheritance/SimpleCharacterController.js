@@ -2,6 +2,8 @@
 import {Vector3} from "./Vector3.js";
 import {CollisionObject} from "./CollisionObject.js";
 import {Transform} from "./Transform.js";
+import {Logger} from "../Logger.js";
+import {Quaternion} from "./Quaternion.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -10,7 +12,7 @@ export class SimpleCharacterController extends SixAxisController {
             position: position = Vector3.Zero.copy(),
             rotation: rotation = Vector3.Zero.copy(),
             linearSpeed: moveSpeed = 5,
-            angularSpeed: rotateSpeed = 5,
+            mouseSensitivity = 0.1,
         } = options;
 
         super({
@@ -18,7 +20,6 @@ export class SimpleCharacterController extends SixAxisController {
             position: position,
             rotation: rotation,
             linearSpeed: moveSpeed,
-            angularSpeed: rotateSpeed,
             localSpace: true,
         });
 
@@ -28,8 +29,31 @@ export class SimpleCharacterController extends SixAxisController {
         })
 
         this.input = Vector3.Zero.copy();
+        this.mouseDelta = Vector3.Zero.copy();
+        this.hasMouseLock = false;
+        this.mouseSensitivity = mouseSensitivity;
+        this.pitch = 0;
+        this.yaw = 0;
 
         this.AddChild(this.collider);
+    }
+
+    SetupEventListeners() {
+        super.SetupEventListeners();
+
+        document.addEventListener("pointerlockchange", () => {
+            this.hasMouseLock = !this.hasMouseLock;
+        });
+
+        window.addEventListener("mousemove", (ev) => {
+            if (this.hasMouseLock)
+                this.mouseDelta = Vector3.fromArray([ev.movementY, ev.movementX, 0]);
+        });
+
+        this.gpu.canvas.addEventListener("click", (e) => {
+            if (!this.hasMouseLock)
+                this.gpu.canvas.requestPointerLock();
+        })
     }
 
     UpdateMovement() {
@@ -47,15 +71,41 @@ export class SimpleCharacterController extends SixAxisController {
         this.input = this.RotateVector(movement);
     }
 
+    UpdateRotation() {
+        // Track pitch and yaw separately as properties
+        if (!this.pitch) this.pitch = 0;
+        if (!this.yaw) this.yaw = 0;
+
+        // Apply mouse deltas to separate values
+        this.pitch += this.mouseDelta.x * this.mouseSensitivity;
+        this.yaw += this.mouseDelta.y * this.mouseSensitivity;
+
+        if (Math.abs(this.yaw) >= 6.283){
+            this.yaw = 0;
+        }
+
+        // Clamp pitch to prevent flipping
+        this.pitch = Math.max(-75*3.1415/180, Math.min(75*3.1415/180, this.pitch));
+
+        const yawQuat = Quaternion.fromEuler(new Vector3(0, this.yaw, 0));
+        const pitchQuat = Quaternion.fromEuler(new Vector3(this.pitch, 0, 0));
+
+        this.quaternion = this.quaternion.Lerp(yawQuat.multiply(pitchQuat), this.gpu.deltaTime*10);
+
+        this.mouseDelta = Vector3.Zero.copy();
+    }
+
     Update() {
         this.UpdateMovement()
+        this.UpdateRotation()
 
         if (this.input.magnitude() === 0) {
             this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 10);
             return
         }
 
-        let temp = Vector3.Lerp(this.linearVelocity, this.input.scale(this.moveSpeed), this.gpu.deltaTime*2);
+        let temp = Vector3.Lerp(this.linearVelocity, this.input.scale(this.moveSpeed), this.gpu.deltaTime * 2);
+        temp.y = 0;
         // Calculate the proposed new position
         let proposedPosition = this.position.add(temp.scale(this.gpu.deltaTime));
 
