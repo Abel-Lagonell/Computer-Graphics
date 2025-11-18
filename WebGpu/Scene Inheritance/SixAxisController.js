@@ -99,7 +99,7 @@ export class SixAxisController extends Transform {
 
     /**
      * Check if a specific action key is pressed
-     * @param {string} category - 'movement' or 'rotation'
+     * @param {string} category - the category name
      * @param {string} action - The action name
      * @returns {boolean}
      */

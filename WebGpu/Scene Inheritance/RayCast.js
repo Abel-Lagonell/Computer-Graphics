@@ -1,0 +1,72 @@
+﻿import {CollisionObject} from "./CollisionObject.js";
+import {Vector3} from "./Vector3.js";
+import {Logger} from "../Logger.js";
+
+export class RayCast extends CollisionObject {
+    constructor(options = {}) {
+        const {
+            name = "RayCast",
+            length = 10,
+            segmentLength = 0.5,
+            size = 0.5
+        } = options;
+
+        super({...options, bounds: new Vector3(size,0,0), isTrigger: true});
+        this.length = length;
+        this.segmentLength = segmentLength;
+    }
+
+    /**
+     * @param ignoreList : CollisionObject[]
+     * @return {CollisionObject}
+     * @constructor
+     */
+    async SendRC(ignoreList){
+        this.position = this.parent.position.copy();
+        this.quaternion = this.parent.quaternion.copy();
+
+        let remainingLength = this.length;
+        do{
+            const collider = this.CheckIfColliding(ignoreList);
+            if (collider !== null) {
+                this.position = Vector3.Zero.copy();
+                return collider;
+            }
+            remainingLength -= this.segmentLength;
+            const forward = this.quaternion.rotateVector(Vector3.Forward).scale(this.segmentLength);
+            this.position = this.position.add(forward);
+        } while (remainingLength > 0);
+
+        this.position = Vector3.Zero.copy();
+        return null;
+    }
+
+    /**
+     * @param ignoreList : CollisionObject[]
+     * @return {CollisionObject|null}
+     * @constructor
+     */
+    CheckIfColliding(ignoreList){
+        for (let shape in this.gpu.registeredShapes){
+            let obj = this.gpu.registeredShapes[shape];
+            if (obj instanceof CollisionObject && obj.ID !== this.ID){
+                let shouldIgnore = false;
+                for (let collisionObject of ignoreList){
+                    if (collisionObject.ID === obj.ID){
+                        shouldIgnore = true;
+                        break;
+                    }
+                }
+                
+                if (!shouldIgnore) {
+                    console.log(obj.ID)
+                    const isValid = this.LocationValidation(this.position, obj);
+                    if (!isValid) {
+                        return obj;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+}

@@ -1,9 +1,8 @@
 ﻿import {SixAxisController} from "./SixAxisController.js";
 import {Vector3} from "./Vector3.js";
 import {CollisionObject} from "./CollisionObject.js";
-import {Transform} from "./Transform.js";
-import {Logger} from "../Logger.js";
 import {Quaternion} from "./Quaternion.js";
+import {RayCast} from "./RayCast.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -27,6 +26,7 @@ export class SimpleCharacterController extends SixAxisController {
             name: "Player Collision",
             bounds: new Vector3(1, 0, 0),
         })
+        this.rayCast = new RayCast()
 
         this.input = Vector3.Zero.copy();
         this.mouseDelta = Vector3.Zero.copy();
@@ -36,6 +36,13 @@ export class SimpleCharacterController extends SixAxisController {
         this.yaw = 0;
 
         this.AddChild(this.collider);
+        this.AddChild(this.rayCast);
+
+        this.keyMappings['actions'] = {
+            interact: "t"
+        }
+
+        console.log(this.keyMappings);
     }
 
     SetupEventListeners() {
@@ -53,6 +60,11 @@ export class SimpleCharacterController extends SixAxisController {
         this.gpu.canvas.addEventListener("click", (e) => {
             if (!this.hasMouseLock)
                 this.gpu.canvas.requestPointerLock();
+        })
+
+        document.addEventListener("keydown", (e) => {
+            const key = e.key.toLowerCase();
+            this.UpdateActions(key);
         })
     }
 
@@ -80,19 +92,25 @@ export class SimpleCharacterController extends SixAxisController {
         this.pitch += this.mouseDelta.x * this.mouseSensitivity;
         this.yaw += this.mouseDelta.y * this.mouseSensitivity;
 
-        if (Math.abs(this.yaw) >= 6.283){
+        if (Math.abs(this.yaw) >= 6.283) {
             this.yaw = 0;
         }
 
         // Clamp pitch to prevent flipping
-        this.pitch = Math.max(-75*3.1415/180, Math.min(75*3.1415/180, this.pitch));
+        this.pitch = Math.max(-75 * 3.1415 / 180, Math.min(75 * 3.1415 / 180, this.pitch));
 
         const yawQuat = Quaternion.fromEuler(new Vector3(0, this.yaw, 0));
         const pitchQuat = Quaternion.fromEuler(new Vector3(this.pitch, 0, 0));
 
-        this.quaternion = this.quaternion.Lerp(yawQuat.multiply(pitchQuat), this.gpu.deltaTime*10);
+        this.quaternion = this.quaternion.Lerp(yawQuat.multiply(pitchQuat), this.gpu.deltaTime * 10);
 
         this.mouseDelta = Vector3.Zero.copy();
+    }
+
+    async UpdateActions(key){
+        if (key === this.keyMappings['actions']['interact']) {
+            let hit = await this.rayCast.SendRC([this.collider])
+        }
     }
 
     Update() {

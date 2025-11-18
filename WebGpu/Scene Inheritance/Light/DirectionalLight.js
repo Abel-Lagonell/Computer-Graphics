@@ -21,14 +21,14 @@ export class DirectionalLight extends AmbientLight {
         if (DirectionalLight.Instance === null) {
             this.CalculateMatrix()
             this.CalculateGlobalMatrix()
-            this.direction = this.RotateVector(Vector3.Forward)
+            this.direction = this.RotateVector(Vector3.Backward)
             DirectionalLight.Instance = this;
             this.SetBuffer();
         }
     }
 
     SetBuffer() {
-        this.direction = this.RotateVector(Vector3.Forward)
+        this.direction = this.RotateVector(Vector3.Backward)
 
         // Only bind directional light data
         this.gpu.device.queue.writeBuffer(

@@ -1,29 +1,36 @@
 ﻿import {Transform} from "./Transform.js";
 import {Vector3} from "./Vector3.js";
-import {Logger} from "../Logger.js";
 
 export class CollisionObject extends Transform {
     constructor(options = {}) {
         const {
             name = "CollisionObject",
-            position = Vector3.Zero.copy(),
-            rotation = Vector3.Zero.copy(),
-            scale = Vector3.One.copy(),
             bounds = Vector3.Empty().copy(),
+            isTrigger = false,
         } = options;
 
         super(name, {...options});
 
         this.bounds = bounds;
+        this.isTrigger = isTrigger;
     }
 
-    OnTriggerEnter() {
+
+    OnCollisionEnter(otherCollisionObject) {
+        document.dispatchEvent(new CustomEvent("onCollisionEnter", {
+            thisCollisionObject: this,
+            otherCollisionObject: otherCollisionObject,
+        }))
+    };
+
+    OnTriggerEnter(otherCollisionObject) {
+        document.dispatchEvent(new CustomEvent("onCollisionEnter", {
+            thisCollisionObject: this,
+            otherCollisionObject: otherCollisionObject,
+        }))
     }
 
-    OnCollisionEnter() {
-    }
-
-    LocationValidation(position, other){
+    LocationValidation(position, other) {
         return CollisionObject.LocationValidation(position, this, other);
     }
 
@@ -116,6 +123,16 @@ export class CollisionObject extends Transform {
 
         // Restore the original position
         collisionObjectOne.position = originalPosition;
+
+        if (!collides) {
+            if (collisionObjectOne.isTrigger || collisionObjectTwo.isTrigger) {
+                collisionObjectOne.OnTriggerEnter(collisionObjectTwo);
+                collisionObjectTwo.OnTriggerEnter(collisionObjectOne);
+            } else {
+                collisionObjectOne.OnCollisionEnter(collisionObjectTwo);
+                collisionObjectTwo.OnCollisionEnter(collisionObjectOne);
+            }
+        }
 
         // Return true if position is valid (no collision), false if collision detected
         return !collides;
