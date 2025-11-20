@@ -51,7 +51,7 @@ export class RayCast extends CollisionObject {
             let obj = this.gpu.registeredShapes[shape];
             if (obj instanceof CollisionObject && obj.ID !== this.ID){
                 let shouldIgnore = false;
-                for (let collisionObject of ignoreList){
+                for (let collisionObject of Object.keys(ignoreList)){
                     if (collisionObject.ID === obj.ID){
                         shouldIgnore = true;
                         break;
@@ -59,7 +59,6 @@ export class RayCast extends CollisionObject {
                 }
                 
                 if (!shouldIgnore) {
-                    console.log(obj.ID)
                     const isValid = this.LocationValidation(this.position, obj);
                     if (!isValid) {
                         return obj;

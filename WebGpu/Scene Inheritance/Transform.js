@@ -17,7 +17,6 @@ import {Quaternion} from "./Quaternion.js";
 export class Transform {
 
     ID = -1;
-    totalChildren = 0;
     /** @type {Transform|null} */
     parent = null;
     /** @type {Transform[]} */
@@ -79,6 +78,11 @@ export class Transform {
     /**@return Quaternion*/
     get quaternion() {
         return this._quaternion;
+    }
+    
+    /** @return Vector3 */
+    get forward(){
+        return this._quaternion.rotateVector(Vector3.Forward);
     }
 
     /**@return Vector3*/
@@ -181,10 +185,10 @@ export class Transform {
             await this.gpu.WaitForReady();
         }
 
-        await this.gpu.RegisterTransform(child);
         await child.WriteToGPU()
         child.parent = this;
         child.MarkDirty(); // Child's global transform needs recalculation
+        return this.gpu.RegisterTransform(child);
     }
 
     async RemoveChild(badChild){

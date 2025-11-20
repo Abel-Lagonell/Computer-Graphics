@@ -3,21 +3,21 @@ import {Vector3} from "./Vector3.js";
 import {CollisionObject} from "./CollisionObject.js";
 import {Quaternion} from "./Quaternion.js";
 import {RayCast} from "./RayCast.js";
+import {Camera} from "./Camera.js";
+import {Transform} from "./Transform.js";
+import {Logger} from "../Logger.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
         const {
             name: name = "Controller",
-            position: position = Vector3.Zero.copy(),
-            rotation: rotation = Vector3.Zero.copy(),
             linearSpeed: moveSpeed = 5,
             mouseSensitivity = 0.1,
         } = options;
 
         super({
+            ...options,
             name: name,
-            position: position,
-            rotation: rotation,
             linearSpeed: moveSpeed,
             localSpace: true,
         });
@@ -26,7 +26,9 @@ export class SimpleCharacterController extends SixAxisController {
             name: "Player Collision",
             bounds: new Vector3(1, 0, 0),
         })
-        this.rayCast = new RayCast()
+        this.rayCast = new RayCast();
+        this.camera = new Camera();
+        Transform.setCameraReference(this.camera);
 
         this.input = Vector3.Zero.copy();
         this.mouseDelta = Vector3.Zero.copy();
@@ -35,14 +37,41 @@ export class SimpleCharacterController extends SixAxisController {
         this.pitch = 0;
         this.yaw = 0;
 
-        this.AddChild(this.collider);
-        this.AddChild(this.rayCast);
 
         this.keyMappings['actions'] = {
             interact: "t"
         }
 
-        console.log(this.keyMappings);
+        this.SlowStart()
+    }
+    async SlowStart() {
+        if (this.gpu) {
+            await this.gpu.WaitForReady();
+        }
+
+        await this.AddChild(this.collider);
+        await this.AddChild(this.rayCast);
+        await this.AddChild(this.camera);
+
+
+        this.ignorelist = {}
+        this.ignorelist[this.collider.ID] = this.collider;
+    }
+
+    async AddChild(child) {
+        await super.AddChild(child);
+        this.CheckChildCollision(child)
+    }
+
+    /** @param child : Transform */
+    CheckChildCollision(child) {
+        if (child.children.length <= 0)
+            return;
+        for (let grandchild of child.children) {
+            if (grandchild instanceof CollisionObject)
+                this.ignorelist[grandchild.ID] = grandchild;
+            this.CheckChildCollision(grandchild);
+        }
     }
 
     SetupEventListeners() {
@@ -81,41 +110,6 @@ export class SimpleCharacterController extends SixAxisController {
 
         movement = movement.normalize();
         this.input = this.RotateVector(movement);
-    }
-
-    UpdateRotation() {
-        // Track pitch and yaw separately as properties
-        if (!this.pitch) this.pitch = 0;
-        if (!this.yaw) this.yaw = 0;
-
-        // Apply mouse deltas to separate values
-        this.pitch += this.mouseDelta.x * this.mouseSensitivity;
-        this.yaw += this.mouseDelta.y * this.mouseSensitivity;
-
-        if (Math.abs(this.yaw) >= 6.283) {
-            this.yaw = 0;
-        }
-
-        // Clamp pitch to prevent flipping
-        this.pitch = Math.max(-75 * 3.1415 / 180, Math.min(75 * 3.1415 / 180, this.pitch));
-
-        const yawQuat = Quaternion.fromEuler(new Vector3(0, this.yaw, 0));
-        const pitchQuat = Quaternion.fromEuler(new Vector3(this.pitch, 0, 0));
-
-        this.quaternion = this.quaternion.Lerp(yawQuat.multiply(pitchQuat), this.gpu.deltaTime * 10);
-
-        this.mouseDelta = Vector3.Zero.copy();
-    }
-
-    async UpdateActions(key){
-        if (key === this.keyMappings['actions']['interact']) {
-            let hit = await this.rayCast.SendRC([this.collider])
-        }
-    }
-
-    Update() {
-        this.UpdateMovement()
-        this.UpdateRotation()
 
         if (this.input.magnitude() === 0) {
             this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 10);
@@ -197,5 +191,59 @@ export class SimpleCharacterController extends SixAxisController {
                 this.linearVelocity = Vector3.Zero.copy();
             }
         }
+    }
+
+    UpdateRotation() {
+        // Track pitch and yaw separately as properties
+        if (!this.pitch) this.pitch = 0;
+        if (!this.yaw) this.yaw = 0;
+
+        // Apply mouse deltas to separate values
+        this.pitch += this.mouseDelta.x * this.mouseSensitivity;
+        this.yaw += this.mouseDelta.y * this.mouseSensitivity;
+
+        if (Math.abs(this.yaw) >= 6.283) {
+            this.yaw = 0;
+        }
+
+        // Clamp pitch to prevent flipping
+        this.pitch = Math.max(-75 * 3.1415 / 180, Math.min(75 * 3.1415 / 180, this.pitch));
+
+        const yawQuat = Quaternion.fromEuler(new Vector3(0, this.yaw, 0));
+        const pitchQuat = Quaternion.fromEuler(new Vector3(this.pitch, 0, 0));
+
+        this.quaternion = this.quaternion.Lerp(yawQuat.multiply(pitchQuat), this.gpu.deltaTime * 10);
+
+        this.mouseDelta = Vector3.Zero.copy();
+    }
+
+    async UpdateActions(key) {
+        if (key === this.keyMappings['actions']['interact']) {
+            let hit = await this.rayCast.SendRC(this.ignorelist)
+            if (hit === null)
+                return
+
+            let realObject = hit;
+            do {
+                realObject = realObject.parent;
+            } while (!(realObject instanceof Transform) && realObject.parent !== null)
+            
+            //SAMPLE CODE
+            if (realObject.parent === null){
+                delete this.gpu.shapes[realObject.ID];
+            } 
+            await realObject.parent?.RemoveChild(realObject);
+            await this.AddChild(realObject);
+            realObject.scale = Vector3.One.copy().scale(.5)
+            realObject.position = new Vector3(-1, -1, 2)
+            
+            console.log(this.gpu.shapes)
+        }
+    }
+
+    Update() {
+        this.UpdateMovement()
+        this.UpdateRotation()
+
     }
 }
