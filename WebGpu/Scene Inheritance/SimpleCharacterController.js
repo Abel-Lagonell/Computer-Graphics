@@ -42,8 +42,13 @@ export class SimpleCharacterController extends SixAxisController {
             interact: "t"
         }
 
+        this.listener = this.gpu.audioContext.listener;
+        this.SetListenerPosition()
+        this.SetListenerRotation()
+
         this.SlowStart()
     }
+
     async SlowStart() {
         if (this.gpu) {
             await this.gpu.WaitForReady();
@@ -74,6 +79,25 @@ export class SimpleCharacterController extends SixAxisController {
         }
     }
 
+    SetListenerPosition() {
+        this.listener.positionX.value = this.position.x;
+        this.listener.positionY.value = this.position.y;
+        this.listener.positionZ.value = this.position.z;
+    }
+
+    SetListenerRotation() {
+        const forward = this.forward;
+        const up = this.quaternion.rotateVector(Vector3.Up);
+
+        this.listener.forwardX.value = -forward.x;
+        this.listener.forwardY.value = forward.y;
+        this.listener.forwardZ.value = -forward.z;
+
+        this.listener.upX.value = up.x;
+        this.listener.upY.value = up.y;
+        this.listener.upZ.value = up.z;
+    }
+
     SetupEventListeners() {
         super.SetupEventListeners();
 
@@ -89,6 +113,7 @@ export class SimpleCharacterController extends SixAxisController {
         this.gpu.canvas.addEventListener("click", (e) => {
             if (!this.hasMouseLock)
                 this.gpu.canvas.requestPointerLock();
+            document.dispatchEvent(new CustomEvent("playerInteracted"))
         })
 
         document.addEventListener("keydown", (e) => {
@@ -245,5 +270,7 @@ export class SimpleCharacterController extends SixAxisController {
         this.UpdateMovement()
         this.UpdateRotation()
 
+        this.SetListenerPosition();
+        this.SetListenerRotation();
     }
 }

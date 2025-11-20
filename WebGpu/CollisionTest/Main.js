@@ -35,7 +35,15 @@ class Main {
             position: new Vector3(0, +2, -5),
         });
         
-        // let sound = new SpatialSound("./Background_Music.mp3", {autoplay: true, loop: true, maxDistance: 20});
+        let sound = new SpatialSound("./Background_Music.mp3", {
+            // autoplay: true, 
+            loop: true, 
+            maxDistance: 20,
+            coneInnerAngle: 90,
+            coneOuterAngle: 90,
+            coneOuterGain: 0,
+            rotation: new Vector3(0, 3.1415, 0)
+        });
         
         await this.web.AddShape([controller, cube]);
         
