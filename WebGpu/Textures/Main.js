@@ -25,6 +25,7 @@ class Main {
         let ambient = new AmbientLight();
         let direction = new DirectionalLight({
             color: [1, 1, 1, 1],
+            rotation: new Vector3(Math.PI/3, Math.PI, 0)
         });
         let camera = new Camera();
         Transform.setCameraReference(camera);
