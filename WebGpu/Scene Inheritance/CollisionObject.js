@@ -1,5 +1,6 @@
 ﻿import {Transform} from "./Transform.js";
 import {Vector3} from "./Vector3.js";
+import {Logger} from "../Logger.js";
 
 export class CollisionObject extends Transform {
     constructor(options = {}) {
@@ -60,21 +61,21 @@ export class CollisionObject extends Transform {
         if (!isCircle1 && !isCircle2) {
             // Box vs Box collision (AABB)
             const min1 = {
-                x: collisionObjectOne.position.x - bounds1.x / 2,
-                y: collisionObjectOne.position.z - bounds1.y / 2
+                x: collisionObjectOne.globalPosition.x - bounds1.x / 2,
+                y: collisionObjectOne.globalPosition.z - bounds1.y / 2
             };
             const max1 = {
-                x: collisionObjectOne.position.x + bounds1.x / 2,
-                y: collisionObjectOne.position.z + bounds1.y / 2
+                x: collisionObjectOne.globalPosition.x + bounds1.x / 2,
+                y: collisionObjectOne.globalPosition.z + bounds1.y / 2
             };
 
             const min2 = {
-                x: collisionObjectTwo.position.x - bounds2.x / 2,
-                y: collisionObjectTwo.position.z - bounds2.y / 2
+                x: collisionObjectTwo.globalPosition.x - bounds2.x / 2,
+                y: collisionObjectTwo.globalPosition.z - bounds2.y / 2
             };
             const max2 = {
-                x: collisionObjectTwo.position.x + bounds2.x / 2,
-                y: collisionObjectTwo.position.z + bounds2.y / 2
+                x: collisionObjectTwo.globalPosition.x + bounds2.x / 2,
+                y: collisionObjectTwo.globalPosition.z + bounds2.y / 2
             };
 
             collides = (
@@ -86,8 +87,8 @@ export class CollisionObject extends Transform {
             const radius1 = bounds1.x;
             const radius2 = bounds2.x;
 
-            const dx = collisionObjectTwo.position.x - collisionObjectOne.position.x;
-            const dy = collisionObjectTwo.position.z - collisionObjectOne.position.z;
+            const dx = collisionObjectTwo.globalPosition.x - collisionObjectOne.globalPosition.x;
+            const dy = collisionObjectTwo.globalPosition.z - collisionObjectOne.globalPosition.z;
             const distanceSquared = dx * dx + dy * dy;
             const radiusSum = radius1 + radius2;
 
@@ -103,19 +104,19 @@ export class CollisionObject extends Transform {
 
             // Find the closest point on the box to the circle's center
             const boxMin = {
-                x: box.position.x - boxBounds.x / 2,
-                y: box.position.z - boxBounds.y / 2
+                x: box.globalPosition.x - boxBounds.x / 2,
+                y: box.globalPosition.z - boxBounds.y / 2
             };
             const boxMax = {
-                x: box.position.x + boxBounds.x / 2,
-                y: box.position.z + boxBounds.y / 2
+                x: box.globalPosition.x + boxBounds.x / 2,
+                y: box.globalPosition.z + boxBounds.y / 2
             };
 
-            const closestX = Math.max(boxMin.x, Math.min(circle.position.x, boxMax.x));
-            const closestY = Math.max(boxMin.y, Math.min(circle.position.z, boxMax.y));
+            const closestX = Math.max(boxMin.x, Math.min(circle.globalPosition.x, boxMax.x));
+            const closestY = Math.max(boxMin.y, Math.min(circle.globalPosition.z, boxMax.y));
 
-            const dx = circle.position.x - closestX;
-            const dy = circle.position.z - closestY;
+            const dx = circle.globalPosition.x - closestX;
+            const dy = circle.globalPosition.z - closestY;
             const distanceSquared = dx * dx + dy * dy;
 
             collides = distanceSquared < (radius * radius);

@@ -24,7 +24,7 @@ class Main {
             color: [1, 1, 1, 1],
         });
 
-        let cube = await this.parser.parseObj("../STARWARS/Textured/", "TestingModel");
+        let cube = await this.parser.parseObj("../STARWARS/", "Hangar");
         // cube.rotation = new Vector3(0,3.1415/4,0);
         cube.AddChild(new CollisionObject({
             bounds: new Vector3(1.5,2,0)

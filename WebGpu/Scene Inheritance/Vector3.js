@@ -185,6 +185,7 @@
      * @constructor
      */
     static Lerp(start, end, amt) {
+        //(1-t)p0+t*p1
         return start.scale(1-amt).add(end.scale(amt));
     }
 }

@@ -22,18 +22,17 @@ export class RayCast extends CollisionObject {
      * @constructor
      */
     async SendRC(ignoreList){
-        this.position = this.parent.position.copy();
-        this.quaternion = this.parent.quaternion.copy();
-
         let remainingLength = this.length;
         do{
+            this.CalculateMatrix();
+            this.CalculateGlobalMatrix()
             const collider = this.CheckIfColliding(ignoreList);
             if (collider !== null) {
                 this.position = Vector3.Zero.copy();
                 return collider;
             }
             remainingLength -= this.segmentLength;
-            const forward = this.quaternion.rotateVector(Vector3.Forward).scale(this.segmentLength);
+            const forward = this.forward.scale(this.segmentLength);
             this.position = this.position.add(forward);
         } while (remainingLength > 0);
 
@@ -50,15 +49,7 @@ export class RayCast extends CollisionObject {
         for (let shape in this.gpu.registeredShapes){
             let obj = this.gpu.registeredShapes[shape];
             if (obj instanceof CollisionObject && obj.ID !== this.ID){
-                let shouldIgnore = false;
-                for (let collisionObject of Object.keys(ignoreList)){
-                    if (collisionObject.ID === obj.ID){
-                        shouldIgnore = true;
-                        break;
-                    }
-                }
-                
-                if (!shouldIgnore) {
+                if (ignoreList[obj.ID] === undefined) {
                     const isValid = this.LocationValidation(this.position, obj);
                     if (!isValid) {
                         return obj;

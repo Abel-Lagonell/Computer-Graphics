@@ -5,7 +5,7 @@ import {Quaternion} from "./Quaternion.js";
 import {RayCast} from "./RayCast.js";
 import {Camera} from "./Camera.js";
 import {Transform} from "./Transform.js";
-import {Logger} from "../Logger.js";
+import {PickUpAble} from "./PickUpAble.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -17,8 +17,6 @@ export class SimpleCharacterController extends SixAxisController {
 
         super({
             ...options,
-            name: name,
-            linearSpeed: moveSpeed,
             localSpace: true,
         });
 
@@ -37,6 +35,8 @@ export class SimpleCharacterController extends SixAxisController {
         this.pitch = 0;
         this.yaw = 0;
 
+        this.weight = 0;
+        this.value = 0;
 
         this.keyMappings['actions'] = {
             interact: "t"
@@ -70,9 +70,7 @@ export class SimpleCharacterController extends SixAxisController {
 
     /** @param child : Transform */
     CheckChildCollision(child) {
-        if (child.children.length <= 0)
-            return;
-        for (let grandchild of child.children) {
+        for (let grandchild of Object.values(child.children)) {
             if (grandchild instanceof CollisionObject)
                 this.ignorelist[grandchild.ID] = grandchild;
             this.CheckChildCollision(grandchild);
@@ -140,9 +138,10 @@ export class SimpleCharacterController extends SixAxisController {
             this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 10);
             return
         }
-
-        let temp = Vector3.Lerp(this.linearVelocity, this.input.scale(this.moveSpeed), this.gpu.deltaTime * 2);
+        
+        let temp = Vector3.Lerp(this.linearVelocity, this.input.scale(this.Sigmoid(this.weight)), this.gpu.deltaTime * 2);
         temp.y = 0;
+        console.log(this.Sigmoid(this.weight));
         // Calculate the proposed new position
         let proposedPosition = this.position.add(temp.scale(this.gpu.deltaTime));
 
@@ -151,6 +150,7 @@ export class SimpleCharacterController extends SixAxisController {
 
         for (let shape in this.gpu.registeredShapes) {
             let shapeObject = this.gpu.registeredShapes[shape];
+            if (shapeObject instanceof RayCast) continue;
 
             // Check if it's a Collision Object (has bounds property)
             if (shapeObject instanceof CollisionObject && shapeObject.ID !== this.collider.ID) {
@@ -245,6 +245,7 @@ export class SimpleCharacterController extends SixAxisController {
     async UpdateActions(key) {
         if (key === this.keyMappings['actions']['interact']) {
             let hit = await this.rayCast.SendRC(this.ignorelist)
+            console.log(hit)
             if (hit === null)
                 return
 
@@ -252,17 +253,28 @@ export class SimpleCharacterController extends SixAxisController {
             do {
                 realObject = realObject.parent;
             } while (!(realObject instanceof Transform) && realObject.parent !== null)
-            
-            //SAMPLE CODE
-            if (realObject.parent === null){
-                delete this.gpu.shapes[realObject.ID];
-            } 
-            await realObject.parent?.RemoveChild(realObject);
-            await this.AddChild(realObject);
-            realObject.scale = Vector3.One.copy().scale(.5)
-            realObject.position = new Vector3(-1, -1, 2)
-            
-            console.log(this.gpu.shapes)
+
+            console.log(this.weight, this.value)
+            for (let child of Object.values(realObject.children)) {
+                if (child instanceof PickUpAble){
+                    //Add the value to our current total
+                    this.weight += child.weight;
+                    this.value += child.value;
+                    //Delete the object from existence
+                    if (realObject.parent === null) {
+                        delete this.gpu.shapes[realObject.ID];
+                    } else {
+                        delete realObject.parent.children[realObject.ID];
+                    }
+                    this.UnregisterShape(realObject.ID);
+                }
+            }
+        }
+    }
+    
+    UnregisterShape(ID){
+        for (let child of Object.values(this.gpu.registeredShapes[ID].children)) {
+            delete this.gpu.registeredShapes[child.ID];
         }
     }
 
@@ -272,5 +284,19 @@ export class SimpleCharacterController extends SixAxisController {
 
         this.SetListenerPosition();
         this.SetListenerRotation();
+    }
+
+    /**
+     * S Function that goes from Max to Min with the S in the middle determined by the delta
+     * @param input : number x value
+     * @param max : number the max you want to have
+     * @param min : number the min you want to have
+     * @param delta : number how steep the S curve is
+     * @param leeway : number how much to the left or the right does the curve need to be
+     * @return {number} the y value of the sigmoid function
+     * @constructor
+     */
+    Sigmoid(input, max=this.moveSpeed, min=0.15, delta=1, leeway=0){
+        return min+(max-min)/(1+Math.exp(delta*(input-leeway-max)))
     }
 }

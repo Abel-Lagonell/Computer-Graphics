@@ -24,22 +24,22 @@ export class MeshObject extends Transform {
     constructor(options = {}) {
         const {
             name = "MeshObject",
-            position = Vector3.Zero,
-            rotation = Vector3.Zero,
-            scale = Vector3.One,
             vertices = [Vector3.Zero.array],
-            color = [Color.Black],
             normals = [Vector3.Up.array],
-            specExps = [1],
-            spec= [Color.Black.slice(0,3)],
             materialIndex = [0],
-            textureCoords = [[0.0,0.0]]
+            textureCoords = [[0.0, 0.0]],
+            finalVertices = []
         } = options;
-
-
-
-        super(name, {position: position, rotation: rotation, scale: scale});
-
-        this.vertices = FreeFormShape.GetSimpleArray(vertices, normals, materialIndex, textureCoords)
+        
+        super(name, {...options});
+        
+        if (finalVertices instanceof Float32Array)
+            this.vertices = finalVertices
+        else {
+            if (finalVertices.length === 0)
+                this.vertices = FreeFormShape.GetSimpleArray(vertices, normals, materialIndex, textureCoords)
+            else
+                this.vertices = new Float32Array(finalVertices)
+        }
     }
 }

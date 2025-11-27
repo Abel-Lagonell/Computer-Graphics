@@ -19,8 +19,8 @@ export class Transform {
     ID = -1;
     /** @type {Transform|null} */
     parent = null;
-    /** @type {Transform[]} */
-    children = [];
+    /** @type {Object.<number, Transform>} */
+    children = {};
     /** @type {Camera/null}*/
     static cameraReference = null;
 
@@ -74,14 +74,14 @@ export class Transform {
     get position() {
         return this._position;
     }
-    
+
     /**@return Quaternion*/
     get quaternion() {
         return this._quaternion;
     }
-    
+
     /** @return Vector3 */
-    get forward(){
+    get forward() {
         return this._quaternion.rotateVector(Vector3.Forward);
     }
 
@@ -95,12 +95,12 @@ export class Transform {
         this._position = position;
         this.MarkDirty();
     }
-    
-    set rotation(rotation){
+
+    set rotation(rotation) {
         this._quaternion = Quaternion.fromEuler(rotation);
         this.MarkDirty()
     }
-    
+
     set quaternion(quaternion) {
         this._quaternion = quaternion;
         this.MarkDirty();
@@ -157,12 +157,7 @@ export class Transform {
      * @param parameters : any[]
      */
     CallInChildren(funcName, ...parameters) {
-        if (!this.children || this.children.length === 0) {
-            return;
-        }
-
-        for (let child of this.children) {
-            if (child === null) continue;
+        for (let child of Object.values(this.children)) {
             try {
                 if (child && typeof child[funcName] === 'function') {
                     child[funcName](...parameters);
@@ -179,7 +174,6 @@ export class Transform {
      * @param child : Transform
      */
     async AddChild(child) {
-        this.children.push(child);
 
         if (this.gpu) {
             await this.gpu.WaitForReady();
@@ -188,16 +182,26 @@ export class Transform {
         await child.WriteToGPU()
         child.parent = this;
         child.MarkDirty(); // Child's global transform needs recalculation
-        return this.gpu.RegisterTransform(child);
+        await this.gpu.RegisterTransform(child);
+
+        this.children[child.ID] = child;
+        return child.ID;
+
     }
 
-    async RemoveChild(badChild){
-        for (let i =0; i < this.children.length; i++) {
-            if (this.children[i] === badChild){
-                badChild.parent = null;
-                this.children[i] = null;
-            }
+    async RemoveChild(badChild) {
+        if (this.children[badChild.ID] !== undefined) {
+            badChild.parent = null;
+            delete this.children[badChild.ID];
         }
+    }
+    
+    GetChildOfType(type){
+        for (let child of Object.values(this.children)) {
+            if (child instanceof type)
+                return child;
+        }
+        return null;
     }
 
     /**
@@ -306,14 +310,18 @@ export class Transform {
                     {binding: 0, resource: {buffer: this.uniformBuffer}},
                     {binding: 1, resource: {buffer: this.gpu.lightBuffer}},
                     {binding: 2, resource: {buffer: this.gpu.materialBuffer}},
-                    {binding: 3, resource: this.gpu.textureArray.createView({
+                    {
+                        binding: 3, resource: this.gpu.textureArray.createView({
                             dimension: '2d-array',
                             arrayLayerCount: 20
-                        })},
-                    {binding: 4, resource: this.gpu.normalTextureArray.createView({
+                        })
+                    },
+                    {
+                        binding: 4, resource: this.gpu.normalTextureArray.createView({
                             dimension: '2d-array',
                             arrayLayerCount: 20
-                        })},
+                        })
+                    },
                     {binding: 5, resource: this.gpu.sampler}
                 ]
             });
@@ -332,8 +340,7 @@ export class Transform {
             this.WriteToBuffer();
 
             // Initialize children
-            for (let child of this.children) {
-                if (child === null) continue;
+            for (let child of Object.values(this.children)) {
                 await child.WriteToGPU();
             }
         } catch (error) {
@@ -468,12 +475,11 @@ export class Transform {
         if (print)
             Logger.continuousLog(
                 Logger.Vector3Log(vec, {prefix: "Input"}) +
-                Logger.Vector3Log(this.rotation, {prefix: "Current Rotation"}) + 
-                Logger.matrixLog(this.rotationMatrix, {prefix: "Rotation Matrix"})+ 
+                Logger.Vector3Log(this.rotation, {prefix: "Current Rotation"}) +
+                Logger.matrixLog(this.rotationMatrix, {prefix: "Rotation Matrix"}) +
                 Logger.Vector3Log(temp, {prefix: "Output"})
             )
-        
+
         return temp
     }
-
 }

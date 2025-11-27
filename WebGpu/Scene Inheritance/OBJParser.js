@@ -223,6 +223,28 @@ export class OBJ {
 
         return [triangleVertices, triangleNormals, triangleTexCoords];
     }
+    
+    GetFinalVertices(){
+        let verts = [];
+        
+        for (let materialName in this.materialFaceElements) {
+            let faces = this.materialFaceElements[materialName];
+            for (let face of faces) {
+                for (let i = 1; i < face.length - 1; i++) {
+                    let triangle = [face[i + 1], face[i], face[0]];
+                    
+                    for (let vertexIndex of triangle) {
+                        verts = verts.concat(this.vertices[vertexIndex[0]]);
+                        verts = verts.concat(this.vertexNormals[vertexIndex[2]]);
+                        verts.push(this.materialReference[materialName].materialIndex)
+                        verts = verts.concat(this.textureCoordinates[vertexIndex[1]])
+                    }
+                }
+            }
+        }
+     
+        return verts
+    }
 
     GetMaterialIndex() {
         let materialIndex = [];
@@ -235,26 +257,6 @@ export class OBJ {
             }
         }
         return materialIndex;
-    }
-
-    GetColorList() {
-        let colorList = [];
-        let specExpList = [];
-        let specList = [];
-        for (let materialName in this.materialFaceElements) {
-            let faces = this.materialFaceElements[materialName];
-            for (let i in faces) {
-                for (let _ = 0; _ < faces[i].length - 2; _++) {
-                    /** @type {Material} */
-                    let material = this.materialReference[materialName];
-                    let colorArray = material.diffuse.concat(material.transparency);
-                    colorList.push(colorArray)
-                    specExpList.push(material.specularExponent);
-                    specList.push(material.specularColor);
-                }
-            }
-        }
-        return [colorList, specExpList, specList];
     }
 }
 
@@ -370,20 +372,19 @@ export class OBJParser {
         const parent = new Transform(this.textName);
 
         for (let obj of this.OBJs) {
-            let [vertices, normals, texCoords] = obj.GetTriangleList();
-            let [colors, specs, spec] = obj.GetColorList();
-            let mats = obj.GetMaterialIndex();
+            // let [vertices, normals, texCoords] = obj.GetTriangleList();
+            // let mats = obj.GetMaterialIndex();
+            let verts = obj.GetFinalVertices();
             const newObj = new MeshObject({
                 name: obj.name,
-                vertices: vertices,
-                color: colors,
-                normals: normals,
-                specExp: specs,
-                spec: spec,
-                materialIndex: mats,
-                textureCoords: texCoords,
+                // vertices: vertices,
+                // normals: normals,
+                // materialIndex: mats,
+                // textureCoords: texCoords,
+                finalVertices: verts,
             });
             await parent.AddChild(newObj);
+            
         }
 
         return parent;
