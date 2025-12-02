@@ -13,9 +13,12 @@ export class WebGPU {
     static Instance;
 
     /**
-     * @type {Transform[]}
+     * @type {Object.<number, Transform>}
      */
-    shapes = [];
+    shapes = {};
+
+    total = 0;
+    registeredShapes = {};
     currentPointLight = 0;
     currentSpotLight = 0;
     currentMaterial = 0;
@@ -42,9 +45,10 @@ export class WebGPU {
         /**
          * @type {Transform[]}
          */
-        this.shapes = [];
+        this.shapes = {};
         this.deltaTime = 0;
         this.timeSinceLastFrame = performance.now();
+        this.audioContext = new AudioContext();
     }
 
     async initialize() {
@@ -79,20 +83,30 @@ export class WebGPU {
     async AddShape(shapes) {
         await this.WaitForReady();
         for (let shape of shapes) {
-            this.shapes.push(shape);
+            await this.RegisterTransform(shape);
+            this.shapes[shape.ID] = shape;
             await shape.WriteToGPU();
         }
     }
 
+    async RegisterTransform(transform) {
+        if (transform.ID !== -1) return transform.ID;
+
+        this.registeredShapes[this.total] = transform;
+        transform.ID = this.total;
+        this.total++;
+        return transform.ID;
+    }
+
     async SlowStart() {
         // Only start if we have shapes and are ready
-        if (this.shapes.length === 0) {
+        if (this.total === 0) {
             requestAnimationFrame(FrameUpdate);
             return;
         }
 
-        for (let i = 0; i < this.shapes.length; i++) {
-            await this.shapes[i].WriteToGPU();
+        for (let [id, shape] of Object.entries(this.shapes)) {
+            await shape.WriteToGPU();
         }
         this.RenderAll();
         requestAnimationFrame(FrameUpdate);
@@ -100,7 +114,7 @@ export class WebGPU {
 
     UpdateAll() {
         if (!this.isReady) return;
-        for (let shape of this.shapes) {
+        for (let [id, shape] of Object.entries(this.shapes)) {
             shape._Update();
         }
     }
@@ -392,8 +406,8 @@ export class WebGPU {
         });
         this.commandPass.setPipeline(this.pipeline);
 
-        for (let i = 0; i < this.shapes.length; i++) {
-            this.shapes[i].Render(this.commandPass);
+        for (let [id, shape] of Object.entries(this.shapes)) {
+            shape.Render(this.commandPass);
         }
 
         this.commandPass.end();

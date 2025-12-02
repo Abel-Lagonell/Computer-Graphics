@@ -1,11 +1,11 @@
 ﻿import {Color} from "../Scene Inheritance/Color.js";
-import {PlayerController} from "../Scene Inheritance/PlayerController.js";
+import {OLDPlayerController} from "../Scene Inheritance/OLDPlayerController.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 
 class TriangleShip {
     constructor() {
         const web = WebGPU.Instance;
-        const player = new PlayerController(
+        const player = new OLDPlayerController(
             "Simple triangle",
             [[-0.5, -0.5, 0.0],
                 [0.5, -0.5, 0.0],

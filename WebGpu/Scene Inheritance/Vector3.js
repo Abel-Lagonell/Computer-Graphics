@@ -11,10 +11,10 @@
     static Right = new Vector3(1,0,0);
     /**[-1,0,0]*/
     static Left = new Vector3(-1,0,0);
-    /**[0,0,-1]*/
-    static Forward = new Vector3(0,0,-1);
     /**[0,0,1]*/
-    static Backward = new Vector3(0,0,1);
+    static Forward = new Vector3(0,0,1);
+    /**[0,0,-1]*/
+    static Backward = new Vector3(0,0,-1);
     
     /**
      * @param array : number[]
@@ -175,5 +175,17 @@
      */
     equals(other){
         return (this.x === other.x) && (this.y === other.y) && (this.z === other.z);     
+    }
+
+    /**
+     * @param start : Vector3
+     * @param end : Vector3
+     * @param amt : number
+     * @returns {Vector3}
+     * @constructor
+     */
+    static Lerp(start, end, amt) {
+        //(1-t)p0+t*p1
+        return start.scale(1-amt).add(end.scale(amt));
     }
 }

@@ -56,17 +56,17 @@ export class SixAxisController extends Transform {
             }
         };
 
-        this.setupEventListeners();
+        this.SetupEventListeners();
     }
 
-    setupEventListeners() {
+    SetupEventListeners() {
         // Keydown handler
         this.keydownHandler = (e) => {
             const key = e.key.toLowerCase();
             this.pressedKeys.add(key);
 
             // Prevent default for all mapped keys
-            if (this.isKeyMapped(key)) {
+            if (this.IsKeyMapped(key)) {
                 e.preventDefault();
             }
         };
@@ -86,7 +86,7 @@ export class SixAxisController extends Transform {
      * @param {string} key
      * @returns {boolean}
      */
-    isKeyMapped(key) {
+    IsKeyMapped(key) {
         for (let category in this.keyMappings) {
             for (let action in this.keyMappings[category]) {
                 if (this.keyMappings[category][action] === key) {
@@ -99,11 +99,11 @@ export class SixAxisController extends Transform {
 
     /**
      * Check if a specific action key is pressed
-     * @param {string} category - 'movement' or 'rotation'
+     * @param {string} category - the category name
      * @param {string} action - The action name
      * @returns {boolean}
      */
-    isActionPressed(category, action) {
+    IsActionPressed(category, action) {
         const key = this.keyMappings[category]?.[action];
         return key ? this.pressedKeys.has(key) : false;
     }
@@ -116,26 +116,21 @@ export class SixAxisController extends Transform {
         this.UpdateRotation();
     }
 
-    _Update() {
-        super._Update();
-        this.Update();
-    }
-
     UpdateMovement() {
         let movement = new Vector3(0, 0, 0);
         const moveSpeed = this.gpu.deltaTime * this.moveSpeed;
 
         // Forward/Backward (W/S)
-        if (this.isActionPressed('movement', 'forward')) movement.z += 1;
-        if (this.isActionPressed('movement', 'backward')) movement.z -= 1;
+        if (this.IsActionPressed('movement', 'forward')) movement.z += 1;
+        if (this.IsActionPressed('movement', 'backward')) movement.z -= 1;
 
         // Left/Right (A/D)
-        if (this.isActionPressed('movement', 'left')) movement.x -= 1;
-        if (this.isActionPressed('movement', 'right')) movement.x += 1;
+        if (this.IsActionPressed('movement', 'left')) movement.x -= 1;
+        if (this.IsActionPressed('movement', 'right')) movement.x += 1;
 
         // Up/Down (E/Q)
-        if (this.isActionPressed('movement', 'up')) movement.y += 1;
-        if (this.isActionPressed('movement', 'down')) movement.y -= 1;
+        if (this.IsActionPressed('movement', 'up')) movement.y += 1;
+        if (this.IsActionPressed('movement', 'down')) movement.y -= 1;
 
         if (movement.magnitude() > 0) {
             // Normalize to prevent faster diagonal movement
@@ -158,16 +153,16 @@ export class SixAxisController extends Transform {
         const rotSpeed = this.rotateSpeed * this.gpu.deltaTime;
         
         // Pitch (X-axis) - I/K
-        if (this.isActionPressed('rotation', 'pitchUp')) rotation.x += rotSpeed;
-        if (this.isActionPressed('rotation', 'pitchDown')) rotation.x -= rotSpeed;
+        if (this.IsActionPressed('rotation', 'pitchUp')) rotation.x += rotSpeed;
+        if (this.IsActionPressed('rotation', 'pitchDown')) rotation.x -= rotSpeed;
 
         // Yaw (Y-axis) - J/L
-        if (this.isActionPressed('rotation', 'yawLeft')) rotation.y -= rotSpeed;
-        if (this.isActionPressed('rotation', 'yawRight')) rotation.y += rotSpeed;
+        if (this.IsActionPressed('rotation', 'yawLeft')) rotation.y -= rotSpeed;
+        if (this.IsActionPressed('rotation', 'yawRight')) rotation.y += rotSpeed;
 
         // Roll (Z-axis) - O/P
-        if (this.isActionPressed('rotation', 'rollLeft')) rotation.z += rotSpeed;
-        if (this.isActionPressed('rotation', 'rollRight')) rotation.z -= rotSpeed;
+        if (this.IsActionPressed('rotation', 'rollLeft')) rotation.z += rotSpeed;
+        if (this.IsActionPressed('rotation', 'rollRight')) rotation.z -= rotSpeed;
 
         if (rotation.magnitude() > 0) {
             const addQuat = Quaternion.fromEuler(rotation);
@@ -179,7 +174,7 @@ export class SixAxisController extends Transform {
      * Get all currently pressed keys
      * @returns {string[]}
      */
-    getPressedKeys() {
+    GetPressedKeys() {
         return Array.from(this.pressedKeys);
     }
 
@@ -187,7 +182,7 @@ export class SixAxisController extends Transform {
      * Check if any keys are pressed
      * @returns {boolean}
      */
-    hasInput() {
+    HasInput() {
         return this.pressedKeys.size > 0;
     }
 
@@ -197,7 +192,7 @@ export class SixAxisController extends Transform {
      * @param {string} action - The action to remap
      * @param {string} newKey - The new key to assign
      */
-    remapKey(category, action, newKey) {
+    RemapKey(category, action, newKey) {
         if (this.keyMappings[category] && this.keyMappings[category][action] !== undefined) {
             this.keyMappings[category][action] = newKey.toLowerCase();
         }
