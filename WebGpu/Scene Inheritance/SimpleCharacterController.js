@@ -6,6 +6,7 @@ import {RayCast} from "./RayCast.js";
 import {Camera} from "./Camera.js";
 import {Transform} from "./Transform.js";
 import {PickUpAble} from "./PickUpAble.js";
+import {Logger} from "../Logger.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -136,13 +137,14 @@ export class SimpleCharacterController extends SixAxisController {
 
         if (this.input.magnitude() === 0) {
             this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 10);
-            return
+            return;
         }
-        
-        let temp = Vector3.Lerp(this.linearVelocity, this.input.scale(this.Sigmoid(this.weight)), this.gpu.deltaTime * 2);
-        temp.y = 0;
-        console.log(this.Sigmoid(this.weight));
-        // Calculate the proposed new position
+
+        let targetVelocity = this.input.scale(this.Sigmoid(this.weight));
+        targetVelocity.y = 0;
+
+        let temp = Vector3.Lerp(this.linearVelocity, targetVelocity, this.gpu.deltaTime * 2);
+
         let proposedPosition = this.position.add(temp.scale(this.gpu.deltaTime));
 
         let canMove = true;
@@ -152,17 +154,13 @@ export class SimpleCharacterController extends SixAxisController {
             let shapeObject = this.gpu.registeredShapes[shape];
             if (shapeObject instanceof RayCast) continue;
 
-            // Check if it's a Collision Object (has bounds property)
             if (shapeObject instanceof CollisionObject && shapeObject.ID !== this.collider.ID) {
-
-                // Validate Location
                 let isValid = this.collider.LocationValidation(
                     proposedPosition,
                     shapeObject
                 );
 
                 if (!isValid) {
-                    // Collision detected - stop moving
                     canMove = false;
                     collidingObject = shapeObject;
                     break;
@@ -173,47 +171,37 @@ export class SimpleCharacterController extends SixAxisController {
         if (canMove) {
             this.linearVelocity = temp;
         } else {
-            // If we're colliding, check if we're already overlapping
-            let currentlyOverlapping = !this.collider.LocationValidation(
-                this.position,
-                collidingObject
-            );
+            // Collision detected - try sliding along the surface
+            const dx = collidingObject.globalPosition.x - this.globalPosition.x;
+            const dz = collidingObject.globalPosition.z - this.globalPosition.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
 
-            if (currentlyOverlapping) {
-                // We're stuck inside - push out
-                const dx = this.position.x - collidingObject.position.x;
-                const dz = this.position.z - collidingObject.position.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
+            if (distance > 0.001) {
+                const normalX = -dx / distance;
+                const normalZ = -dz / distance;
 
-                if (distance > 0.001) {
-                    // Normalize and push away
-                    const pushX = (dx / distance);
-                    const pushZ = (dz / distance);
+                const dotProduct = temp.x * normalX + temp.z * normalZ;
 
-                    const radius1 = this.collider.bounds.x;
-                    const radius2 = collidingObject.bounds.y === 0 ? collidingObject.bounds.x : 0;
-                    const minDistance = radius1 + (radius2 || Math.max(collidingObject.bounds.x, collidingObject.bounds.y) * 0.7071); // For boxes, use diagonal approximation
-
-                    // Push to minimum safe distance
-                    const pushDistance = minDistance - distance + 0.1; // Small buffer
-                    this.position = new Vector3(
-                        this.position.x + pushX * pushDistance,
-                        this.position.y,
-                        this.position.z + pushZ * pushDistance
-                    );
-                }
-
-                // Allow movement perpendicular to collision direction
-                const dotProduct = (temp.x * dx + temp.z * dz) / (distance || 1);
                 if (dotProduct < 0) {
-                    // Moving away from collision, allow it
-                    this.linearVelocity = temp;
+                    const slideVelocity = new Vector3(
+                        temp.x - normalX * dotProduct,
+                        0,
+                        temp.z - normalZ * dotProduct
+                    );
+
+                    let slidePosition = this.position.add(slideVelocity.scale(this.gpu.deltaTime));
+                    let canSlide = this.collider.LocationValidation(slidePosition, collidingObject);
+
+                    if (canSlide) {
+                        this.linearVelocity = slideVelocity;
+                    } else {
+                        this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 15);
+                    }
                 } else {
-                    this.linearVelocity = Vector3.Zero.copy();
+                    this.linearVelocity = temp;
                 }
             } else {
-                // Just hitting the edge, stop
-                this.linearVelocity = Vector3.Zero.copy();
+                this.linearVelocity = Vector3.Lerp(this.linearVelocity, Vector3.Zero, this.gpu.deltaTime * 15);
             }
         }
     }
@@ -245,7 +233,6 @@ export class SimpleCharacterController extends SixAxisController {
     async UpdateActions(key) {
         if (key === this.keyMappings['actions']['interact']) {
             let hit = await this.rayCast.SendRC(this.ignorelist)
-            console.log(hit)
             if (hit === null)
                 return
 
@@ -254,7 +241,6 @@ export class SimpleCharacterController extends SixAxisController {
                 realObject = realObject.parent;
             } while (!(realObject instanceof Transform) && realObject.parent !== null)
 
-            console.log(this.weight, this.value)
             for (let child of Object.values(realObject.children)) {
                 if (child instanceof PickUpAble){
                     //Add the value to our current total
