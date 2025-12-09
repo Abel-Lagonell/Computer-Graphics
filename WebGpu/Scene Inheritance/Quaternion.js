@@ -231,4 +231,16 @@ export class Quaternion {
     Lerp(other, amt){
         return Quaternion.Lerp(this, other, amt);
     }
+
+    /**
+     * @param axis : Vector3
+     * @param ang : number
+     * @constructor
+     */
+    static AngleAxis(axis, ang){
+        let s = Math.sin(ang/2);
+        let u = axis.normalize();
+
+        return new Quaternion(Math.cos(ang/2), u.x*s, u.y*s,u.z*s);
+    }
 }

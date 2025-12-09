@@ -18,6 +18,7 @@ export class WebGPU {
     shapes = {};
 
     total = 0;
+    /** @type {Object.<number, Transform>} */
     registeredShapes = {};
     currentPointLight = 0;
     currentSpotLight = 0;

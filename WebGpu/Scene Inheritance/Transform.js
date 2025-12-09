@@ -58,6 +58,10 @@ export class Transform {
         this.vertices = new Float32Array([...this._position.array, ...Color.Black]);
 
         this._readyPromise = this._initializedWhenReady();
+
+        this.ogPosition = this._position;
+        this.ogScale = this._scale;
+        this.ogRotation = this.rotation;
     }
 
     /**@return Vector3*/
@@ -189,14 +193,21 @@ export class Transform {
 
     }
 
+    UnRegister() {
+        delete this.gpu.registeredShapes[this.ID];
+        for (let child of Object.values(this.children)) {
+            delete this.gpu.registeredShapes[child.ID];
+        }
+    }
+
     async RemoveChild(badChild) {
         if (this.children[badChild.ID] !== undefined) {
             badChild.parent = null;
             delete this.children[badChild.ID];
         }
     }
-    
-    GetChildOfType(type){
+
+    GetChildOfType(type) {
         for (let child of Object.values(this.children)) {
             if (child instanceof type)
                 return child;
@@ -481,5 +492,13 @@ export class Transform {
             )
 
         return temp
+    }
+
+    Reset() {
+        this.rotation = this.ogRotation;
+        this.position = this.ogPosition;
+        this.scale = this.ogScale;
+
+        this.CallInChildren("Reset")
     }
 }

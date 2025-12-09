@@ -15,6 +15,7 @@ import {Color} from "./Color.js";
  * @property {number[][]} [color=[Color.Black]]
  * @property {number[][]} [normals=[Vector3.Up.array]]
  * @property {number[]} [specExps=[1]]
+ * @property {any[]} [finalVertices=[]]
  */
 
 export class MeshObject extends Transform {
