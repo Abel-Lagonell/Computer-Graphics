@@ -46,7 +46,8 @@ export class Zombie extends Transform {
             maxDistance: 20,
             coneInnerAngle: 90,
             coneOuterAngle: 360,
-            // autoplay: true,
+            autoplay: true,
+            volume: 2,
         })
 
         await this.AddChild(this.collider);
@@ -58,11 +59,15 @@ export class Zombie extends Transform {
             await this.AddChild(mesh);
         }
 
-        // this.StartGroaning();
+        this.StartGroaning();
     }
 
     Update() {
-        if (this.LocateDistanceToPlayer() > this.seekingRadius) return;
+
+        if (this.LocateDistanceToPlayer() > this.seekingRadius){
+            this.linearVelocity = Vector3.Zero;
+            return;
+        }
         if (this.LocateDistanceToPlayer() <= this.dangerZone)
             GameEngine.Instance.GameEnd();
 

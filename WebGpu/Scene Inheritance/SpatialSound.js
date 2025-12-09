@@ -137,9 +137,9 @@ export class SpatialSound extends Transform {
         super.Update();
 
         // Update panner position to match transform position
-        this.panner.positionX.value = this.position.x;
-        this.panner.positionY.value = this.position.y;
-        this.panner.positionZ.value = this.position.z;
+        this.panner.positionX.value = this.globalPosition.x;
+        this.panner.positionY.value = this.globalPosition.y;
+        this.panner.positionZ.value = this.globalPosition.z;
 
         // Update orientation to match transform forward direction
         const forward = this.forward;

@@ -9,6 +9,7 @@ import {PickUpAble} from "./PickUpAble.js";
 import {SpatialSound} from "./SpatialSound.js";
 import {OBJParser} from "./OBJParser.js";
 import {MeshObject} from "./MeshObject.js";
+import {GameEngine} from "../ActualGame/GameEngine.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -25,10 +26,10 @@ export class SimpleCharacterController extends SixAxisController {
 
         this.collider = new CollisionObject({
             name: "Player Collision",
-            bounds: new Vector3(2, 0, 0),
+            bounds: new Vector3(1, 0, 0),
         })
         this.rayCast = new RayCast({
-            length: 15,
+            length: 2.5,
         });
         this.camera = new Camera();
         Transform.setCameraReference(this.camera);
@@ -50,7 +51,8 @@ export class SimpleCharacterController extends SixAxisController {
         this.value = 0;
 
         this.keyMappings['actions'] = {
-            interact: "t"
+            interact: "t",
+            log: "l",
         }
 
         this.listener = this.gpu.audioContext.listener;
@@ -140,6 +142,8 @@ export class SimpleCharacterController extends SixAxisController {
     }
 
     UpdateMovement() {
+        if (this.globalPosition.x < -21) GameEngine.Instance.GameWin();
+
         let movement = new Vector3(0, 0, 0);
 
         // Forward/Backward (W/S)
@@ -161,7 +165,7 @@ export class SimpleCharacterController extends SixAxisController {
         let targetVelocity = this.input.scale(this.Sigmoid(this.weight));
         targetVelocity.y = 0;
 
-        let temp = Vector3.Lerp(this.linearVelocity, targetVelocity, this.gpu.deltaTime * 2);
+        let temp = Vector3.Lerp(this.linearVelocity, targetVelocity, this.gpu.deltaTime * 15);
 
         let proposedPosition = this.position.add(temp.scale(this.gpu.deltaTime));
 
@@ -172,7 +176,7 @@ export class SimpleCharacterController extends SixAxisController {
             let shapeObject = this.gpu.registeredShapes[shape];
             if (shapeObject instanceof RayCast) continue;
 
-            if (shapeObject instanceof CollisionObject && shapeObject.ID !== this.collider.ID) {
+            if (shapeObject instanceof CollisionObject && shapeObject.ID !== this.collider.ID && !shapeObject.isTrigger) {
                 let isValid = this.collider.LocationValidation(
                     proposedPosition,
                     shapeObject
@@ -284,6 +288,10 @@ export class SimpleCharacterController extends SixAxisController {
                     this.takeSound.Play();
                 }
             }
+        }
+
+        if (key === this.keyMappings['actions']['log']) {
+            console.log(this.position.array);
         }
     }
 
