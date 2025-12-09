@@ -9,6 +9,7 @@ import {PickUpAble} from "./PickUpAble.js";
 import {Logger} from "../Logger.js";
 import {SpatialSound} from "./SpatialSound.js";
 import {OBJParser} from "./OBJParser.js";
+import {WebGPU} from "../WebGPU.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -25,7 +26,7 @@ export class SimpleCharacterController extends SixAxisController {
 
         this.collider = new CollisionObject({
             name: "Player Collision",
-            bounds: new Vector3(10, 0, 0),
+            bounds: new Vector3(2, 0, 0),
         })
         this.rayCast = new RayCast({
             length: 15,
@@ -66,10 +67,12 @@ export class SimpleCharacterController extends SixAxisController {
         }
         let parser = new OBJParser();
         this.hands = await parser.parseObj("./Models/Hands/", "hands")
-        this.hands.position = this.forward.scale(5).add(Vector3.Down.scale(21));
+        this.hands.scale = Vector3.One.scale(1/3)
+        this.hands.position = this.forward.scale(1.5).add(Vector3.Down.scale(7));
         this.hands.rotation = new Vector3(0, 3.1415, 0)
 
 
+        // WebGPU.Instance.AddShape([this.hands])
         await this.AddChild(this.hands)
         await this.AddChild(this.collider);
         await this.AddChild(this.rayCast);
@@ -254,7 +257,7 @@ export class SimpleCharacterController extends SixAxisController {
 
     async UpdateActions(key) {
         if (key === this.keyMappings['actions']['interact']) {
-            let hit = await this.rayCast.SendRC(this.ignorelist)
+            let hit = await this.rayCast.SendRCTrigger(this.ignorelist)
             if (hit === null)
                 return
 

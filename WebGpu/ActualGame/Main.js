@@ -22,37 +22,48 @@ class Main {
         let ambient = new AmbientLight();
         let direction = new DirectionalLight();
 
-        let cube = await this.parser.parseObj("../Models/", "Cube");
-        let verts = cube.GetChildOfType(MeshObject).vertices
-
         let backgroundMusic = new SpatialSound("./Sounds/Background.wav", {
             coneOuterAngle: 360, volume: 0.2, maxDistance: 100000, autoplay: false, loop: true
         })
 
-        const total = 1;
-        for (let i = 0; i < total; i++) {
-            let mesh = new MeshObject({
-                name: "Cube " + i,
-                position: new Vector3(-Math.sin(2 * i * 3.1415 / total) * 5, 0, Math.cos(2 * i * 3.1415 / total) * 5).scale(10),
-                scale: Vector3.One.copy().scale(10),
-                finalVertices: verts,
-            });
-
-
-            await mesh.AddChild(new PickUpAble(i, i))
-            await mesh.AddChild(new CollisionObject({
-                bounds: new Vector3(1, 1, 0),
-            }))
-            await this.web.AddShape([mesh])
-        }
-
         let player = new SimpleCharacterController({
             linearSpeed: 10,
-            position: new Vector3(0,21,0)
+            position: new Vector3(-15, 6.5, 0)
         });
 
         await this.web.AddShape([player])
-        // console.log(this.web.shapes)
+
+        //Items
+
+        const aisle1_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle1_sign");
+        const aisle2_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle2_sign");
+        const aisle3_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle3_sign");
+        const counter = await this.parser.parseObj("./Models/AisleTexture/", "counter");
+        // counter.AddChild(new CollisionObject({
+        //     If the orientation stays the same its this if its rotated 90 degrees then flip the two values
+            // bounds: new Vector3(0.75, 6.5, 0)
+        // }))
+
+        const shelf = await this.parser.parseObj("./Models/ShelfTexture/", "shelf");
+        // shelf.AddChild(new CollisionObject({
+        //     bounds: new Vector3(2, 6.25, 0)
+        // }))
+        const shelf2 = await this.parser.parseObj("./Models/ShelfTexture/", "shelf2");
+        // shelf2.AddChild(new CollisionObject({
+        //     bounds: new Vector3(1, 0.75, 0)
+        // }))
+        const endShelf = await this.parser.parseObj("./Models/ShelfTexture/", "endShelf");
+        // endShelf.AddChild(new CollisionObject({
+        //     bounds: new Vector3(1, 0.75, 0)
+        // }))
+
+        const zombie = await this.parser.parseObj("./Models/Zombie/", "zombie");
+        // zombie.AddChild(new CollisionObject({
+        //     bounds: new Vector3(1.5,0,0)
+        // }))
+
+        await this.web.AddShape([counter])
+
     }
 }
 

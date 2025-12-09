@@ -10,7 +10,7 @@ export class TextureMap {
 
     constructor(imageUrl) {
         this.imageUrl = imageUrl;
-        console.log(`imageUrl ${imageUrl.slice(0,-4).concat("_normal.jpg")}`);
+        console.log(`imageUrl ${imageUrl.slice(0,-4).concat("_normal.png")}`);
     }
 
     async LoadImage(imageUrl = this.imageUrl) {
@@ -56,17 +56,17 @@ export class TextureMap {
 
         try {
             // Load the normal map
-            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.jpg"));
+            this.normalImg = await this.LoadImage(this.imageUrl.slice(0,-4).concat("_normal.png"));
 
             // Write normal map to the same texture layer in the normal texture array
             gpu.WriteImageToTextureLayer(this.normalImg, this.textureIndex, gpu.normalTextureArray);
 
-            console.log(`Loaded normal texture ${this.textureIndex}: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`);
+            console.log(`Loaded normal texture ${this.textureIndex}: ${this.imageUrl.slice(0,-4).concat("_normal.png")}`);
 
             normalTexture = 1;
 
         } catch (error) {
-            console.warn(`Failed to load normal texture: ${this.imageUrl.slice(0,-4).concat("_normal.jpg")}`, error);
+            console.warn(`Failed to load normal texture: ${this.imageUrl.slice(0,-4).concat("_normal.png")}`, error);
             normalTexture = -1;
         }
 

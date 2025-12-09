@@ -1,6 +1,6 @@
 # Blender 5.0.0
 # www.blender.org
-mtllib aisle3 sign.mtl
+mtllib aisle3_sign.mtl
 o Aisle_3
 v -0.320908 13.612709 -4.564734
 v -0.320908 18.475391 -4.564734
