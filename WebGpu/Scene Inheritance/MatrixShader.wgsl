@@ -93,7 +93,7 @@ fn fragmentMain(fsInput: VertexData) -> @location(0) vec4f {
     let texIndex = u32(-material.diffuse.x - 1.0);
 
     var textCoord = repeatTexCoord(fsInput.textCoord);
-    textCoord = vec2f((textCoord.x*material.diffuse.y)/640, ((1-textCoord.y)*material.diffuse.y)/640);
+    textCoord = vec2f((textCoord.x*material.diffuse.y)/1024, ((1-textCoord.y)*material.diffuse.y)/1024);
 
     let sampledColor = textureSample(textures, ourSampler, textCoord, texIndex);
     let normalColor = textureSample(normals, ourSampler, textCoord, texIndex);

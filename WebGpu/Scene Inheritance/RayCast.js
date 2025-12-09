@@ -36,6 +36,27 @@ export class RayCast extends CollisionObject {
             this.position = this.position.add(forward);
         } while (remainingLength > 0);
 
+
+        this.position = Vector3.Zero.copy();
+        return null;
+    }
+
+    async SendRCTrigger(ignoreList){
+        let remainingLength = this.length;
+        do{
+            this.CalculateMatrix();
+            this.CalculateGlobalMatrix()
+            const collider = this.CheckIfCollidingTrigger(ignoreList);
+            if (collider !== null && collider.isTrigger) {
+                this.position = Vector3.Zero.copy();
+                return collider;
+            }
+            remainingLength -= this.segmentLength;
+            const forward = this.forward.scale(this.segmentLength);
+            this.position = this.position.add(forward);
+        } while (remainingLength > 0);
+
+
         this.position = Vector3.Zero.copy();
         return null;
     }
@@ -49,6 +70,26 @@ export class RayCast extends CollisionObject {
         for (let shape in this.gpu.registeredShapes){
             let obj = this.gpu.registeredShapes[shape];
             if (obj instanceof CollisionObject && obj.ID !== this.ID){
+                if (ignoreList[obj.ID] === undefined) {
+                    const isValid = this.LocationValidation(this.position, obj);
+                    if (!isValid) {
+                        return obj;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param ignoreList : CollisionObject[]
+     * @return {CollisionObject|null}
+     * @constructor
+     */
+    CheckIfCollidingTrigger(ignoreList){
+        for (let shape in this.gpu.registeredShapes){
+            let obj = this.gpu.registeredShapes[shape];
+            if (obj instanceof CollisionObject && obj.ID !== this.ID && obj.isTrigger){
                 if (ignoreList[obj.ID] === undefined) {
                     const isValid = this.LocationValidation(this.position, obj);
                     if (!isValid) {

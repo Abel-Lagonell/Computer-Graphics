@@ -31,11 +31,19 @@ export class CollisionObject extends Transform {
         }))
     }
 
-    LocationValidation(position, other) {
-        return CollisionObject.LocationValidation(position, this, other);
+    LocationValidation(position, other, log =false) {
+        return CollisionObject.LocationValidation(position, this, other, log);
     }
 
-    static LocationValidation(position, collisionObjectOne, collisionObjectTwo) {
+    /**
+     * @param position : Vector3
+     * @param collisionObjectOne : CollisionObject
+     * @param collisionObjectTwo : CollisionObject
+     * @param log : boolean
+     * @returns {boolean}
+     * @constructor
+     */
+    static LocationValidation(position, collisionObjectOne, collisionObjectTwo, log = false) {
         // If either object doesn't exist, no collision
         if (!collisionObjectOne || !collisionObjectTwo) {
             return true; // Position is valid
@@ -48,8 +56,15 @@ export class CollisionObject extends Transform {
         collisionObjectOne.position = position.copy();
 
         // Get bounds for both objects
-        const bounds1 = collisionObjectOne.bounds;
-        const bounds2 = collisionObjectTwo.bounds;
+        const bounds1 = new Vector3(
+            collisionObjectOne.bounds.x * collisionObjectOne.parent.scale.x,
+            collisionObjectOne.bounds.y * collisionObjectOne.parent.scale.y,
+            0);
+
+        const bounds2 = new Vector3(
+            collisionObjectTwo.bounds.x * collisionObjectTwo.parent.scale.x,
+            collisionObjectTwo.bounds.y * collisionObjectTwo.parent.scale.y,
+            0);
 
         // Determine object types based on bounds
         const isCircle1 = bounds1.y === 0 || !bounds1.y;
@@ -118,6 +133,10 @@ export class CollisionObject extends Transform {
             const dx = circle.globalPosition.x - closestX;
             const dy = circle.globalPosition.z - closestY;
             const distanceSquared = dx * dx + dy * dy;
+
+            if (log){
+                console.log(boxBounds.array, box.globalPosition.array, boxMax, boxMin)
+            }
 
             collides = distanceSquared < (radius * radius);
         }
