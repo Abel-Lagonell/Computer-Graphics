@@ -21,7 +21,7 @@ class Main {
         let direction = new DirectionalLight();
 
         let backgroundMusic = new SpatialSound("./Sounds/Background.wav", {
-            coneOuterAngle: 360, volume: 0.2, maxDistance: 100000, autoplay: false, loop: true
+            coneOuterAngle: 360, volume: 0.2, maxDistance: 100000, autoplay: true, loop: true
         })
 
         let player = new SimpleCharacterController({
