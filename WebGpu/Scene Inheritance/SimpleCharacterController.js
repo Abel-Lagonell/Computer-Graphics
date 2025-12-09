@@ -6,10 +6,8 @@ import {RayCast} from "./RayCast.js";
 import {Camera} from "./Camera.js";
 import {Transform} from "./Transform.js";
 import {PickUpAble} from "./PickUpAble.js";
-import {Logger} from "../Logger.js";
 import {SpatialSound} from "./SpatialSound.js";
 import {OBJParser} from "./OBJParser.js";
-import {WebGPU} from "../WebGPU.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -67,7 +65,7 @@ export class SimpleCharacterController extends SixAxisController {
         }
         let parser = new OBJParser();
         this.hands = await parser.parseObj("./Models/Hands/", "hands")
-        this.hands.scale = Vector3.One.scale(1/3)
+        this.hands.scale = Vector3.One.scale(1 / 3)
         this.hands.position = this.forward.scale(1.5).add(Vector3.Down.scale(7));
         this.hands.rotation = new Vector3(0, 3.1415, 0)
 
@@ -189,7 +187,7 @@ export class SimpleCharacterController extends SixAxisController {
 
         if (canMove) {
             this.linearVelocity = temp;
-            if (this.canPlayFootStep){
+            if (this.canPlayFootStep) {
                 this.feet.Play();
                 this.WaitFootStep();
                 this.canPlayFootStep = false;
@@ -269,7 +267,7 @@ export class SimpleCharacterController extends SixAxisController {
             } while (!(realObject instanceof Transform) && realObject.parent !== null)
 
             for (let child of Object.values(realObject.children)) {
-                if (child instanceof PickUpAble){
+                if (child instanceof PickUpAble) {
                     //Add the value to our current total
                     this.weight += child.weight;
                     this.value += child.value;
@@ -287,8 +285,8 @@ export class SimpleCharacterController extends SixAxisController {
             }
         }
     }
-    
-    UnregisterShape(ID){
+
+    UnregisterShape(ID) {
         for (let child of Object.values(this.gpu.registeredShapes[ID].children)) {
             delete this.gpu.registeredShapes[child.ID];
         }
@@ -312,12 +310,12 @@ export class SimpleCharacterController extends SixAxisController {
      * @return {number} the y value of the sigmoid function
      * @constructor
      */
-    Sigmoid(input, max=this.moveSpeed, min=0.15, delta=1, leeway=0){
-        return min+(max-min)/(1+Math.exp(delta*(input-leeway-max)))
+    Sigmoid(input, max = this.moveSpeed, min = 0.15, delta = 1, leeway = 0) {
+        return min + (max - min) / (1 + Math.exp(delta * (input - leeway - max)))
     }
 
-    async WaitFootStep(){
-        await new Promise(resolve => setTimeout(resolve, 500 * this.moveSpeed/this.Sigmoid(this.weight, this.moveSpeed, 1)));
+    async WaitFootStep() {
+        await new Promise(resolve => setTimeout(resolve, 500 * this.moveSpeed / this.Sigmoid(this.weight, this.moveSpeed, 1)));
         this.canPlayFootStep = true;
     }
 }

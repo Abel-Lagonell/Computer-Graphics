@@ -8,6 +8,7 @@ import {SimpleCharacterController} from "../Scene Inheritance/SimpleCharacterCon
 import {PickUpAble} from "../Scene Inheritance/PickUpAble.js";
 import {CollisionObject} from "../Scene Inheritance/CollisionObject.js";
 import {SpatialSound} from "../Scene Inheritance/SpatialSound.js";
+import {Zombie} from "../Scene Inheritance/Zombie.js";
 
 class Main {
     constructor() {
@@ -34,7 +35,6 @@ class Main {
         await this.web.AddShape([player])
 
         //Items
-
         const aisle1_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle1_sign");
         const aisle2_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle2_sign");
         const aisle3_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle3_sign");
@@ -43,6 +43,11 @@ class Main {
         //     If the orientation stays the same its this if its rotated 90 degrees then flip the two values
             // bounds: new Vector3(0.75, 6.5, 0)
         // }))
+
+        aisle1_sign.UnRegister();
+        aisle2_sign.UnRegister();
+        aisle3_sign.UnRegister();
+        counter.UnRegister();
 
         const shelf = await this.parser.parseObj("./Models/ShelfTexture/", "shelf");
         // shelf.AddChild(new CollisionObject({
@@ -57,13 +62,21 @@ class Main {
         //     bounds: new Vector3(1, 0.75, 0)
         // }))
 
+        shelf.UnRegister();
+        shelf2.UnRegister();
+        endShelf.UnRegister();
+
         const zombie = await this.parser.parseObj("./Models/Zombie/", "zombie");
-        // zombie.AddChild(new CollisionObject({
-        //     bounds: new Vector3(1.5,0,0)
-        // }))
+        zombie.UnRegister();
+        let vert = []
+        for (let child of Object.values(zombie.children)){
+            vert.push(child.vertices);
+        }
+        const activeZombie = new Zombie(vert);
 
-        await this.web.AddShape([counter])
+        await this.web.AddShape([activeZombie])
 
+        console.log(this.web.registeredShapes)
     }
 }
 

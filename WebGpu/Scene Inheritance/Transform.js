@@ -189,6 +189,13 @@ export class Transform {
 
     }
 
+    UnRegister() {
+        delete this.gpu.registeredShapes[this.ID];
+        for (let child of Object.values(this.children)) {
+            delete this.gpu.registeredShapes[child.ID];
+        }
+    }
+
     async RemoveChild(badChild) {
         if (this.children[badChild.ID] !== undefined) {
             badChild.parent = null;
