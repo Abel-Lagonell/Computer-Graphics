@@ -1,0 +1,72 @@
+# Blender 5.0.0 MTL File: 'store.blend'
+# www.blender.org
+
+newmtl aisleMat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd C:/Users/cardc/Documents/GitHub/Computer-Graphics/WebGpu/ActualGame/Models/AisleTexture/aisleSignTexture.png
+
+newmtl aislePoleRegister
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.045953 0.045953 0.045953
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl fridgeMat
+Ns 540.657410
+Ka 0.684492 0.684492 0.684492
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd Fridge.png
+
+newmtl merchMat
+Ns 430.402893
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:/Users/cardc/Documents/GitHub/Computer-Graphics/Models/Graphics/merch/boxLayoutWhite.png
+
+newmtl registerMat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.005245 0.005245 0.005245
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+
+newmtl shelfMat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd shelf.png
+
+newmtl storeMat
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd storeWalls.png
