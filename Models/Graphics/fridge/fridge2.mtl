@@ -1,0 +1,12 @@
+# Blender 5.0.0 MTL File: 'fridge.blend'
+# www.blender.org
+
+newmtl Material.001
+Ns 540.657410
+Ka 0.684492 0.684492 0.684492
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd Fridge.png
