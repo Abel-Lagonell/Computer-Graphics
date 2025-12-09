@@ -130,12 +130,15 @@ export class GameEngine {
     }
 
     GameEnd() {
+        let death = "The next survivor to follow in your footsteps will have an even more difficult time raiding this store for supplies, as <span style=\"color: red\"><b>two</b> living dead</span> now haunt these halls. <h2 style=\"color:  red\"><center>YOU HAVE DIED</center></h2><br>Refresh the page to try again or click <button onClick=\"window.location.reload();\">here.</button>";
+        let liveBad = "You escape with scant supplies. Perhaps the close proximity with an undead human unsettled you so, forcing you to flee before grabbing much. Perhaps you meant to leave something for the next survivor.<br><br>Either way, you'll need to venture out again before long. This will hardly last you the week, if that.<center><h2 style=\"color:  green\">YOU ESCAPED</h2><br> with food for [insert variable here] days.</center><br><br>Refresh the page to play again or click <button onClick=\"window.location.reload();\">here.</button>";
+        let liveGood = "You escape with a good amount in your rucksack. You'll be eating well, or at least eating consistently. The supplies you got will last you for some time, and hopefully until you stumble upon your next location to raid or a safe haven.<br><br>I applaud you for your courage.<center><h2 style=\"color:  green\">YOU ESCAPED</h2><br> with food for [insert variable here] days.</center><br><br>Refresh the page to play again or click <button onClick=\"window.location.reload();\">here.</button>"
         let canvas = document.querySelector("canvas");
         cancelAnimationFrame(WebGPU.Instance.reqAF)
         canvas.hidden = true;
         document.exitPointerLock();
         let text =document.getElementById("text");
-        text.innerHTML = "Your Bad lmao";
+        text.innerHTML = death; 
         text.hidden = false;
     }
 
