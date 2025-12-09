@@ -7,6 +7,7 @@ import {MeshObject} from "../Scene Inheritance/MeshObject.js";
 import {SimpleCharacterController} from "../Scene Inheritance/SimpleCharacterController.js";
 import {PickUpAble} from "../Scene Inheritance/PickUpAble.js";
 import {CollisionObject} from "../Scene Inheritance/CollisionObject.js";
+import {SpatialSound} from "../Scene Inheritance/SpatialSound.js";
 
 class Main {
     constructor() {
@@ -24,11 +25,16 @@ class Main {
         let cube = await this.parser.parseObj("../Models/", "Cube");
         let verts = cube.GetChildOfType(MeshObject).vertices
 
-        const total = 10;
+        let backgroundMusic = new SpatialSound("./Sounds/Background.wav", {
+            coneOuterAngle: 360, volume: 0.2, maxDistance: 100000, autoplay: false, loop: true
+        })
+
+        const total = 1;
         for (let i = 0; i < total; i++) {
             let mesh = new MeshObject({
                 name: "Cube " + i,
-                position: new Vector3(-Math.sin(2 * i * 3.1415 / total) * 5, 0, Math.cos(2 * i * 3.1415 / total) * 5),
+                position: new Vector3(-Math.sin(2 * i * 3.1415 / total) * 5, 0, Math.cos(2 * i * 3.1415 / total) * 5).scale(10),
+                scale: Vector3.One.copy().scale(10),
                 finalVertices: verts,
             });
 
@@ -41,7 +47,8 @@ class Main {
         }
 
         let player = new SimpleCharacterController({
-            // linearSpeed: 0
+            linearSpeed: 10,
+            position: new Vector3(0,21,0)
         });
 
         await this.web.AddShape([player])

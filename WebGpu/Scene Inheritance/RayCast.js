@@ -28,6 +28,7 @@ export class RayCast extends CollisionObject {
             this.CalculateGlobalMatrix()
             const collider = this.CheckIfColliding(ignoreList);
             if (collider !== null) {
+                console.log(this.globalPosition.array);
                 this.position = Vector3.Zero.copy();
                 return collider;
             }
@@ -35,6 +36,8 @@ export class RayCast extends CollisionObject {
             const forward = this.forward.scale(this.segmentLength);
             this.position = this.position.add(forward);
         } while (remainingLength > 0);
+        console.log(this.globalPosition.array);
+
 
         this.position = Vector3.Zero.copy();
         return null;

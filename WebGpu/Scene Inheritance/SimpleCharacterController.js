@@ -7,6 +7,8 @@ import {Camera} from "./Camera.js";
 import {Transform} from "./Transform.js";
 import {PickUpAble} from "./PickUpAble.js";
 import {Logger} from "../Logger.js";
+import {SpatialSound} from "./SpatialSound.js";
+import {OBJParser} from "./OBJParser.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -23,11 +25,19 @@ export class SimpleCharacterController extends SixAxisController {
 
         this.collider = new CollisionObject({
             name: "Player Collision",
-            bounds: new Vector3(1, 0, 0),
+            bounds: new Vector3(10, 0, 0),
         })
-        this.rayCast = new RayCast();
+        this.rayCast = new RayCast({
+            length: 15,
+        });
         this.camera = new Camera();
         Transform.setCameraReference(this.camera);
+
+
+        this.feet = new SpatialSound("./Sounds/footstep.wav", {coneOuterAngle: 360, volume: 0.5})
+        this.canPlayFootStep = true;
+
+        this.takeSound = new SpatialSound("./Sounds/inventory.wav", {coneOuterAngle: 360, volume: 0.5})
 
         this.input = Vector3.Zero.copy();
         this.mouseDelta = Vector3.Zero.copy();
@@ -54,7 +64,13 @@ export class SimpleCharacterController extends SixAxisController {
         if (this.gpu) {
             await this.gpu.WaitForReady();
         }
+        let parser = new OBJParser();
+        this.hands = await parser.parseObj("./Models/Hands/", "hands")
+        this.hands.position = this.forward.scale(5).add(Vector3.Down.scale(21));
+        this.hands.rotation = new Vector3(0, 3.1415, 0)
 
+
+        await this.AddChild(this.hands)
         await this.AddChild(this.collider);
         await this.AddChild(this.rayCast);
         await this.AddChild(this.camera);
@@ -170,6 +186,12 @@ export class SimpleCharacterController extends SixAxisController {
 
         if (canMove) {
             this.linearVelocity = temp;
+            if (this.canPlayFootStep){
+                this.feet.Play();
+                this.WaitFootStep();
+                this.canPlayFootStep = false;
+
+            }
         } else {
             // Collision detected - try sliding along the surface
             const dx = collidingObject.globalPosition.x - this.globalPosition.x;
@@ -236,6 +258,8 @@ export class SimpleCharacterController extends SixAxisController {
             if (hit === null)
                 return
 
+
+            console.log(hit)
             let realObject = hit;
             do {
                 realObject = realObject.parent;
@@ -253,6 +277,9 @@ export class SimpleCharacterController extends SixAxisController {
                         delete realObject.parent.children[realObject.ID];
                     }
                     this.UnregisterShape(realObject.ID);
+
+                    //Play Sound
+                    this.takeSound.Play();
                 }
             }
         }
@@ -284,5 +311,10 @@ export class SimpleCharacterController extends SixAxisController {
      */
     Sigmoid(input, max=this.moveSpeed, min=0.15, delta=1, leeway=0){
         return min+(max-min)/(1+Math.exp(delta*(input-leeway-max)))
+    }
+
+    async WaitFootStep(){
+        await new Promise(resolve => setTimeout(resolve, 500 * this.moveSpeed/this.Sigmoid(this.weight, this.moveSpeed, 1)));
+        this.canPlayFootStep = true;
     }
 }
