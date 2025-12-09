@@ -3,6 +3,10 @@ import {MeshObject} from "../Scene Inheritance/MeshObject.js";
 import {Vector3} from "../Scene Inheritance/Vector3.js";
 import {Transform} from "../Scene Inheritance/Transform.js";
 import {CollisionObject} from "../Scene Inheritance/CollisionObject.js";
+import {WebGPU} from "../WebGPU.js";
+import {SimpleCharacterController} from "../Scene Inheritance/SimpleCharacterController.js";
+import {Zombie} from "../Scene Inheritance/Zombie.js";
+import {PickUpAble} from "../Scene Inheritance/PickUpAble.js";
 
 export class GameEngine {
     static Instance = null;
@@ -32,33 +36,28 @@ export class GameEngine {
         /** @type {Object.<string, Vector3>} */
         this.rotations = {}
 
+        this.isReady =false;
+        this.WaitForReady();
+
+    }
+
+    async WaitForReady(){
+        if (!this.isReady){
+            console.log("WaitForReady");
+            await new Promise(resolve => setTimeout(resolve, 400));
+        }
+        return this.isReady;
     }
 
     async SlowStart() {
 
-        const aisle1_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle1_sign");
-        const aisle2_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle2_sign");
-        const aisle3_sign = await this.parser.parseObj("./Models/AisleTexture/", "aisle3_sign");
-        const counter = await this.parser.parseObj("./Models/AisleTexture/", "counter");
-        this.RecordVerts("aisle1_sign", aisle1_sign);
-        this.RecordVerts("aisle2_sign", aisle2_sign);
-        this.RecordVerts("aisle3_sign", aisle3_sign);
-        this.RecordVerts("counter", counter);
-        this.collisionObjects["counter"] = new Vector3(0.75, 6.5, 0);
-
-        const shelf = await this.parser.parseObj("./Models/ShelfTexture/", "shelf");
-        const shelf2 = await this.parser.parseObj("./Models/ShelfTexture/", "shelf2");
-        const endShelf = await this.parser.parseObj("./Models/ShelfTexture/", "endShelf");
-        this.RecordVerts("shelf", shelf);
-        this.RecordVerts("shelf", shelf2);
-        this.RecordVerts("endShelf", endShelf);
-        this.collisionObjects["shelf"] = new Vector3(2, 6.25, 0);
-        this.collisionObjects["shelf2"] = new Vector3(1, 0.75, 0);
-        this.collisionObjects["endShelf"] = this.collisionObjects["shelf2"].copy();
-
-
         const zombie = await this.parser.parseObj("./Models/Zombie/", "zombie");
         this.RecordVerts("zombie", zombie);
+
+        //Load in place
+        // this.SetValuesUP()
+
+        this.isReady = true;
     }
 
     /**
@@ -81,7 +80,6 @@ export class GameEngine {
 
     /**
      * @param string : string
-     * @param transform : Transform
      * @constructor
      */
     MakeObject(string) {
@@ -96,6 +94,7 @@ export class GameEngine {
         }
         if (string === "zombie") {
             this.gpu.AddShape([new Zombie(this.gameObjects[string], {position: position, rotation: rotation})]);
+            return;
         }
         for (let array of this.gameObjects[string]) {
             transform.AddChild(new MeshObject({name: string + "Mesh", finalVertices: array}));
@@ -109,7 +108,52 @@ export class GameEngine {
 
         transform.position = position;
         transform.rotation = rotation;
+        return transform;
+    }
 
+
+    GameWin() {
+        let canvas = document.querySelector("canvas");
+        cancelAnimationFrame(WebGPU.Instance.reqAF)
+        canvas.hidden = true;
+        document.exitPointerLock();
+        let text = document.getElementById("text");
+        for (let shape of Object.values(WebGPU.Instance.registeredShapes)) {
+            if (shape instanceof SimpleCharacterController) {
+                if (shape.value === 0) {
+                    text.innerText = shape.value;
+                }
+            }
+        }
+
+        text.hidden = false;
+    }
+
+    GameEnd() {
+        let canvas = document.querySelector("canvas");
+        cancelAnimationFrame(WebGPU.Instance.reqAF)
+        canvas.hidden = true;
+        document.exitPointerLock();
+        let text =document.getElementById("text");
+        text.innerHTML = "Your Bad lmao";
+        text.hidden = false;
+    }
+
+    SetValuesUP(){
+        for (let shape of Object.values(this.gpu.registeredShapes)){
+            if (shape.name.includes("stuf")){
+                shape.AddChild(new CollisionObject({bounds: new Vector3(1,0,0)}));
+                shape.AddChild(new PickUpAble(1,2));
+            }
+            if (shape.name.includes("flour")){
+                shape.AddChild(new CollisionObject({bounds: new Vector3(1,0,0)}));
+                shape.AddChild(new PickUpAble(5,7));
+            }
+            if (shape.name.includes("jimbo")){
+                shape.AddChild(new CollisionObject({bounds: new Vector3(1,0,0)}));
+                shape.AddChild(new PickUpAble(3,5));
+            }
+        }
     }
 
 

@@ -6,6 +6,7 @@ import {Vector3} from "./Vector3.js";
 import {Quaternion} from "./Quaternion.js";
 import {MeshObject} from "./MeshObject.js";
 import {SpatialSound} from "./SpatialSound.js";
+import {GameEngine} from "../ActualGame/GameEngine.js";
 
 export class Zombie extends Transform {
     constructor(verts, options = {}) {
@@ -23,12 +24,15 @@ export class Zombie extends Transform {
 
         for (let shapeKey in this.gpu.registeredShapes) {
             if (this.gpu.registeredShapes[shapeKey] instanceof SimpleCharacterController) {
+                /** @type SimpleCharacterController */
                 this.player = this.gpu.registeredShapes[shapeKey];
             }
         }
         this.collider = new CollisionObject({
             bounds: new Vector3(1.5, 0, 0)
         });
+
+        this.dangerZone = 7.5
 
         this.SlowStart()
     }
@@ -59,7 +63,8 @@ export class Zombie extends Transform {
 
     Update() {
         if (this.LocateDistanceToPlayer() > this.seekingRadius) return;
-
+        if (this.LocateDistanceToPlayer() <= this.dangerZone)
+            GameEngine.Instance.GameEnd();
 
         //Lookat player
         let toVector = this.player.globalPosition.subtract(this.globalPosition);

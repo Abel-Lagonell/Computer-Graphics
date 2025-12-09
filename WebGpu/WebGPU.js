@@ -3,7 +3,7 @@
 function FrameUpdate() {
     WebGPU.Instance.UpdateAll();
     WebGPU.Instance.RenderAll();
-    requestAnimationFrame(FrameUpdate);
+    WebGPU.Instance.reqAF = requestAnimationFrame(FrameUpdate);
 }
 
 export class WebGPU {
@@ -102,7 +102,7 @@ export class WebGPU {
     async SlowStart() {
         // Only start if we have shapes and are ready
         if (this.total === 0) {
-            requestAnimationFrame(FrameUpdate);
+            this.reqAF = requestAnimationFrame(FrameUpdate);
             return;
         }
 
@@ -110,7 +110,7 @@ export class WebGPU {
             await shape.WriteToGPU();
         }
         this.RenderAll();
-        requestAnimationFrame(FrameUpdate);
+        this.reqAF = requestAnimationFrame(FrameUpdate);
     }
 
     UpdateAll() {

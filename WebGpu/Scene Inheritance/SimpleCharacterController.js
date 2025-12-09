@@ -8,6 +8,7 @@ import {Transform} from "./Transform.js";
 import {PickUpAble} from "./PickUpAble.js";
 import {SpatialSound} from "./SpatialSound.js";
 import {OBJParser} from "./OBJParser.js";
+import {MeshObject} from "./MeshObject.js";
 
 export class SimpleCharacterController extends SixAxisController {
     constructor(options = {}) {
@@ -264,7 +265,7 @@ export class SimpleCharacterController extends SixAxisController {
             let realObject = hit;
             do {
                 realObject = realObject.parent;
-            } while (!(realObject instanceof Transform) && realObject.parent !== null)
+            } while (!(realObject instanceof MeshObject))
 
             for (let child of Object.values(realObject.children)) {
                 if (child instanceof PickUpAble) {

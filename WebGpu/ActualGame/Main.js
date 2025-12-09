@@ -5,7 +5,6 @@ import {AmbientLight} from "../Scene Inheritance/Light/AmbientLight.js";
 import {DirectionalLight} from "../Scene Inheritance/Light/DirectionalLight.js";
 import {SimpleCharacterController} from "../Scene Inheritance/SimpleCharacterController.js";
 import {SpatialSound} from "../Scene Inheritance/SpatialSound.js";
-import {Zombie} from "../Scene Inheritance/Zombie.js";
 import {GameEngine} from "./GameEngine.js";
 
 class Main {
@@ -34,6 +33,10 @@ class Main {
 
         //Items
         let gameEngine = new GameEngine(this.web);
+
+        // let tst = await gameEngine.WaitForReady();
+        // gameEngine.MakeObject("zombie");
+
     }
 }
 
