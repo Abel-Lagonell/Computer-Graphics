@@ -9,7 +9,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd C:/Users/cardc/Documents/GitHub/Computer-Graphics/WebGpu/ActualGame/Models/AisleTexture/aisleSignTexture.png
+map_Kd aisleSignTexture.png
 
 newmtl aislePoleRegister
 Ns 250.000000
@@ -39,7 +39,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd C:/Users/cardc/Documents/GitHub/Computer-Graphics/Models/Graphics/merch/boxLayoutWhite.png
+map_Kd boxLayoutWhite.png
 
 newmtl registerMat
 Ns 250.000000
